@@ -1,0 +1,322 @@
+spsw0102# show bgp l2vpn evpn summary
+BGP summary information for VRF default, address family L2VPN EVPN
+BGP router identifier 10.0.0.253, local AS number 65001
+BGP table version is 111, L2VPN EVPN config peers 5, capable peers 4
+80 network entries and 80 paths using 23360 bytes of memory
+BGP attribute entries [42/15456], BGP AS path entries [0/0]
+BGP community entries [0/0], BGP clusterlist entries [0/0]
+
+Neighbor        V    AS    MsgRcvd    MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+10.0.0.1        4 65001        116         94      111    0    0 01:29:45 22        
+10.0.0.2        4 65001        117         95      111    0    0 01:29:34 22        
+10.0.0.3        4 65001        111         94      111    0    0 01:29:42 18        
+10.0.0.4        4 65001        111         94      111    0    0 01:29:38 18        
+
+Neighbor        T    AS PfxRcd     Type-2     Type-3     Type-4     Type-5     Type-12   
+10.0.0.1        I 65001 22         13         3          0          6          0         
+10.0.0.2        I 65001 22         13         3          0          6          0         
+10.0.0.3        I 65001 18         9          3          0          6          0         
+10.0.0.4        I 65001 18         9          3          0          6          0         
+spsw0102# show bgp l2vpn evpn
+BGP routing table information for VRF default, address family L2VPN EVPN
+BGP table version is 111, Local Router ID is 10.0.0.253
+Status: s-suppressed, x-deleted, S-stale, d-dampened, h-history, *-valid, >-best
+Path type: i-internal, e-external, c-confed, l-local, a-aggregate, r-redist, I-injected
+Origin codes: i - IGP, e - EGP, ? - incomplete, | - multipath, & - backup, 2 - best2
+
+   Network            Next Hop            Metric     LocPrf     Weight Path
+Route Distinguisher: 10.0.0.1:4
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[100.64.0.0]/224
+                      10.0.1.1                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd12:0:0:1::]/416
+                      10.0.1.1                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.1:5
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.1.1                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.1.1                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.1:6
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.1.1                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.1.1                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.1:32867
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[32]:[172.16.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[128]:[fd21:0:0:1::101]/368
+                      10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.1:32967
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[32]:[172.17.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.1:34768
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab46.6ec9]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab46.6ec9]:[32]:[100.64.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.2:4
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[100.64.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd12:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.2:5
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.2:6
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.2:32867
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[32]:[172.16.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[128]:[fd21:0:0:1::101]/368
+                      10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.2:32967
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[32]:[172.17.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.2:34768
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab46.6ec9]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab46.6ec9]:[32]:[100.64.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.3:4
+*>i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[24]:[172.16.1.0]/224
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:2::]/416
+                      10.0.2.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.3:5
+*>i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.2.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.3:32777
+*>i[2]:[0]:[0]:[48]:[0c8e.cf00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.aba8.e3b0]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100          0 i
+
+Route Distinguisher: 10.0.0.3:32778
+*>i[2]:[0]:[0]:[48]:[0c8e.cf00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[32]:[172.16.1.1]/272
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[128]:[fd21:0:0:2::101]/368
+                      10.0.2.2                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100          0 i
+
+Route Distinguisher: 10.0.0.3:32787
+*>i[2]:[0]:[0]:[48]:[0c8e.cf00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab9b.9af4]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab9b.9af4]:[128]:[fd22:0:0:1::102]/368
+                      10.0.2.2                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100          0 i
+
+Route Distinguisher: 10.0.0.4:4
+*>i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[24]:[172.16.1.0]/224
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:2::]/416
+                      10.0.2.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.4:5
+*>i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.2.2                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.2.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.4:32777
+*>i[2]:[0]:[0]:[48]:[0c76.7400.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.aba8.e3b0]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100          0 i
+
+Route Distinguisher: 10.0.0.4:32778
+*>i[2]:[0]:[0]:[48]:[0c76.7400.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[32]:[172.16.1.1]/272
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[128]:[fd21:0:0:2::101]/368
+                      10.0.2.2                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100          0 i
+
+Route Distinguisher: 10.0.0.4:32787
+*>i[2]:[0]:[0]:[48]:[0c76.7400.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab9b.9af4]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab9b.9af4]:[128]:[fd22:0:0:1::102]/368
+                      10.0.2.2                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100          0 i
+
+spsw0102# show ip route vrf all
+IP Route Table for VRF "default"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+10.0.0.1/32, ubest/mbest: 1/0
+    *via 10.0.4.0, Eth1/1, [110/41], 01:29:56, ospf-UNDERLAY, intra
+10.0.0.2/32, ubest/mbest: 1/0
+    *via 10.0.4.2, Eth1/2, [110/41], 01:29:43, ospf-UNDERLAY, intra
+10.0.0.3/32, ubest/mbest: 1/0
+    *via 10.0.4.4, Eth1/3, [110/41], 01:29:53, ospf-UNDERLAY, intra
+10.0.0.4/32, ubest/mbest: 1/0
+    *via 10.0.4.6, Eth1/4, [110/41], 01:29:49, ospf-UNDERLAY, intra
+10.0.0.253/32, ubest/mbest: 2/0, attached
+    *via 10.0.0.253, Lo0, [0/0], 01:30:40, local
+    *via 10.0.0.253, Lo0, [0/0], 01:30:40, direct
+10.0.0.254/32, ubest/mbest: 4/0
+    *via 10.0.4.0, Eth1/1, [110/81], 01:29:55, ospf-UNDERLAY, intra
+    *via 10.0.4.2, Eth1/2, [110/81], 01:29:43, ospf-UNDERLAY, intra
+    *via 10.0.4.4, Eth1/3, [110/81], 01:29:49, ospf-UNDERLAY, intra
+    *via 10.0.4.6, Eth1/4, [110/81], 01:29:49, ospf-UNDERLAY, intra
+10.0.1.1/32, ubest/mbest: 1/0
+    *via 10.0.4.0, Eth1/1, [110/41], 01:26:38, ospf-UNDERLAY, intra
+10.0.1.2/32, ubest/mbest: 1/0
+    *via 10.0.4.2, Eth1/2, [110/41], 01:26:38, ospf-UNDERLAY, intra
+10.0.1.3/32, ubest/mbest: 1/0
+    *via 10.0.4.4, Eth1/3, [110/41], 01:26:44, ospf-UNDERLAY, intra
+10.0.1.4/32, ubest/mbest: 1/0
+    *via 10.0.4.6, Eth1/4, [110/41], 01:26:44, ospf-UNDERLAY, intra
+10.0.2.1/32, ubest/mbest: 2/0
+    *via 10.0.4.0, Eth1/1, [110/41], 01:26:38, ospf-UNDERLAY, intra
+    *via 10.0.4.2, Eth1/2, [110/41], 01:26:38, ospf-UNDERLAY, intra
+10.0.2.2/32, ubest/mbest: 2/0
+    *via 10.0.4.4, Eth1/3, [110/41], 01:26:44, ospf-UNDERLAY, intra
+    *via 10.0.4.6, Eth1/4, [110/41], 01:26:44, ospf-UNDERLAY, intra
+10.0.3.0/31, ubest/mbest: 1/0
+    *via 10.0.4.0, Eth1/1, [110/80], 01:29:56, ospf-UNDERLAY, intra
+10.0.3.2/31, ubest/mbest: 1/0
+    *via 10.0.4.2, Eth1/2, [110/80], 01:29:43, ospf-UNDERLAY, intra
+10.0.3.4/31, ubest/mbest: 1/0
+    *via 10.0.4.4, Eth1/3, [110/80], 01:29:53, ospf-UNDERLAY, intra
+10.0.3.6/31, ubest/mbest: 1/0
+    *via 10.0.4.6, Eth1/4, [110/80], 01:29:49, ospf-UNDERLAY, intra
+10.0.4.0/31, ubest/mbest: 1/0, attached
+    *via 10.0.4.1, Eth1/1, [0/0], 01:30:53, direct
+10.0.4.1/32, ubest/mbest: 1/0, attached
+    *via 10.0.4.1, Eth1/1, [0/0], 01:30:53, local
+10.0.4.2/31, ubest/mbest: 1/0, attached
+    *via 10.0.4.3, Eth1/2, [0/0], 01:30:52, direct
+10.0.4.3/32, ubest/mbest: 1/0, attached
+    *via 10.0.4.3, Eth1/2, [0/0], 01:30:52, local
+10.0.4.4/31, ubest/mbest: 1/0, attached
+    *via 10.0.4.5, Eth1/3, [0/0], 01:30:51, direct
+10.0.4.5/32, ubest/mbest: 1/0, attached
+    *via 10.0.4.5, Eth1/3, [0/0], 01:30:51, local
+10.0.4.6/31, ubest/mbest: 1/0, attached
+    *via 10.0.4.7, Eth1/4, [0/0], 01:30:50, direct
+10.0.4.7/32, ubest/mbest: 1/0, attached
+    *via 10.0.4.7, Eth1/4, [0/0], 01:30:50, local
+
+IP Route Table for VRF "management"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+0.0.0.0/0, ubest/mbest: 1/0
+    *via 10.0.0.2, [1/0], 01:31:11, static
+10.0.0.0/24, ubest/mbest: 1/0, attached
+    *via 10.0.0.15, mgmt0, [0/0], 01:31:12, direct
+10.0.0.15/32, ubest/mbest: 1/0, attached
+    *via 10.0.0.15, mgmt0, [0/0], 01:31:12, local
+
+IP Route Table for VRF "egress-loadbalance-resolution-"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+
+spsw0102# show ip ospf neighbors 
+ OSPF Process ID UNDERLAY VRF default
+ Total number of neighbors: 4
+ Neighbor ID     Pri State            Up Time  Address         Interface
+ 10.0.0.1          1 FULL/ -          01:30:03 10.0.4.0        Eth1/1 
+ 10.0.0.2          1 FULL/ -          01:29:51 10.0.4.2        Eth1/2 
+ 10.0.0.3          1 FULL/ -          01:30:00 10.0.4.4        Eth1/3 
+ 10.0.0.4          1 FULL/ -          01:29:57 10.0.4.6        Eth1/4 
+spsw0102# 

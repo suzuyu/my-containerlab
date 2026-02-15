@@ -1,0 +1,125 @@
+name: n9kspineleaf01
+
+mgmt:
+  network: mgmt-ext
+  ipv4-subnet: 192.168.129.0/24
+  ipv4-range: 192.168.129.112/28
+  bridge: bridge0
+
+topology:
+  kinds:
+    cisco_n9kv:
+      image: vrnetlab/cisco_n9kv:10.4.5.M
+      startup-config: configs/__clabNodeName__.cfg
+      env:
+        QEMU_MEMORY: 12288 # 6GiB だと BGP がメモリ不足で使用できない
+        # QEMU_MEMORY: 6144 # N9kv-lite requires minimum 6GB memory
+        QEMU_SMP: 2 # N9kv-lite requires minimum 2 CPUs
+    linux:
+      image: ghcr.io/hellt/network-multitool:latest
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+  nodes:
+    spsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.89
+    spsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.88
+    lfsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.81
+    lfsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.82
+    lfsw0103:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.83
+    lfsw0104:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.84
+
+    controller-server01:
+      kind: linux
+      env:
+        VLAN_ID: "2001"
+        IP_CIDR: "100.64.0.1/24"
+        DEF_GW: "100.64.0.254"
+        IPV6_CIDR: "fd12:0:0:1::101/64"
+        DEF_GW6: "fd12:0:0:1::1"
+    tenant1-server01:
+      kind: linux
+      env:
+        VLAN_ID: "100"
+        IP_CIDR: "172.16.0.1/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::101/64"
+        DEF_GW6: "fd21:0:0:1::1"
+    tenant1-server02:
+      kind: linux
+      env:
+        VLAN_ID: "10"
+        IP_CIDR: "172.16.0.2/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::102/64"
+        DEF_GW6: "fd21:0:0:1::1"
+    tenant1-server03:
+      kind: linux
+      env:
+        VLAN_ID: "11"
+        IP_CIDR: "172.16.1.1/24"
+        DEF_GW: "172.16.1.254"
+        IPV6_CIDR: "fd21:0:0:2::101/64"
+        DEF_GW6: "fd21:0:0:2::1"
+    tenant2-server01:
+      kind: linux
+      env:
+        VLAN_ID: "200"
+        IP_CIDR: "172.17.0.1/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::101/64"
+        DEF_GW6: "fd22:0:0:1::1"
+    tenant2-server02:
+      kind: linux
+      env:
+        VLAN_ID: "20"
+        IP_CIDR: "172.17.0.2/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::102/64"
+        DEF_GW6: "fd22:0:0:1::1"
+
+  links:
+    # spine#1 - leaf
+    - endpoints: ["spsw0101:Ethernet1/1", "lfsw0101:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/2", "lfsw0102:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/3", "lfsw0103:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/4", "lfsw0104:Ethernet1/8"]
+
+
+    # spine#2 - leaf
+    - endpoints: ["spsw0102:Ethernet1/1", "lfsw0101:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/2", "lfsw0102:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/3", "lfsw0103:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/4", "lfsw0104:Ethernet1/7"]
+
+    # leaf#1 - server
+    - endpoints: ["lfsw0101:Ethernet1/1", "controller-server01:eth1"]
+    - endpoints: ["lfsw0101:Ethernet1/2", "tenant1-server01:eth1"]
+    - endpoints: ["lfsw0101:Ethernet1/3", "tenant2-server01:eth1"]
+
+    # leaf#2 - server
+    - endpoints: ["lfsw0102:Ethernet1/1", "controller-server01:eth2"]
+    - endpoints: ["lfsw0102:Ethernet1/2", "tenant1-server01:eth2"]
+    - endpoints: ["lfsw0102:Ethernet1/3", "tenant2-server01:eth2"]
+
+    # leaf#3 - server
+    - endpoints: ["lfsw0103:Ethernet1/1", "tenant1-server02:eth1"]
+    - endpoints: ["lfsw0103:Ethernet1/2", "tenant1-server03:eth1"]
+    - endpoints: ["lfsw0103:Ethernet1/3", "tenant2-server02:eth1"]
+
+    # leaf#4 - server
+    - endpoints: ["lfsw0104:Ethernet1/1", "tenant1-server02:eth2"]
+    - endpoints: ["lfsw0104:Ethernet1/2", "tenant1-server03:eth2"]
+    - endpoints: ["lfsw0104:Ethernet1/3", "tenant2-server02:eth2"]

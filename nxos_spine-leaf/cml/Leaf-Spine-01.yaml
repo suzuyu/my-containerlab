@@ -1,0 +1,4136 @@
+annotations:
+  - border_color: '#808080FF'
+    border_style: ''
+    color: '#FFFFFFFF'
+    line_end: null
+    line_start: null
+    thickness: 1
+    type: line
+    x1: 1080.0
+    y1: -760.0
+    x2: 1080.0
+    y2: -760.0
+    z_index: 1
+  - border_color: '#808080FF'
+    border_style: ''
+    color: '#FFFFFFFF'
+    line_end: null
+    line_start: null
+    thickness: 1
+    type: line
+    x1: 1080.0
+    y1: -760.0
+    x2: 1080.0
+    y2: -760.0
+    z_index: 2
+  - border_color: '#049FD9'
+    border_radius: 0
+    border_style: ''
+    color: '#FFFFFFFF'
+    rotation: 0
+    thickness: 3
+    type: rectangle
+    x1: -360.0
+    y1: -720.0
+    x2: 1280.0
+    y2: 520.0
+    z_index: 3
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#049FD9'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      EVPN+VXLAN Fabric01
+      (Underlay OSPF, Overlay iBGP)
+      AS: 65001
+      Underlay Addresses: 10.0.0.0/16
+      VRF: Global
+    text_font: monospace
+    text_italic: false
+    text_size: 24
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: -360.0
+    y1: -720.0
+    z_index: 4
+  - border_color: '#E95420'
+    border_radius: 0
+    border_style: ''
+    color: '#FFFFFFFF'
+    rotation: 0
+    thickness: 3
+    type: rectangle
+    x1: -360.0
+    y1: -200.0
+    x2: 640.0
+    y2: 560.0
+    z_index: 5
+  - border_color: '#E95420'
+    border_radius: 0
+    border_style: ''
+    color: '#FFFFFFFF'
+    rotation: 0
+    thickness: 3
+    type: rectangle
+    x1: 280.0
+    y1: -200.0
+    x2: 640.0
+    y2: 560.0
+    z_index: 5
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#E95420'
+    rotation: 0
+    text_bold: false
+    text_content: ' Server-Leaf Set1 (Ubuntu, vPC Fabric Peering)'
+    text_font: monospace
+    text_italic: false
+    text_size: 20
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: -360.0
+    y1: 320.0
+    z_index: 6
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#E95420'
+    rotation: 0
+    text_bold: false
+    text_content: ' Server-Leaf Set2 (Ubuntu, vPC Fabric Peering)'
+    text_font: monospace
+    text_italic: false
+    text_size: 20
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: 280.0
+    y1: 320.0
+    z_index: 6
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      controller-server01: bond0.2001 (IPv4 100.64.0.1, IPv6 fd12:0:0:1::101)
+      tenant1-server01: bond0.100 (IPv4 172.16.0.1, IPv6 fd21:0:0:1::101)
+      tenant2-server01: bond0.200 (IPv4 172.17.0.1, IPv6 fd22:0:0:1::101)
+    text_font: monospace
+    text_italic: false
+    text_size: 12
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: -360.0
+    y1: 240.0
+    z_index: 7
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080FF'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      tenant1-server02: bond0.10 (IPv4 172.16.0.2, IPv6 fd21:0:0:1::102)
+      tenant1-server03: bond0.11 (IPv4 172.16.1.1, IPv6 fd21:0:0:2::101)
+      tenant2-server02: bond0.20 (IPv4 172.17.0.2, IPv6 fd22:0:0:1::102)
+    text_font: monospace
+    text_italic: false
+    text_size: 12
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: 280.0
+    y1: 240.0
+    z_index: 7
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080FF'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      [L3VNI]
+      vrf controller-vpc1 VNI  9001 ↔︎ VLAN 3000
+      vrf tenant1-vpc1    VNI 19001 ↔︎ VLAN 3001
+      vrf tenant2-vpc1    VNI 29001 ↔︎ VLAN 3002
+    text_font: monospace
+    text_italic: false
+    text_size: 12
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: -360.0
+    y1: 80.0
+    z_index: 7
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080FF'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      [L2VNI]
+      L2VNI   100 ↔︎ VLAN 2001
+      L2VNI 10100 ↔︎ VLAN  100
+      L2VNI 20200 ↔︎ VLAN  200
+    text_font: monospace
+    text_italic: false
+    text_size: 12
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: 0.0
+    y1: 80.0
+    z_index: 7
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080FF'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      [L2VNI]
+      L2VNI 10100 ↔︎ VLAN   10
+      L2VNI 10101 ↔︎ VLAN   11
+      L2VNI 20200 ↔︎ VLAN   20
+    text_font: monospace
+    text_italic: false
+    text_size: 12
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: 640.0
+    y1: 80.0
+    z_index: 7
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080FF'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      [L3VNI]
+      vrf controller-vpc1 VNI  9001 ↔︎ VLAN 3000
+      vrf tenant1-vpc1    VNI 19001 ↔︎ VLAN 3001
+      vrf tenant2-vpc1    VNI 29001 ↔︎ VLAN 3002
+    text_font: monospace
+    text_italic: false
+    text_size: 12
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: 280.0
+    y1: 80.0
+    z_index: 7
+  - border_color: '#808080FF'
+    border_style: ''
+    color: '#FFFFFFFF'
+    line_end: null
+    line_start: null
+    thickness: 1
+    type: line
+    x1: 240.0
+    y1: -640.0
+    x2: 240.0
+    y2: -640.0
+    z_index: 8
+  - border_color: '#FFFFFF'
+    border_style: ''
+    color: '#FFFFFFFF'
+    line_end: null
+    line_start: null
+    thickness: 8
+    type: line
+    x1: 1360.0
+    y1: -640.0
+    x2: 2280.0
+    y2: -640.0
+    z_index: 9
+  - border_color: '#00000000'
+    border_style: ''
+    color: '#808080FF'
+    rotation: 0
+    text_bold: false
+    text_content: |-
+      機種 : username/password
+      ネットワーク機器 [Default] : admin/cisco
+      サーバ [Default] : cisco/cisco
+    text_font: monospace
+    text_italic: false
+    text_size: 23
+    text_unit: pt
+    thickness: 1
+    type: text
+    x1: 960.0
+    y1: -520.0
+    z_index: 10
+smart_annotations: []
+nodes:
+  - boot_disk_size: null
+    configuration:
+      - name: nxos_config.txt
+        content: |2-
+
+          !Command: show running-config
+          !Running configuration last done at: Mon Jan 12 23:02:30 2026
+          !Time: Mon Jan 12 23:02:31 2026
+
+          version 10.5(1) Bios:version
+          hostname lfsw0101
+          vdc lfsw0101 id 1
+            limit-resource vlan minimum 16 maximum 4094
+            limit-resource vrf minimum 2 maximum 4096
+            limit-resource port-channel minimum 0 maximum 511
+            limit-resource m4route-mem minimum 58 maximum 58
+            limit-resource m6route-mem minimum 8 maximum 8
+
+          feature nxapi
+          cfs ipv4 distribute
+          nv overlay evpn
+          feature ospf
+          feature bgp
+          feature interface-vlan
+          feature vn-segment-vlan-based
+          feature lacp
+          feature vpc
+          feature lldp
+          feature bfd
+          clock timezone JST 9 0
+          feature nv overlay
+
+          no password strength-check
+          username admin password 5 $5$PJAMHI$W4Ih7NfB87rKZatB0F3LTQtWPHkZK4uhH6Byb767Oj5  role network-admin
+          username cisco password 5 $5$FCPIIG$RRagIkHJeow6kxDTamd2Xsp4TUkeGCRQeVdz0pHwlD0  role network-admin
+          username cisco passphrase  lifetime 99999 warntime 14 gracetime 3
+          ssh key rsa 2048
+          no ip domain-lookup
+          copp profile strict
+          bfd interval 300 min_rx 300 multiplier 3
+          bfd startup-timer 0
+          snmp-server user admin network-admin auth md5 3328CD1117679702547B2F13039654E3AC6A priv aes-128 0153CA151511AC3C1C4A5A330C9253ACA93D localizedV2key
+          snmp-server user cisco network-admin auth md5 056E98403323A677350C5F675BC31EC5F735 priv aes-128 33199E4E4743BF3E6A11426643C317B4A667 localizedV2key
+          rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+          rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+          rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+          rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+          rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+          fabric forwarding anycast-gateway-mac 2020.0000.00aa
+          vlan 1,100,200,2001,3000-3002
+          vlan 100
+            name tenant1-vpc1-server-seg1
+            vn-segment 10100
+          vlan 200
+            name tenant2-vpc1-server-seg1
+            vn-segment 20200
+          vlan 2001
+            name controller-vpc1-seg1
+            vn-segment 100
+          vlan 3000
+            name controller-vpc1-l3vni
+            vn-segment 9001
+          vlan 3001
+            name tenant1-vpc1-l3vni
+            vn-segment 19001
+          vlan 3002
+            name tenant2-vpc1-l3vni
+            vn-segment 29001
+
+          no cdp enable
+          no spanning-tree vlan 10-3900
+          ip prefix-list all-v4 seq 10 permit 0.0.0.0/0 ge 1 le 32
+          ip prefix-list filter-controller-vpc1-from-user-tenant-v4 seq 10 permit 172.16.0.0/16 ge 17 le 24
+          ip prefix-list filter-controller-vpc1-from-user-tenant-v4 seq 20 permit 172.17.0.0/16 ge 17 le 24
+          ip prefix-list filter-controller-vpc1-to-user-tenant-v4 seq 10 permit 100.64.0.0/16 ge 17 le 24
+          ipv6 prefix-list all-v6 seq 10 permit 0::/0 ge 1 le 128
+          ipv6 prefix-list filter-controller-vpc1-from-user-tenant-v6 seq 10 permit fd21::/48 ge 49 le 64
+          ipv6 prefix-list filter-controller-vpc1-from-user-tenant-v6 seq 20 permit fd22::/48 ge 49 le 64
+          ipv6 prefix-list filter-controller-vpc1-to-user-tenant-v6 seq 10 permit fd12::/60 ge 61 le 64
+          route-map export-controller-vpc1-v4 permit 10
+            match ip address prefix-list filter-controller-vpc1-to-user-tenant-v4
+          route-map export-controller-vpc1-v6 permit 10
+            match ipv6 address prefix-list filter-controller-vpc1-to-user-tenant-v6
+          route-map import-controller-vpc1-v4 permit 10
+            match ip address prefix-list filter-controller-vpc1-from-user-tenant-v4
+          route-map import-controller-vpc1-v6 permit 10
+            match ipv6 address prefix-list filter-controller-vpc1-from-user-tenant-v6
+          route-map permit-all-v4 permit 100
+            match ip address prefix-list all-v4
+          route-map permit-all-v6 permit 100
+            match ipv6 address prefix-list all-v6
+          vrf context controller-vpc1
+            vni 9001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vrf context management
+            ip name-server 192.168.129.254
+            ip route 0.0.0.0/0 192.168.129.254
+          vrf context tenant1-vpc1
+            vni 19001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vrf context tenant2-vpc1
+            vni 29001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vpc domain 1
+            role priority 100
+            peer-keepalive destination 192.168.129.72 source 192.168.129.71
+            virtual peer-link destination 10.0.0.2 source 10.0.0.1 dscp 56
+            delay restore 150
+            peer-gateway
+            auto-recovery
+            ipv6 nd synchronize
+            ip arp synchronize
+
+          nxapi use-vrf management
+
+
+          interface Vlan1
+            no ip redirects
+            no ipv6 redirects
+
+          interface Vlan100
+            description tenant1-vpc1-server-seg1
+            no shutdown
+            mtu 9216
+            vrf member tenant1-vpc1
+            no ip redirects
+            ip address 172.16.0.254/24
+            ipv6 address fd21:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan200
+            description tenant2-vpc1-server-seg1
+            no shutdown
+            vrf member tenant2-vpc1
+            no ip redirects
+            ip address 172.17.0.254/24
+            ipv6 address fd22:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan2001
+            description controller-vpc1-seg1
+            no shutdown
+            vrf member controller-vpc1
+            no ip redirects
+            ip address 100.64.0.254/24
+            ipv6 address fd12:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan3000
+            description controller-vpc1
+            no shutdown
+            vrf member controller-vpc1
+            no ip redirects
+            ip forward
+            ipv6 address use-link-local-only
+            no ipv6 redirects
+
+          interface Vlan3001
+            description tenant1-vpc1
+            no shutdown
+            vrf member tenant1-vpc1
+            no ip redirects
+            ip forward
+            ipv6 address use-link-local-only
+            no ipv6 redirects
+
+          interface Vlan3002
+            description tenant2-vpc1
+            no shutdown
+            vrf member tenant2-vpc1
+            no ip redirects
+            ip forward
+            ipv6 address use-link-local-only
+            no ipv6 redirects
+
+          interface port-channel1
+            description virtual-vpc-peer-link
+            switchport mode trunk
+            spanning-tree port type network
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc peer-link
+
+          interface port-channel11
+            description tenant1-server01 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 11
+
+          interface port-channel12
+            description tenant2-server01 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 12
+
+          interface port-channel13
+            description tenant3-server01 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 13
+
+          interface nve1
+            no shutdown
+            host-reachability protocol bgp
+            advertise virtual-rmac
+            source-interface loopback1
+            member vni 100
+              ingress-replication protocol bgp
+            member vni 9001 associate-vrf
+            member vni 10100
+              ingress-replication protocol bgp
+            member vni 19001 associate-vrf
+            member vni 20200
+              ingress-replication protocol bgp
+            member vni 29001 associate-vrf
+
+          interface Ethernet1/1
+            description tenant1-server01 ens2
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 11 mode active
+
+          interface Ethernet1/2
+            description tenant2-server01 ens2
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 12 mode active
+
+          interface Ethernet1/3
+            description tenant3-server01 ens2
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 13 mode active
+
+          interface Ethernet1/4
+            shutdown
+
+          interface Ethernet1/5
+            shutdown
+
+          interface Ethernet1/6
+            shutdown
+
+          interface Ethernet1/7
+            description spsw02 eth1/1
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.4.0/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/8
+            description spsw01 eth1/1
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.3.0/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/9
+            shutdown
+
+          interface Ethernet1/10
+            shutdown
+
+          interface Ethernet1/11
+            shutdown
+
+          interface Ethernet1/12
+            shutdown
+
+          interface Ethernet1/13
+            shutdown
+
+          interface Ethernet1/14
+            shutdown
+
+          interface Ethernet1/15
+            shutdown
+
+          interface Ethernet1/16
+            shutdown
+
+          interface Ethernet1/17
+            shutdown
+
+          interface Ethernet1/18
+            shutdown
+
+          interface Ethernet1/19
+            shutdown
+
+          interface Ethernet1/20
+            shutdown
+
+          interface Ethernet1/21
+            shutdown
+
+          interface Ethernet1/22
+            shutdown
+
+          interface Ethernet1/23
+            shutdown
+
+          interface Ethernet1/24
+            shutdown
+
+          interface Ethernet1/25
+            shutdown
+
+          interface Ethernet1/26
+            shutdown
+
+          interface Ethernet1/27
+            shutdown
+
+          interface Ethernet1/28
+            shutdown
+
+          interface Ethernet1/29
+            shutdown
+
+          interface Ethernet1/30
+            shutdown
+
+          interface Ethernet1/31
+            shutdown
+
+          interface Ethernet1/32
+            shutdown
+
+          interface Ethernet1/33
+            shutdown
+
+          interface Ethernet1/34
+            shutdown
+
+          interface Ethernet1/35
+            shutdown
+
+          interface Ethernet1/36
+            shutdown
+
+          interface Ethernet1/37
+            shutdown
+
+          interface Ethernet1/38
+            shutdown
+
+          interface Ethernet1/39
+            shutdown
+
+          interface Ethernet1/40
+            shutdown
+
+          interface Ethernet1/41
+            shutdown
+
+          interface Ethernet1/42
+            shutdown
+
+          interface Ethernet1/43
+            shutdown
+
+          interface Ethernet1/44
+            shutdown
+
+          interface Ethernet1/45
+            shutdown
+
+          interface Ethernet1/46
+            shutdown
+
+          interface Ethernet1/47
+            shutdown
+
+          interface Ethernet1/48
+            shutdown
+
+          interface Ethernet1/49
+
+          interface Ethernet1/50
+
+          interface Ethernet1/51
+
+          interface Ethernet1/52
+
+          interface Ethernet1/53
+
+          interface Ethernet1/54
+
+          interface Ethernet1/55
+
+          interface Ethernet1/56
+
+          interface Ethernet1/57
+
+          interface Ethernet1/58
+
+          interface Ethernet1/59
+
+          interface Ethernet1/60
+
+          interface Ethernet1/61
+
+          interface Ethernet1/62
+
+          interface Ethernet1/63
+
+          interface Ethernet1/64
+
+          interface mgmt0
+            vrf member management
+            ip address 192.168.129.71/24
+
+          interface loopback0
+            description RouterID Loopback
+            ip address 10.0.0.1/32
+            ip router ospf UNDERLAY area 0.0.0.0
+
+          interface loopback1
+            description VTEP Loopback
+            ip address 10.0.1.1/32
+            ip address 10.0.2.1/32 secondary
+            ip router ospf UNDERLAY area 0.0.0.0
+          icam monitor scale
+
+          line console
+            exec-timeout 0
+          line vty
+            exec-timeout 0
+          boot nxos bootflash:/nxos64-cs.10.5.1.F.bin
+          router ospf UNDERLAY
+            bfd
+            router-id 10.0.0.1
+            max-metric router-lsa on-startup
+            log-adjacency-changes
+          router bgp 65001
+            router-id 10.0.0.1
+            log-neighbor-changes
+            address-family l2vpn evpn
+              advertise-pip
+            neighbor 10.0.0.253
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            neighbor 10.0.0.254
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            vrf controller-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+            vrf tenant1-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+            vrf tenant2-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+          evpn
+            vni 100 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 10100 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 20200 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+
+          no logging console
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n0
+    image_definition: null
+    label: lfsw0101
+    node_definition: nxosv9000
+    parameters: {}
+    ram: null
+    tags: []
+    x: -80
+    y: -200
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: mgmt0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: Ethernet1/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: Ethernet1/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: Ethernet1/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: Ethernet1/4
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: Ethernet1/5
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: Ethernet1/6
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: Ethernet1/7
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: Ethernet1/8
+        mac_address: null
+        slot: 8
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: nxos_config.txt
+        content: |2-
+
+          !Command: show running-config
+          !Running configuration last done at: Mon Jan 12 14:02:08 2026
+          !Time: Mon Jan 12 14:02:08 2026
+
+          version 10.5(1) Bios:version
+          hostname spsw0101
+          vdc spsw0101 id 1
+            limit-resource vlan minimum 16 maximum 4094
+            limit-resource vrf minimum 2 maximum 4096
+            limit-resource port-channel minimum 0 maximum 511
+            limit-resource m4route-mem minimum 58 maximum 58
+            limit-resource m6route-mem minimum 8 maximum 8
+
+          feature nxapi
+          nv overlay evpn
+          feature ospf
+          feature bgp
+          feature vn-segment-vlan-based
+          feature bfd
+          feature nv overlay
+
+          no password strength-check
+          username admin password 5 $5$OKFIOP$.ECirSUNMFJ3N4MLVUsCl9/IJyiYzdf9rUb2fRIi9l/  role network-admin
+          username cisco password 5 $5$FELGCK$zhm3i0lUM8jDTJ/znDTG5/Qpj9TYi3hfjdm79s165xD  role network-admin
+          username cisco passphrase  lifetime 99999 warntime 14 gracetime 3
+          ssh key rsa 2048
+          no ip domain-lookup
+          copp profile strict
+          bfd interval 300 min_rx 300 multiplier 3
+          snmp-server user admin network-admin auth md5 00701D0AF41A8BB428E045A2288EED4BF3B1 priv aes-128 040F792AC455FD8536D915D97E84B4199DD2 localizedV2key
+          snmp-server user cisco network-admin auth md5 33297A78FC5A89AE5EAB6AAF7582E60EBFB1 priv aes-128 17780A26DB65A88112E31AEB3794E90AB8E2 localizedV2key
+          rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+          rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+          rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+          rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+          rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+          vlan 1
+
+          no cdp enable
+          vrf context management
+
+
+          interface Ethernet1/1
+            description lfsw0101 eth1/8
+            no switchport
+            mtu 9216
+            ip address 10.0.3.1/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/2
+            description lfsw0102 eth1/8
+            no switchport
+            mtu 9216
+            ip address 10.0.3.3/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/3
+            description lfsw0103 eth1/8
+            no switchport
+            mtu 9216
+            ip address 10.0.3.5/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/4
+            description lfsw0104 eth1/8
+            no switchport
+            mtu 9216
+            ip address 10.0.3.7/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/5
+
+          interface Ethernet1/6
+
+          interface Ethernet1/7
+            description bgw0102 eth1/1
+            no switchport
+            mtu 9216
+            ip address 10.0.3.11/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/8
+            description bgw0101 eth1/1
+            no switchport
+            mtu 9216
+            ip address 10.0.3.9/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/9
+
+          interface Ethernet1/10
+
+          interface Ethernet1/11
+
+          interface Ethernet1/12
+
+          interface Ethernet1/13
+
+          interface Ethernet1/14
+
+          interface Ethernet1/15
+
+          interface Ethernet1/16
+
+          interface Ethernet1/17
+
+          interface Ethernet1/18
+
+          interface Ethernet1/19
+
+          interface Ethernet1/20
+
+          interface Ethernet1/21
+
+          interface Ethernet1/22
+
+          interface Ethernet1/23
+
+          interface Ethernet1/24
+
+          interface Ethernet1/25
+
+          interface Ethernet1/26
+
+          interface Ethernet1/27
+
+          interface Ethernet1/28
+
+          interface Ethernet1/29
+
+          interface Ethernet1/30
+
+          interface Ethernet1/31
+
+          interface Ethernet1/32
+
+          interface Ethernet1/33
+
+          interface Ethernet1/34
+
+          interface Ethernet1/35
+
+          interface Ethernet1/36
+
+          interface Ethernet1/37
+
+          interface Ethernet1/38
+
+          interface Ethernet1/39
+
+          interface Ethernet1/40
+
+          interface Ethernet1/41
+
+          interface Ethernet1/42
+
+          interface Ethernet1/43
+
+          interface Ethernet1/44
+
+          interface Ethernet1/45
+
+          interface Ethernet1/46
+
+          interface Ethernet1/47
+
+          interface Ethernet1/48
+
+          interface Ethernet1/49
+
+          interface Ethernet1/50
+
+          interface Ethernet1/51
+
+          interface Ethernet1/52
+
+          interface Ethernet1/53
+
+          interface Ethernet1/54
+
+          interface Ethernet1/55
+
+          interface Ethernet1/56
+
+          interface Ethernet1/57
+
+          interface Ethernet1/58
+
+          interface Ethernet1/59
+
+          interface Ethernet1/60
+
+          interface Ethernet1/61
+
+          interface Ethernet1/62
+
+          interface Ethernet1/63
+
+          interface Ethernet1/64
+
+          interface mgmt0
+            vrf member management
+            ip address 192.168.129.79/24
+
+          interface loopback0
+            ip address 10.0.0.254/32
+            ip router ospf UNDERLAY area 0.0.0.0
+          icam monitor scale
+
+          line console
+            exec-timeout 0
+          line vty
+            exec-timeout 0
+          boot nxos bootflash:/nxos64-cs.10.5.1.F.bin
+          router ospf UNDERLAY
+            router-id 10.0.0.254
+            max-metric router-lsa on-startup
+            log-adjacency-changes
+          router bgp 65001
+            router-id 10.0.0.254
+            log-neighbor-changes
+            address-family l2vpn evpn
+              retain route-target all
+            template peer leaf
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+                route-reflector-client
+            neighbor 10.0.0.0/24
+              inherit peer leaf
+
+          no logging console
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n1
+    image_definition: null
+    label: spsw0101
+    node_definition: nxosv9000
+    parameters: {}
+    ram: null
+    tags: []
+    x: 240
+    y: -440
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: mgmt0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: Ethernet1/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: Ethernet1/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: Ethernet1/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: Ethernet1/4
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: Ethernet1/5
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: Ethernet1/6
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: Ethernet1/7
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: Ethernet1/8
+        mac_address: null
+        slot: 8
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: nxos_config.txt
+        content: |2-
+
+          !Command: show running-config
+          !Running configuration last done at: Mon Jan 12 23:03:11 2026
+          !Time: Mon Jan 12 23:03:11 2026
+
+          version 10.5(1) Bios:version
+          hostname lfsw0102
+          vdc lfsw0102 id 1
+            limit-resource vlan minimum 16 maximum 4094
+            limit-resource vrf minimum 2 maximum 4096
+            limit-resource port-channel minimum 0 maximum 511
+            limit-resource m4route-mem minimum 58 maximum 58
+            limit-resource m6route-mem minimum 8 maximum 8
+
+          feature nxapi
+          cfs ipv4 distribute
+          nv overlay evpn
+          feature ospf
+          feature bgp
+          feature interface-vlan
+          feature vn-segment-vlan-based
+          feature lacp
+          feature vpc
+          feature lldp
+          feature bfd
+          clock timezone JST 9 0
+          feature nv overlay
+
+          no password strength-check
+          username admin password 5 $5$MIABHO$I4vvga9QpydmKdK1iLAnJtqJx/sFAUrWABoY6cEgBr.  role network-admin
+          username cisco password 5 $5$GMELDH$8v4a2WA5YuNub3XWE9/EKcgcIZpXPNPSGyubE/r0eLA  role network-admin
+          username cisco passphrase  lifetime 99999 warntime 14 gracetime 3
+          ssh key rsa 2048
+          no ip domain-lookup
+          copp profile strict
+          bfd interval 300 min_rx 300 multiplier 3
+          snmp-server user admin network-admin auth md5 00514DE2E2F0FAE3138880548031669F521C priv aes-128 323C6DD1DD1B212C9C760EC557EEA547FEF8 localizedV2key
+          snmp-server user cisco network-admin auth md5 37427EC18B623A31C73A5FD91EE3AE1B83D7 priv aes-128 482F13A7F6505F4B96351E8D11EE8403C2D5 localizedV2key
+          rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+          rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+          rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+          rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+          rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+          fabric forwarding anycast-gateway-mac 2020.0000.00aa
+          vlan 1,100,200,2001,3000-3002
+          vlan 100
+            name tenant1-vpc1-server-seg1
+            vn-segment 10100
+          vlan 200
+            name tenant2-vpc1-server-seg1
+            vn-segment 20200
+          vlan 2001
+            name controller-vpc1-seg1
+            vn-segment 100
+          vlan 3000
+            name controller-vpc1-l3vni
+            vn-segment 9001
+          vlan 3001
+            name tenant1-vpc1-l3vni
+            vn-segment 19001
+          vlan 3002
+            name tenant2-vpc1-l3vni
+            vn-segment 29001
+
+          no cdp enable
+          no spanning-tree vlan 10-3900
+          ip prefix-list all-v4 seq 10 permit 0.0.0.0/0 ge 1 le 32
+          ip prefix-list filter-controller-vpc1-from-user-tenant-v4 seq 10 permit 172.16.0.0/16 ge 17 le 24
+          ip prefix-list filter-controller-vpc1-from-user-tenant-v4 seq 20 permit 172.17.0.0/16 ge 17 le 24
+          ip prefix-list filter-controller-vpc1-to-user-tenant-v4 seq 10 permit 100.64.0.0/16 ge 17 le 24
+          ipv6 prefix-list all-v6 seq 10 permit 0::/0 ge 1 le 128
+          ipv6 prefix-list filter-controller-vpc1-from-user-tenant-v6 seq 10 permit fd21::/48 ge 49 le 64
+          ipv6 prefix-list filter-controller-vpc1-from-user-tenant-v6 seq 20 permit fd22::/48 ge 49 le 64
+          ipv6 prefix-list filter-controller-vpc1-to-user-tenant-v6 seq 10 permit fd12::/60 ge 61 le 64
+          route-map export-controller-vpc1-v4 permit 10
+            match ip address prefix-list filter-controller-vpc1-to-user-tenant-v4
+          route-map export-controller-vpc1-v6 permit 10
+            match ipv6 address prefix-list filter-controller-vpc1-to-user-tenant-v6
+          route-map import-controller-vpc1-v4 permit 10
+            match ip address prefix-list filter-controller-vpc1-from-user-tenant-v4
+          route-map import-controller-vpc1-v6 permit 10
+            match ipv6 address prefix-list filter-controller-vpc1-from-user-tenant-v6
+          route-map permit-all-v4 permit 100
+            match ip address prefix-list all-v4
+          route-map permit-all-v6 permit 100
+            match ipv6 address prefix-list all-v6
+          vrf context controller-vpc1
+            vni 9001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+              export map export-controller-vpc1-v4
+              import map import-controller-vpc1-v4
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+              route-target import 65001:19001
+              route-target import 65001:19001 evpn
+              route-target import 65001:29001
+              route-target import 65001:29001 evpn
+              route-target export 65001:19001
+              route-target export 65001:19001 evpn
+              route-target export 65001:29001
+              route-target export 65001:29001 evpn
+          vrf context management
+            ip name-server 192.168.129.254
+            ip route 0.0.0.0/0 192.168.129.254
+          vrf context tenant1-vpc1
+            vni 19001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vrf context tenant2-vpc1
+            vni 29001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vpc domain 1
+            role priority 200
+            peer-keepalive destination 192.168.129.71 source 192.168.129.72
+            virtual peer-link destination 10.0.0.1 source 10.0.0.2 dscp 56
+            delay restore 150
+            peer-gateway
+            auto-recovery
+            ipv6 nd synchronize
+            ip arp synchronize
+
+
+          interface Vlan1
+            no ip redirects
+            no ipv6 redirects
+
+          interface Vlan100
+            description tenant1-vpc1-server-seg1
+            no shutdown
+            mtu 9216
+            vrf member tenant1-vpc1
+            no ip redirects
+            ip address 172.16.0.254/24
+            ipv6 address fd21:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan200
+            description tenant2-vpc1-server-seg1
+            no shutdown
+            vrf member tenant2-vpc1
+            no ip redirects
+            ip address 172.17.0.254/24
+            ipv6 address fd22:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan2001
+            description controller-vpc1-seg1
+            no shutdown
+            vrf member controller-vpc1
+            no ip redirects
+            ip address 100.64.0.254/24
+            ipv6 address fd12:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan3000
+            description controller-vpc1
+            no shutdown
+            vrf member controller-vpc1
+            no ip redirects
+            ip forward
+            ipv6 address use-link-local-only
+            no ipv6 redirects
+
+          interface Vlan3001
+            description tenant1-vpc1
+            no shutdown
+            vrf member tenant1-vpc1
+            no ip redirects
+            ip forward
+            ipv6 address use-link-local-only
+            no ipv6 redirects
+
+          interface Vlan3002
+            description tenant2-vpc1
+            no shutdown
+            vrf member tenant2-vpc1
+            no ip redirects
+            ip forward
+            ipv6 address use-link-local-only
+            no ipv6 redirects
+
+          interface port-channel1
+            description virtual-vpc-peer-link
+            switchport mode trunk
+            spanning-tree port type network
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc peer-link
+
+          interface port-channel11
+            description tenant1-server01 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 11
+
+          interface port-channel12
+            description tenant2-server01 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 12
+
+          interface port-channel13
+            description tenant3-server01 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 13
+
+          interface nve1
+            no shutdown
+            host-reachability protocol bgp
+            advertise virtual-rmac
+            source-interface loopback1
+            member vni 100
+              ingress-replication protocol bgp
+            member vni 9001 associate-vrf
+            member vni 10100
+              ingress-replication protocol bgp
+            member vni 19001 associate-vrf
+            member vni 20200
+              ingress-replication protocol bgp
+            member vni 29001 associate-vrf
+
+          interface Ethernet1/1
+            description tenant1-server01 ens3
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 11 mode active
+
+          interface Ethernet1/2
+            description tenant2-server01 ens3
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 12 mode active
+
+          interface Ethernet1/3
+            description tenant3-server01 ens3
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 13 mode active
+
+          interface Ethernet1/4
+            shutdown
+
+          interface Ethernet1/5
+            shutdown
+
+          interface Ethernet1/6
+            shutdown
+
+          interface Ethernet1/7
+            description spsw0102 eth1/2
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.4.2/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/8
+            description spsw0101 eth1/2
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.3.2/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/9
+            shutdown
+
+          interface Ethernet1/10
+            shutdown
+
+          interface Ethernet1/11
+            shutdown
+
+          interface Ethernet1/12
+            shutdown
+
+          interface Ethernet1/13
+            shutdown
+
+          interface Ethernet1/14
+            shutdown
+
+          interface Ethernet1/15
+            shutdown
+
+          interface Ethernet1/16
+            shutdown
+
+          interface Ethernet1/17
+            shutdown
+
+          interface Ethernet1/18
+            shutdown
+
+          interface Ethernet1/19
+            shutdown
+
+          interface Ethernet1/20
+            shutdown
+
+          interface Ethernet1/21
+            shutdown
+
+          interface Ethernet1/22
+            shutdown
+
+          interface Ethernet1/23
+            shutdown
+
+          interface Ethernet1/24
+            shutdown
+
+          interface Ethernet1/25
+            shutdown
+
+          interface Ethernet1/26
+            shutdown
+
+          interface Ethernet1/27
+            shutdown
+
+          interface Ethernet1/28
+            shutdown
+
+          interface Ethernet1/29
+            shutdown
+
+          interface Ethernet1/30
+            shutdown
+
+          interface Ethernet1/31
+            shutdown
+
+          interface Ethernet1/32
+            shutdown
+
+          interface Ethernet1/33
+            shutdown
+
+          interface Ethernet1/34
+            shutdown
+
+          interface Ethernet1/35
+            shutdown
+
+          interface Ethernet1/36
+            shutdown
+
+          interface Ethernet1/37
+            shutdown
+
+          interface Ethernet1/38
+            shutdown
+
+          interface Ethernet1/39
+            shutdown
+
+          interface Ethernet1/40
+            shutdown
+
+          interface Ethernet1/41
+            shutdown
+
+          interface Ethernet1/42
+            shutdown
+
+          interface Ethernet1/43
+            shutdown
+
+          interface Ethernet1/44
+            shutdown
+
+          interface Ethernet1/45
+            shutdown
+
+          interface Ethernet1/46
+            shutdown
+
+          interface Ethernet1/47
+            shutdown
+
+          interface Ethernet1/48
+            shutdown
+
+          interface Ethernet1/49
+
+          interface Ethernet1/50
+
+          interface Ethernet1/51
+
+          interface Ethernet1/52
+
+          interface Ethernet1/53
+
+          interface Ethernet1/54
+
+          interface Ethernet1/55
+
+          interface Ethernet1/56
+
+          interface Ethernet1/57
+
+          interface Ethernet1/58
+
+          interface Ethernet1/59
+
+          interface Ethernet1/60
+
+          interface Ethernet1/61
+
+          interface Ethernet1/62
+
+          interface Ethernet1/63
+
+          interface Ethernet1/64
+
+          interface mgmt0
+            vrf member management
+            ip address 192.168.129.72/24
+
+          interface loopback0
+            description RouterID Loopback
+            ip address 10.0.0.2/32
+            ip router ospf UNDERLAY area 0.0.0.0
+
+          interface loopback1
+            description VTEP Loopback
+            ip address 10.0.1.2/32
+            ip address 10.0.2.1/32 secondary
+            ip router ospf UNDERLAY area 0.0.0.0
+          icam monitor scale
+
+          line console
+            exec-timeout 0
+          line vty
+            exec-timeout 0
+          boot nxos bootflash:/nxos64-cs.10.5.1.F.bin
+          router ospf UNDERLAY
+            router-id 10.0.0.2
+            max-metric router-lsa on-startup
+            log-adjacency-changes
+          router bgp 65001
+            router-id 10.0.0.2
+            log-neighbor-changes
+            address-family l2vpn evpn
+              advertise-pip
+            neighbor 10.0.0.253
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            neighbor 10.0.0.254
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            vrf controller-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+            vrf tenant1-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+            vrf tenant2-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+          evpn
+            vni 100 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 10100 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 20200 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+
+          no logging console
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n2
+    image_definition: null
+    label: lfsw0102
+    node_definition: nxosv9000
+    parameters: {}
+    ram: null
+    tags: []
+    x: 80
+    y: -200
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: mgmt0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: Ethernet1/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: Ethernet1/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: Ethernet1/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: Ethernet1/4
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: Ethernet1/5
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: Ethernet1/6
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: Ethernet1/7
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: Ethernet1/8
+        mac_address: null
+        slot: 8
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: nxos_config.txt
+        content: |2-
+
+          !Command: show running-config
+          !Running configuration last done at: Sun Jan 11 10:42:13 2026
+          !Time: Sun Jan 11 10:42:13 2026
+
+          version 10.5(1) Bios:version
+          hostname spsw0102
+          vdc spsw0102 id 1
+            limit-resource vlan minimum 16 maximum 4094
+            limit-resource vrf minimum 2 maximum 4096
+            limit-resource port-channel minimum 0 maximum 511
+            limit-resource m4route-mem minimum 58 maximum 58
+            limit-resource m6route-mem minimum 8 maximum 8
+
+          feature nxapi
+          nv overlay evpn
+          feature ospf
+          feature bgp
+          feature vn-segment-vlan-based
+          feature bfd
+          feature nv overlay
+
+          no password strength-check
+          username admin password 5 $5$OKFIOP$.ECirSUNMFJ3N4MLVUsCl9/IJyiYzdf9rUb2fRIi9l/  role network-admin
+          username cisco password 5 $5$FELGCK$zhm3i0lUM8jDTJ/znDTG5/Qpj9TYi3hfjdm79s165xD  role network-admin
+          username cisco passphrase  lifetime 99999 warntime 14 gracetime 3
+          ssh key rsa 2048
+          ip domain-lookup
+          copp profile strict
+          bfd interval 300 min_rx 300 multiplier 3
+          snmp-server user admin network-admin auth md5 00701D0AF41A8BB428E045A2288EED4BF3B1 priv aes-128 040F792AC455FD8536D915D97E84B4199DD2 localizedV2key
+          snmp-server user cisco network-admin auth md5 33297A78FC5A89AE5EAB6AAF7582E60EBFB1 priv aes-128 17780A26DB65A88112E31AEB3794E90AB8E2 localizedV2key
+          rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+          rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+          rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+          rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+          rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+          vlan 1
+
+          no cdp enable
+          vrf context management
+
+
+          interface Ethernet1/1
+            description lfsw0101 eth1/7
+            no switchport
+            mtu 9216
+            no ip redirects
+            ip address 10.0.4.1/31
+            no ipv6 redirects
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/2
+            description lfsw0102 eth1/7
+            no switchport
+            mtu 9216
+            ip address 10.0.4.3/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/3
+            description lfsw0103 eth1/7
+            no switchport
+            mtu 9216
+            ip address 10.0.4.5/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/4
+            description lfsw0104 eth1/7
+            no switchport
+            mtu 9216
+            ip address 10.0.4.7/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/5
+
+          interface Ethernet1/6
+
+          interface Ethernet1/7
+            description bgw0102 eth1/2
+            no switchport
+            mtu 9216
+            ip address 10.0.4.11/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/8
+            description bgw0101 eth1/2
+            no switchport
+            mtu 9216
+            ip address 10.0.4.9/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            ip ospf bfd
+            no shutdown
+
+          interface Ethernet1/9
+
+          interface Ethernet1/10
+
+          interface Ethernet1/11
+
+          interface Ethernet1/12
+
+          interface Ethernet1/13
+
+          interface Ethernet1/14
+
+          interface Ethernet1/15
+
+          interface Ethernet1/16
+
+          interface Ethernet1/17
+
+          interface Ethernet1/18
+
+          interface Ethernet1/19
+
+          interface Ethernet1/20
+
+          interface Ethernet1/21
+
+          interface Ethernet1/22
+
+          interface Ethernet1/23
+
+          interface Ethernet1/24
+
+          interface Ethernet1/25
+
+          interface Ethernet1/26
+
+          interface Ethernet1/27
+
+          interface Ethernet1/28
+
+          interface Ethernet1/29
+
+          interface Ethernet1/30
+
+          interface Ethernet1/31
+
+          interface Ethernet1/32
+
+          interface Ethernet1/33
+
+          interface Ethernet1/34
+
+          interface Ethernet1/35
+
+          interface Ethernet1/36
+
+          interface Ethernet1/37
+
+          interface Ethernet1/38
+
+          interface Ethernet1/39
+
+          interface Ethernet1/40
+
+          interface Ethernet1/41
+
+          interface Ethernet1/42
+
+          interface Ethernet1/43
+
+          interface Ethernet1/44
+
+          interface Ethernet1/45
+
+          interface Ethernet1/46
+
+          interface Ethernet1/47
+
+          interface Ethernet1/48
+
+          interface Ethernet1/49
+
+          interface Ethernet1/50
+
+          interface Ethernet1/51
+
+          interface Ethernet1/52
+
+          interface Ethernet1/53
+
+          interface Ethernet1/54
+
+          interface Ethernet1/55
+
+          interface Ethernet1/56
+
+          interface Ethernet1/57
+
+          interface Ethernet1/58
+
+          interface Ethernet1/59
+
+          interface Ethernet1/60
+
+          interface Ethernet1/61
+
+          interface Ethernet1/62
+
+          interface Ethernet1/63
+
+          interface Ethernet1/64
+
+          interface mgmt0
+            vrf member management
+            ip address 192.168.129.78/24
+
+          interface loopback0
+            ip address 10.0.0.253/32
+            ip router ospf UNDERLAY area 0.0.0.0
+          icam monitor scale
+
+          line console
+            exec-timeout 0
+          line vty
+            exec-timeout 0
+          boot nxos bootflash:/nxos64-cs.10.5.1.F.bin
+          router ospf UNDERLAY
+            router-id 10.0.0.253
+            max-metric router-lsa on-startup
+            log-adjacency-changes
+          router bgp 65001
+            router-id 10.0.0.253
+            log-neighbor-changes
+            address-family l2vpn evpn
+              retain route-target all
+            template peer leaf
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+                route-reflector-client
+            neighbor 10.0.0.0/24
+              inherit peer leaf
+
+          no logging console
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n3
+    image_definition: null
+    label: spsw0102
+    node_definition: nxosv9000
+    parameters: {}
+    ram: null
+    tags: []
+    x: 440
+    y: -440
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: mgmt0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: Ethernet1/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: Ethernet1/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: Ethernet1/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: Ethernet1/4
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: Ethernet1/5
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: Ethernet1/6
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: Ethernet1/7
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: Ethernet1/8
+        mac_address: null
+        slot: 8
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: user-data
+        content: |-
+          #cloud-config
+          hostname: tenant1-server01
+          manage_etc_hosts: True
+          system_info:
+            default_user:
+              name: cisco
+          password: cisco
+          chpasswd: { expire: False }
+          ssh_pwauth: True
+          ssh_authorized_keys:
+            - your-ssh-pubkey-line-goes-here
+          bootcmd:
+            - |
+              if [ ! -e "/etc/systemd/network/10-bond0.link" ]; then
+              echo "[Match]
+              OriginalName=ens2
+              OriginalName=ens3
+              [Link]
+              Duplex=full
+              BitsPerSecond=1000M" | tee /etc/systemd/network/10-bond0.link
+              chmod +x /etc/systemd/network/10-bond0.link
+              reboot
+              fi
+      - name: network-config
+        content: |-
+          #network-config
+          network:
+            version: 2
+            ethernets:
+              ens2:
+                optional: true
+              ens3:
+                optional: true
+            bonds:
+              bond0:
+                interfaces: [ens2, ens3]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+            vlans:
+              bond0.100:
+                id: 100
+                link: bond0
+                addresses:
+                  - 172.16.0.1/24
+                  - fd21:0:0:1::101/64
+                gateway4: 172.16.0.254
+                gateway6: fd21:0:0:1::1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n4
+    image_definition: null
+    label: tenant1-server01
+    node_definition: ubuntu
+    parameters: {}
+    ram: 1024
+    tags: []
+    x: 0
+    y: 0
+    interfaces:
+      - id: i0
+        label: ens2
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i1
+        label: ens3
+        mac_address: null
+        slot: 1
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: user-data
+        content: |-
+          #cloud-config
+          hostname: tenant2-server01
+          manage_etc_hosts: True
+          system_info:
+            default_user:
+              name: cisco
+          password: cisco
+          chpasswd: { expire: False }
+          ssh_pwauth: True
+          ssh_authorized_keys:
+            - your-ssh-pubkey-line-goes-here
+          bootcmd:
+            - |
+              if [ ! -e "/etc/systemd/network/10-bond0.link" ]; then
+              echo "[Match]
+              OriginalName=ens2
+              OriginalName=ens3
+              [Link]
+              Duplex=full
+              BitsPerSecond=1000M" | tee /etc/systemd/network/10-bond0.link
+              chmod +x /etc/systemd/network/10-bond0.link
+              reboot
+              fi
+      - name: network-config
+        content: |-
+          #network-config
+          network:
+            version: 2
+            ethernets:
+              ens2:
+                optional: true
+              ens3:
+                optional: true
+            bonds:
+              bond0:
+                interfaces: [ens2, ens3]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+            vlans:
+              bond0.200:
+                id: 200
+                link: bond0
+                addresses:
+                  - 172.17.0.1/24
+                  - fd22:0:0:1::101/64
+                gateway4: 172.17.0.254
+                gateway6: fd22:0:0:1::1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n5
+    image_definition: null
+    label: tenant2-server01
+    node_definition: ubuntu
+    parameters: {}
+    ram: 1024
+    tags: []
+    x: 160
+    y: 0
+    interfaces:
+      - id: i0
+        label: ens2
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i1
+        label: ens3
+        mac_address: null
+        slot: 1
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: user-data
+        content: |-
+          #cloud-config
+          hostname: controller-server01
+          manage_etc_hosts: True
+          system_info:
+            default_user:
+              name: cisco
+          password: cisco
+          chpasswd: { expire: False }
+          ssh_pwauth: True
+          ssh_authorized_keys:
+            - your-ssh-pubkey-line-goes-here
+          bootcmd:
+            - |
+              if [ ! -e "/etc/systemd/network/10-bond0.link" ]; then
+              echo "[Match]
+              OriginalName=ens2
+              OriginalName=ens3
+              [Link]
+              Duplex=full
+              BitsPerSecond=1000M" | tee /etc/systemd/network/10-bond0.link
+              chmod +x /etc/systemd/network/10-bond0.link
+              reboot
+              fi
+      - name: network-config
+        content: |-
+          #network-config
+          network:
+            version: 2
+            ethernets:
+              ens2:
+                optional: true
+              ens3:
+                optional: true
+            bonds:
+              bond0:
+                interfaces: [ens2, ens3]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+            vlans:
+              bond0.2001:
+                id: 2001
+                link: bond0
+                addresses:
+                  - 100.64.0.1/24
+                  - fd12:0:0:1::101/64
+                gateway4: 100.64.0.254
+                gateway6: fd12:0:0:1::1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n6
+    image_definition: null
+    label: controller-server01
+    node_definition: ubuntu
+    parameters: {}
+    ram: 1024
+    tags: []
+    x: -160
+    y: 0
+    interfaces:
+      - id: i0
+        label: ens2
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i1
+        label: ens3
+        mac_address: null
+        slot: 1
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: nxos_config.txt
+        content: |2-
+
+          !Command: show running-config
+          !Running configuration last done at: Sun Mar 23 02:06:14 2025
+          !Time: Sun Mar 23 02:06:15 2025
+
+          version 10.5(1) Bios:version
+          hostname lfsw03
+          vdc lfsw03 id 1
+            limit-resource vlan minimum 16 maximum 4094
+            limit-resource vrf minimum 2 maximum 4096
+            limit-resource port-channel minimum 0 maximum 511
+            limit-resource m4route-mem minimum 58 maximum 58
+            limit-resource m6route-mem minimum 8 maximum 8
+
+          feature nxapi
+          cfs ipv4 distribute
+          nv overlay evpn
+          feature ospf
+          feature bgp
+          feature interface-vlan
+          feature vn-segment-vlan-based
+          feature lacp
+          feature vpc
+          feature lldp
+          feature bfd
+          clock timezone JST 9 0
+          feature nv overlay
+
+          no password strength-check
+          username admin password 5 $5$DCALLD$97LM57TD1qBqvKxSPC.zrFWkwLb.mcI3oelSIY2ezK6  role network-admin
+          username cisco password 5 $5$PLGLCI$KPPOvBPkC9lKtmwVpmhHOPkkAMuMSqfWf2Lj7yVmBX0  role network-admin
+          username cisco passphrase  lifetime 99999 warntime 14 gracetime 3
+          ssh key rsa 2048
+          no ip domain-lookup
+          copp profile strict
+          snmp-server user admin network-admin auth md5 4976440ADE75ACA80D512BEB0C28C2391689 priv aes-128 174C152CF52BB2BA0C0D5F90515ECB771395 localizedV2key
+          snmp-server user cisco network-admin auth md5 53150C1621F12906B9B08951D9C85FB8D557 priv aes-128 01462E3AB6CF0D1A9FEAC459969410F98A55 localizedV2key
+          rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+          rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+          rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+          rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+          rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+          fabric forwarding anycast-gateway-mac 2020.0000.00aa
+          vlan 1,10-11,20,3001-3002
+          vlan 10
+            name tenant1-vpc1-server-seg1
+            vn-segment 10100
+          vlan 11
+            name tenant1-vpc1-server-seg2
+            vn-segment 10101
+          vlan 20
+            name tenant2-vpc1-server-seg1
+            vn-segment 20200
+          vlan 3001
+            name tenant1-vpc1-l3vni
+            vn-segment 19001
+          vlan 3002
+            name tenant2-vpc1-l3vni
+            vn-segment 29001
+
+          no spanning-tree vlan 10-3900
+          ip prefix-list all-v4 seq 10 permit 0.0.0.0/0 ge 1 le 32
+          ipv6 prefix-list all-v6 seq 10 permit 0::/0 ge 1 le 128
+          route-map permit-all-v4 permit 100
+            match ip address prefix-list all-v4
+          route-map permit-all-v6 permit 100
+            match ipv6 address prefix-list all-v6
+          vrf context management
+            ip name-server 192.168.129.254
+            ip route 0.0.0.0/0 192.168.129.254
+          vrf context tenant1-vpc1
+            vni 19001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vrf context tenant2-vpc1
+            vni 29001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vpc domain 1
+            role priority 100
+            peer-keepalive destination 192.168.129.74 source 192.168.129.73
+            virtual peer-link destination 10.0.0.4 source 10.0.0.3 dscp 56
+            delay restore 150
+            peer-gateway
+            auto-recovery
+            ipv6 nd synchronize
+            ip arp synchronize
+
+          interface Vlan1
+
+          interface Vlan10
+            description tenant1-vpc1-server-seg1
+            no shutdown
+            vrf member tenant1-vpc1
+            ip address 172.16.0.254/24
+            ipv6 address fd21:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan11
+            description tenant1-vpc1-server-seg2
+            no shutdown
+            vrf member tenant1-vpc1
+            ip address 172.16.1.254/24
+            ipv6 address fd21:0:0:2::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan20
+            description tenant2-vpc1-server-seg1
+            no shutdown
+            vrf member tenant2-vpc1
+            ip address 172.17.0.254/24
+            ipv6 address fd22:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan3001
+            description tenant1-vpc1
+            no shutdown
+            vrf member tenant1-vpc1
+            ip forward
+            ipv6 address use-link-local-only
+
+          interface Vlan3002
+            description tenant2-vpc1
+            no shutdown
+            vrf member tenant2-vpc1
+            ip forward
+            ipv6 address use-link-local-only
+
+          interface port-channel1
+            description virtual-vpc-peer-link
+            switchport mode trunk
+            spanning-tree port type network
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc peer-link
+
+          interface port-channel11
+            description tenant1-server02 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 11
+
+          interface port-channel12
+            description tenant1-server03 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 12
+
+          interface port-channel13
+            description tenant2-server02 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 13
+
+          interface nve1
+            no shutdown
+            host-reachability protocol bgp
+            advertise virtual-rmac
+            source-interface loopback1
+            member vni 10100
+              ingress-replication protocol bgp
+            member vni 10101
+              ingress-replication protocol bgp
+            member vni 19001 associate-vrf
+            member vni 20200
+              ingress-replication protocol bgp
+            member vni 29001 associate-vrf
+
+          interface Ethernet1/1
+            description tenant1-server02 ens2
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 11 mode active
+
+          interface Ethernet1/2
+            description tenant1-server03 ens2
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 12 mode active
+
+          interface Ethernet1/3
+            description tenant2-server02 ens2
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 13 mode active
+
+          interface Ethernet1/4
+            shutdown
+
+          interface Ethernet1/5
+            shutdown
+
+          interface Ethernet1/6
+            shutdown
+
+          interface Ethernet1/7
+            description spsw0102 eth1/3
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.4.4/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            no shutdown
+
+          interface Ethernet1/8
+            description spsw0101 eth1/3
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.3.4/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            no shutdown
+
+          interface Ethernet1/9
+            shutdown
+
+          interface Ethernet1/10
+            shutdown
+
+          interface Ethernet1/11
+            shutdown
+
+          interface Ethernet1/12
+            shutdown
+
+          interface Ethernet1/13
+            shutdown
+
+          interface Ethernet1/14
+            shutdown
+
+          interface Ethernet1/15
+            shutdown
+
+          interface Ethernet1/16
+            shutdown
+
+          interface Ethernet1/17
+            shutdown
+
+          interface Ethernet1/18
+            shutdown
+
+          interface Ethernet1/19
+            shutdown
+
+          interface Ethernet1/20
+            shutdown
+
+          interface Ethernet1/21
+            shutdown
+
+          interface Ethernet1/22
+            shutdown
+
+          interface Ethernet1/23
+            shutdown
+
+          interface Ethernet1/24
+            shutdown
+
+          interface Ethernet1/25
+            shutdown
+
+          interface Ethernet1/26
+            shutdown
+
+          interface Ethernet1/27
+            shutdown
+
+          interface Ethernet1/28
+            shutdown
+
+          interface Ethernet1/29
+            shutdown
+
+          interface Ethernet1/30
+            shutdown
+
+          interface Ethernet1/31
+            shutdown
+
+          interface Ethernet1/32
+            shutdown
+
+          interface Ethernet1/33
+            shutdown
+
+          interface Ethernet1/34
+            shutdown
+
+          interface Ethernet1/35
+            shutdown
+
+          interface Ethernet1/36
+            shutdown
+
+          interface Ethernet1/37
+            shutdown
+
+          interface Ethernet1/38
+            shutdown
+
+          interface Ethernet1/39
+            shutdown
+
+          interface Ethernet1/40
+            shutdown
+
+          interface Ethernet1/41
+            shutdown
+
+          interface Ethernet1/42
+            shutdown
+
+          interface Ethernet1/43
+            shutdown
+
+          interface Ethernet1/44
+            shutdown
+
+          interface Ethernet1/45
+            shutdown
+
+          interface Ethernet1/46
+            shutdown
+
+          interface Ethernet1/47
+            shutdown
+
+          interface Ethernet1/48
+            shutdown
+
+          interface Ethernet1/49
+
+          interface Ethernet1/50
+
+          interface Ethernet1/51
+
+          interface Ethernet1/52
+
+          interface Ethernet1/53
+
+          interface Ethernet1/54
+
+          interface Ethernet1/55
+
+          interface Ethernet1/56
+
+          interface Ethernet1/57
+
+          interface Ethernet1/58
+
+          interface Ethernet1/59
+
+          interface Ethernet1/60
+
+          interface Ethernet1/61
+
+          interface Ethernet1/62
+
+          interface Ethernet1/63
+
+          interface Ethernet1/64
+
+          interface mgmt0
+            vrf member management
+            ip address 192.168.129.73/24
+
+          interface loopback0
+            description RouterID Loopback
+            ip address 10.0.0.3/32
+            ip router ospf UNDERLAY area 0.0.0.0
+
+          interface loopback1
+            description VTEP Loopback
+            ip address 10.0.1.3/32
+            ip address 10.0.2.2/32 secondary
+            ip router ospf UNDERLAY area 0.0.0.0
+          icam monitor scale
+
+          line console
+            exec-timeout 0
+          line vty
+            exec-timeout 0
+          boot nxos bootflash:/nxos64-cs.10.5.1.F.bin
+          router ospf UNDERLAY
+            router-id 10.0.0.3
+            max-metric router-lsa on-startup
+            log-adjacency-changes
+          router bgp 65001
+            router-id 10.0.0.3
+            log-neighbor-changes
+            address-family l2vpn evpn
+            neighbor 10.0.0.253
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            neighbor 10.0.0.254
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            vrf tenant1-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+            vrf tenant2-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+          evpn
+            vni 10100 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 10101 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 20200 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+
+          no logging console
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n7
+    image_definition: null
+    label: lfsw0103
+    node_definition: nxosv9000
+    parameters: {}
+    ram: null
+    tags: []
+    x: 520
+    y: -200
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: mgmt0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: Ethernet1/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: Ethernet1/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: Ethernet1/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: Ethernet1/4
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: Ethernet1/5
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: Ethernet1/6
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: Ethernet1/7
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: Ethernet1/8
+        mac_address: null
+        slot: 8
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: nxos_config.txt
+        content: |2-
+
+          !Command: show running-config
+          !Running configuration last done at: Sun Mar 23 02:06:16 2025
+          !Time: Sun Mar 23 02:06:16 2025
+
+          version 10.5(1) Bios:version
+          hostname lfsw04
+          vdc lfsw04 id 1
+            limit-resource vlan minimum 16 maximum 4094
+            limit-resource vrf minimum 2 maximum 4096
+            limit-resource port-channel minimum 0 maximum 511
+            limit-resource m4route-mem minimum 58 maximum 58
+            limit-resource m6route-mem minimum 8 maximum 8
+
+          feature nxapi
+          cfs ipv4 distribute
+          nv overlay evpn
+          feature ospf
+          feature bgp
+          feature interface-vlan
+          feature vn-segment-vlan-based
+          feature lacp
+          feature vpc
+          feature lldp
+          feature bfd
+          clock timezone JST 9 0
+          feature nv overlay
+
+          no password strength-check
+          username admin password 5 $5$DCALLD$97LM57TD1qBqvKxSPC.zrFWkwLb.mcI3oelSIY2ezK6  role network-admin
+          username cisco password 5 $5$PLGLCI$KPPOvBPkC9lKtmwVpmhHOPkkAMuMSqfWf2Lj7yVmBX0  role network-admin
+          username cisco passphrase  lifetime 99999 warntime 14 gracetime 3
+          ssh key rsa 2048
+          no ip domain-lookup
+          copp profile strict
+          snmp-server user admin network-admin auth md5 4976440ADE75ACA80D512BEB0C28C2391689 priv aes-128 174C152CF52BB2BA0C0D5F90515ECB771395 localizedV2key
+          snmp-server user cisco network-admin auth md5 53150C1621F12906B9B08951D9C85FB8D557 priv aes-128 01462E3AB6CF0D1A9FEAC459969410F98A55 localizedV2key
+          rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+          rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+          rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+          rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+          rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+          fabric forwarding anycast-gateway-mac 2020.0000.00aa
+          vlan 1,10-11,20,3001-3002
+          vlan 10
+            name tenant1-vpc1-server-seg1
+            vn-segment 10100
+          vlan 11
+            name tenant1-vpc1-server-seg2
+            vn-segment 10101
+          vlan 20
+            name tenant2-vpc1-server-seg1
+            vn-segment 20200
+          vlan 3001
+            name tenant1-vpc1-l3vni
+            vn-segment 19001
+          vlan 3002
+            name tenant2-vpc1-l3vni
+            vn-segment 29001
+
+          no spanning-tree vlan 10-3900
+          ip prefix-list all-v4 seq 10 permit 0.0.0.0/0 ge 1 le 32
+          ipv6 prefix-list all-v6 seq 10 permit 0::/0 ge 1 le 128
+          route-map permit-all-v4 permit 100
+            match ip address prefix-list all-v4
+          route-map permit-all-v6 permit 100
+            match ipv6 address prefix-list all-v6
+          vrf context management
+            ip name-server 192.168.129.254
+            ip route 0.0.0.0/0 192.168.129.254
+          vrf context tenant1-vpc1
+            vni 19001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vrf context tenant2-vpc1
+            vni 29001
+            rd auto
+            address-family ipv4 unicast
+              route-target both auto
+              route-target both auto evpn
+            address-family ipv6 unicast
+              route-target both auto
+              route-target both auto evpn
+          vpc domain 1
+            role priority 200
+            peer-keepalive destination 192.168.129.73 source 192.168.129.74
+            virtual peer-link destination 10.0.0.3 source 10.0.0.4 dscp 56
+            delay restore 150
+            peer-gateway
+            auto-recovery
+            ipv6 nd synchronize
+            ip arp synchronize
+
+
+          interface Vlan1
+
+          interface Vlan10
+            description tenant1-vpc1-server-seg1
+            no shutdown
+            vrf member tenant1-vpc1
+            ip address 172.16.0.254/24
+            ipv6 address fd21:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan11
+            description tenant1-vpc1-server-seg2
+            no shutdown
+            vrf member tenant1-vpc1
+            ip address 172.16.1.254/24
+            ipv6 address fd21:0:0:2::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan20
+            description tenant2-vpc1-server-seg1
+            no shutdown
+            vrf member tenant2-vpc1
+            ip address 172.17.0.254/24
+            ipv6 address fd22:0:0:1::1/64
+            ipv6 nd suppress-ra
+            no ipv6 redirects
+            fabric forwarding mode anycast-gateway
+
+          interface Vlan3001
+            description tenant1-vpc1
+            no shutdown
+            vrf member tenant1-vpc1
+            ip forward
+            ipv6 address use-link-local-only
+
+          interface Vlan3002
+            description tenant2-vpc1
+            no shutdown
+            vrf member tenant2-vpc1
+            ip forward
+            ipv6 address use-link-local-only
+
+          interface port-channel1
+            description virtual-vpc-peer-link
+            switchport mode trunk
+            spanning-tree port type network
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc peer-link
+
+          interface port-channel11
+            description tenant1-server02 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 11
+
+          interface port-channel12
+            description tenant1-server03 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 12
+
+          interface port-channel13
+            description tenant2-server02 bond0
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            vpc 13
+
+          interface nve1
+            no shutdown
+            host-reachability protocol bgp
+            advertise virtual-rmac
+            source-interface loopback1
+            member vni 10100
+              ingress-replication protocol bgp
+            member vni 10101
+              ingress-replication protocol bgp
+            member vni 19001 associate-vrf
+            member vni 20200
+              ingress-replication protocol bgp
+            member vni 29001 associate-vrf
+
+          interface Ethernet1/1
+            description tenant1-server02 ens3
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 11 mode active
+
+          interface Ethernet1/2
+            description tenant1-server03 ens3
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 12 mode active
+
+          interface Ethernet1/3
+            description tenant2-server02 ens3
+            lacp rate fast
+            switchport mode trunk
+            storm-control broadcast level 40.00
+            storm-control multicast level 40.00
+            storm-control unicast level 40.00
+            storm-control action shutdown
+            channel-group 13 mode active
+
+          interface Ethernet1/4
+            shutdown
+
+          interface Ethernet1/5
+            shutdown
+
+          interface Ethernet1/6
+            shutdown
+
+          interface Ethernet1/7
+            description spsw0102 eth1/4
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.4.6/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            no shutdown
+
+          interface Ethernet1/8
+            description spsw0101 eth1/4
+            no switchport
+            mtu 9216
+            port-type fabric
+            ip address 10.0.3.6/31
+            ip ospf network point-to-point
+            ip router ospf UNDERLAY area 0.0.0.0
+            no shutdown
+
+          interface Ethernet1/9
+            shutdown
+
+          interface Ethernet1/10
+            shutdown
+
+          interface Ethernet1/11
+            shutdown
+
+          interface Ethernet1/12
+            shutdown
+
+          interface Ethernet1/13
+            shutdown
+
+          interface Ethernet1/14
+            shutdown
+
+          interface Ethernet1/15
+            shutdown
+
+          interface Ethernet1/16
+            shutdown
+
+          interface Ethernet1/17
+            shutdown
+
+          interface Ethernet1/18
+            shutdown
+
+          interface Ethernet1/19
+            shutdown
+
+          interface Ethernet1/20
+            shutdown
+
+          interface Ethernet1/21
+            shutdown
+
+          interface Ethernet1/22
+            shutdown
+
+          interface Ethernet1/23
+            shutdown
+
+          interface Ethernet1/24
+            shutdown
+
+          interface Ethernet1/25
+            shutdown
+
+          interface Ethernet1/26
+            shutdown
+
+          interface Ethernet1/27
+            shutdown
+
+          interface Ethernet1/28
+            shutdown
+
+          interface Ethernet1/29
+            shutdown
+
+          interface Ethernet1/30
+            shutdown
+
+          interface Ethernet1/31
+            shutdown
+
+          interface Ethernet1/32
+            shutdown
+
+          interface Ethernet1/33
+            shutdown
+
+          interface Ethernet1/34
+            shutdown
+
+          interface Ethernet1/35
+            shutdown
+
+          interface Ethernet1/36
+            shutdown
+
+          interface Ethernet1/37
+            shutdown
+
+          interface Ethernet1/38
+            shutdown
+
+          interface Ethernet1/39
+            shutdown
+
+          interface Ethernet1/40
+            shutdown
+
+          interface Ethernet1/41
+            shutdown
+
+          interface Ethernet1/42
+            shutdown
+
+          interface Ethernet1/43
+            shutdown
+
+          interface Ethernet1/44
+            shutdown
+
+          interface Ethernet1/45
+            shutdown
+
+          interface Ethernet1/46
+            shutdown
+
+          interface Ethernet1/47
+            shutdown
+
+          interface Ethernet1/48
+            shutdown
+
+          interface Ethernet1/49
+
+          interface Ethernet1/50
+
+          interface Ethernet1/51
+
+          interface Ethernet1/52
+
+          interface Ethernet1/53
+
+          interface Ethernet1/54
+
+          interface Ethernet1/55
+
+          interface Ethernet1/56
+
+          interface Ethernet1/57
+
+          interface Ethernet1/58
+
+          interface Ethernet1/59
+
+          interface Ethernet1/60
+
+          interface Ethernet1/61
+
+          interface Ethernet1/62
+
+          interface Ethernet1/63
+
+          interface Ethernet1/64
+
+          interface mgmt0
+            vrf member management
+            ip address 192.168.129.74/24
+
+          interface loopback0
+            description RouterID Loopback
+            ip address 10.0.0.4/32
+            ip router ospf UNDERLAY area 0.0.0.0
+
+          interface loopback1
+            description VTEP Loopback
+            ip address 10.0.1.4/32
+            ip address 10.0.2.2/32 secondary
+            ip router ospf UNDERLAY area 0.0.0.0
+          icam monitor scale
+
+          line console
+            exec-timeout 0
+          line vty
+            exec-timeout 0
+          boot nxos bootflash:/nxos64-cs.10.5.1.F.bin
+          router ospf UNDERLAY
+            router-id 10.0.0.4
+            max-metric router-lsa on-startup
+            log-adjacency-changes
+          router bgp 65001
+            router-id 10.0.0.4
+            log-neighbor-changes
+            address-family l2vpn evpn
+            neighbor 10.0.0.253
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            neighbor 10.0.0.254
+              remote-as internal
+              update-source loopback0
+              address-family l2vpn evpn
+                send-community
+                send-community extended
+            vrf tenant1-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+            vrf tenant2-vpc1
+              address-family ipv4 unicast
+                redistribute direct route-map permit-all-v4
+              address-family ipv6 unicast
+                redistribute direct route-map permit-all-v6
+          evpn
+            vni 10100 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 10101 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+            vni 20200 l2
+              rd auto
+              route-target import auto
+              route-target export auto
+
+          no logging console
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n8
+    image_definition: null
+    label: lfsw0104
+    node_definition: nxosv9000
+    parameters: {}
+    ram: null
+    tags: []
+    x: 680
+    y: -200
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: mgmt0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: Ethernet1/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: Ethernet1/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: Ethernet1/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: Ethernet1/4
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: Ethernet1/5
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: Ethernet1/6
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: Ethernet1/7
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: Ethernet1/8
+        mac_address: null
+        slot: 8
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: user-data
+        content: |-
+          #cloud-config
+          hostname: tenant1-server02
+          manage_etc_hosts: True
+          system_info:
+            default_user:
+              name: cisco
+          password: cisco
+          chpasswd: { expire: False }
+          ssh_pwauth: True
+          ssh_authorized_keys:
+            - your-ssh-pubkey-line-goes-here
+          bootcmd:
+            - |
+              if [ ! -e "/etc/systemd/network/10-bond0.link" ]; then
+              echo "[Match]
+              OriginalName=ens2
+              OriginalName=ens3
+              [Link]
+              Duplex=full
+              BitsPerSecond=1000M" | tee /etc/systemd/network/10-bond0.link
+              chmod +x /etc/systemd/network/10-bond0.link
+              reboot
+              fi
+      - name: network-config
+        content: |-
+          #network-config
+          network:
+            version: 2
+            ethernets:
+              ens2:
+                optional: true
+              ens3:
+                optional: true
+            bonds:
+              bond0:
+                interfaces: [ens2, ens3]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+            vlans:
+              bond0.10:
+                id: 10
+                link: bond0
+                addresses:
+                  - 172.16.0.2/24
+                  - fd21:0:0:1::102/64
+                gateway4: 172.16.0.254
+                gateway6: fd21:0:0:1::1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n9
+    image_definition: null
+    label: tenant1-server02
+    node_definition: ubuntu
+    parameters: {}
+    ram: 1024
+    tags: []
+    x: 440
+    y: 0
+    interfaces:
+      - id: i0
+        label: ens2
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i1
+        label: ens3
+        mac_address: null
+        slot: 1
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: user-data
+        content: |-
+          #cloud-config
+          hostname: tenant1-server03
+          manage_etc_hosts: True
+          system_info:
+            default_user:
+              name: cisco
+          password: cisco
+          chpasswd: { expire: False }
+          ssh_pwauth: True
+          ssh_authorized_keys:
+            - your-ssh-pubkey-line-goes-here
+          bootcmd:
+            - |
+              if [ ! -e "/etc/systemd/network/10-bond0.link" ]; then
+              echo "[Match]
+              OriginalName=ens2
+              OriginalName=ens3
+              [Link]
+              Duplex=full
+              BitsPerSecond=1000M" | tee /etc/systemd/network/10-bond0.link
+              chmod +x /etc/systemd/network/10-bond0.link
+              reboot
+              fi
+      - name: network-config
+        content: |-
+          #network-config
+          network:
+            version: 2
+            ethernets:
+              ens2:
+                optional: true
+              ens3:
+                optional: true
+            bonds:
+              bond0:
+                interfaces: [ens2, ens3]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+            vlans:
+              bond0.11:
+                id: 11
+                link: bond0
+                addresses:
+                  - 172.16.1.1/24
+                  - fd21:0:0:2::101/64
+                gateway4: 172.16.1.254
+                gateway6: fd21:0:0:2::1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n10
+    image_definition: null
+    label: tenant1-server03
+    node_definition: ubuntu
+    parameters: {}
+    ram: 1024
+    tags: []
+    x: 600
+    y: 0
+    interfaces:
+      - id: i0
+        label: ens2
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i1
+        label: ens3
+        mac_address: null
+        slot: 1
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: user-data
+        content: |-
+          #cloud-config
+          hostname: tenant2-server02
+          manage_etc_hosts: True
+          system_info:
+            default_user:
+              name: cisco
+          password: cisco
+          chpasswd: { expire: False }
+          ssh_pwauth: True
+          ssh_authorized_keys:
+            - your-ssh-pubkey-line-goes-here
+          bootcmd:
+            - |
+              if [ ! -e "/etc/systemd/network/10-bond0.link" ]; then
+              echo "[Match]
+              OriginalName=ens2
+              OriginalName=ens3
+              [Link]
+              Duplex=full
+              BitsPerSecond=1000M" | tee /etc/systemd/network/10-bond0.link
+              chmod +x /etc/systemd/network/10-bond0.link
+              reboot
+              fi
+      - name: network-config
+        content: |-
+          #network-config
+          network:
+            version: 2
+            ethernets:
+              ens2:
+                optional: true
+              ens3:
+                optional: true
+            bonds:
+              bond0:
+                interfaces: [ens2, ens3]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+            vlans:
+              bond0.20:
+                id: 20
+                link: bond0
+                addresses:
+                  - 172.17.0.2/24
+                  - fd22:0:0:1::102/64
+                gateway4: 172.17.0.254
+                gateway6: fd22:0:0:1::1
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n11
+    image_definition: null
+    label: tenant2-server02
+    node_definition: ubuntu
+    parameters: {}
+    ram: 1024
+    tags: []
+    x: 760
+    y: 0
+    interfaces:
+      - id: i0
+        label: ens2
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i1
+        label: ens3
+        mac_address: null
+        slot: 1
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: default
+        content: System Bridge
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n12
+    image_definition: null
+    label: mgmtnw(mgagsw01)
+    node_definition: external_connector
+    parameters: {}
+    ram: null
+    tags: []
+    x: -520
+    y: -240
+    interfaces:
+      - id: i0
+        label: port
+        mac_address: null
+        slot: 0
+        type: physical
+  - boot_disk_size: null
+    configuration:
+      - name: ios_config.txt
+        content: |-
+          Building configuration...
+
+          Current configuration : 3523 bytes
+          !
+          ! Last configuration change at 09:46:35 UTC Mon Jan 12 2026
+          !
+          version 15.2
+          service timestamps debug datetime msec
+          service timestamps log datetime msec
+          no service password-encryption
+          service compress-config
+          !
+          hostname mgagsw01
+          !
+          boot-start-marker
+          boot-end-marker
+          !
+          !
+          no logging console
+          !
+          no aaa new-model
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          ip cef
+          no ipv6 cef
+          !
+          !
+          !
+          spanning-tree mode pvst
+          spanning-tree extend system-id
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          !
+          interface GigabitEthernet0/0
+           description mgmtnw(ext-nw)
+           negotiation auto
+          !
+          interface GigabitEthernet0/1
+           description spsw0101 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet0/2
+           description spsw0102 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet0/3
+           description lfsw0101 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet1/0
+           description lfsw0102 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet1/1
+           description lfsw0103 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet1/2
+           description lfsw0104 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet1/3
+           description bgw0101 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet2/0
+           description bgw0102 mgmt0
+           negotiation auto
+          !
+          interface GigabitEthernet2/1
+           negotiation auto
+          !
+          interface GigabitEthernet2/2
+           negotiation auto
+          !
+          interface GigabitEthernet2/3
+           negotiation auto
+          !
+          interface GigabitEthernet3/0
+           negotiation auto
+          !
+          interface GigabitEthernet3/1
+           negotiation auto
+          !
+          interface GigabitEthernet3/2
+           negotiation auto
+          !
+          interface GigabitEthernet3/3
+           negotiation auto
+          !
+          ip forward-protocol nd
+          !
+          ip http server
+          ip http secure-server
+          !
+          ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+          !
+          !
+          !
+          !
+          !
+          !
+          control-plane
+          !
+          banner exec ^CC
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner incoming ^CC
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          banner login ^CC
+          IOSv - Cisco Systems Confidential -
+
+          Supplemental End User License Restrictions
+
+          This IOSv software is provided AS-IS without warranty of any kind. Under no circumstances may this software be used separate from the Cisco Modeling Labs Software that this software was provided with, or deployed or used as part of a production environment.
+
+          By using the software, you agree to abide by the terms and conditions of the Cisco End User License Agreement at http://www.cisco.com/go/eula. Unauthorized use or distribution of this software is expressly prohibited.
+          ^C
+          !
+          line con 0
+           exec-timeout 0 0
+          line aux 0
+          line vty 0 4
+           exec-timeout 0 0
+           login
+          !
+          !
+          end
+    cpu_limit: null
+    cpus: null
+    data_volume: null
+    hide_links: false
+    id: n13
+    image_definition: null
+    label: mgagsw01
+    node_definition: iosvl2
+    parameters: {}
+    ram: null
+    tags: []
+    x: -520
+    y: -440
+    interfaces:
+      - id: i0
+        label: Loopback0
+        mac_address: null
+        type: loopback
+      - id: i1
+        label: GigabitEthernet0/0
+        mac_address: null
+        slot: 0
+        type: physical
+      - id: i2
+        label: GigabitEthernet0/1
+        mac_address: null
+        slot: 1
+        type: physical
+      - id: i3
+        label: GigabitEthernet0/2
+        mac_address: null
+        slot: 2
+        type: physical
+      - id: i4
+        label: GigabitEthernet0/3
+        mac_address: null
+        slot: 3
+        type: physical
+      - id: i5
+        label: GigabitEthernet1/0
+        mac_address: null
+        slot: 4
+        type: physical
+      - id: i6
+        label: GigabitEthernet1/1
+        mac_address: null
+        slot: 5
+        type: physical
+      - id: i7
+        label: GigabitEthernet1/2
+        mac_address: null
+        slot: 6
+        type: physical
+      - id: i8
+        label: GigabitEthernet1/3
+        mac_address: null
+        slot: 7
+        type: physical
+      - id: i9
+        label: GigabitEthernet2/0
+        mac_address: null
+        slot: 8
+        type: physical
+      - id: i10
+        label: GigabitEthernet2/1
+        mac_address: null
+        slot: 9
+        type: physical
+      - id: i11
+        label: GigabitEthernet2/2
+        mac_address: null
+        slot: 10
+        type: physical
+      - id: i12
+        label: GigabitEthernet2/3
+        mac_address: null
+        slot: 11
+        type: physical
+      - id: i13
+        label: GigabitEthernet3/0
+        mac_address: null
+        slot: 12
+        type: physical
+      - id: i14
+        label: GigabitEthernet3/1
+        mac_address: null
+        slot: 13
+        type: physical
+      - id: i15
+        label: GigabitEthernet3/2
+        mac_address: null
+        slot: 14
+        type: physical
+      - id: i16
+        label: GigabitEthernet3/3
+        mac_address: null
+        slot: 15
+        type: physical
+links:
+  - id: l0
+    n1: n0
+    n2: n1
+    i1: i9
+    i2: i2
+    conditioning: {}
+    label: lfsw0101-Ethernet1/8<->spsw0101-Ethernet1/1
+  - id: l1
+    n1: n0
+    n2: n3
+    i1: i8
+    i2: i2
+    conditioning: {}
+    label: lfsw0101-Ethernet1/7<->spsw0102-Ethernet1/1
+  - id: l2
+    n1: n2
+    n2: n1
+    i1: i9
+    i2: i3
+    conditioning: {}
+    label: lfsw0102-Ethernet1/8<->spsw0101-Ethernet1/2
+  - id: l3
+    n1: n2
+    n2: n3
+    i1: i8
+    i2: i3
+    conditioning: {}
+    label: lfsw0102-Ethernet1/7<->spsw0102-Ethernet1/2
+  - id: l4
+    n1: n7
+    n2: n1
+    i1: i9
+    i2: i4
+    conditioning: {}
+    label: lfsw0103-Ethernet1/8<->spsw0101-Ethernet1/3
+  - id: l5
+    n1: n7
+    n2: n3
+    i1: i8
+    i2: i4
+    conditioning: {}
+    label: lfsw0103-Ethernet1/7<->spsw0102-Ethernet1/3
+  - id: l6
+    n1: n8
+    n2: n1
+    i1: i9
+    i2: i5
+    conditioning: {}
+    label: lfsw0104-Ethernet1/8<->spsw0101-Ethernet1/4
+  - id: l7
+    n1: n8
+    n2: n3
+    i1: i8
+    i2: i5
+    conditioning: {}
+    label: lfsw0104-Ethernet1/7<->spsw0102-Ethernet1/4
+  - id: l8
+    n1: n9
+    n2: n7
+    i1: i0
+    i2: i2
+    conditioning: {}
+    label: tenant1-server02-ens2<->lfsw0103-Ethernet1/1
+  - id: l9
+    n1: n9
+    n2: n8
+    i1: i1
+    i2: i2
+    conditioning: {}
+    label: tenant1-server02-ens3<->lfsw0104-Ethernet1/1
+  - id: l10
+    n1: n10
+    n2: n7
+    i1: i0
+    i2: i3
+    conditioning: {}
+    label: tenant1-server03-ens2<->lfsw0103-Ethernet1/2
+  - id: l11
+    n1: n10
+    n2: n8
+    i1: i1
+    i2: i3
+    conditioning: {}
+    label: tenant1-server03-ens3<->lfsw0104-Ethernet1/2
+  - id: l12
+    n1: n11
+    n2: n7
+    i1: i0
+    i2: i4
+    conditioning: {}
+    label: tenant2-server02-ens2<->lfsw0103-Ethernet1/3
+  - id: l13
+    n1: n11
+    n2: n8
+    i1: i1
+    i2: i4
+    conditioning: {}
+    label: tenant2-server02-ens3<->lfsw0104-Ethernet1/3
+  - id: l14
+    n1: n6
+    n2: n0
+    i1: i0
+    i2: i2
+    conditioning: {}
+    label: controller-server01-ens2<->lfsw0101-Ethernet1/1
+  - id: l15
+    n1: n6
+    n2: n2
+    i1: i1
+    i2: i2
+    conditioning: {}
+    label: controller-server01-ens3<->lfsw0102-Ethernet1/1
+  - id: l16
+    n1: n4
+    n2: n0
+    i1: i0
+    i2: i3
+    conditioning: {}
+    label: tenant1-server01-ens2<->lfsw0101-Ethernet1/2
+  - id: l17
+    n1: n4
+    n2: n2
+    i1: i1
+    i2: i3
+    conditioning: {}
+    label: tenant1-server01-ens3<->lfsw0102-Ethernet1/2
+  - id: l18
+    n1: n5
+    n2: n0
+    i1: i0
+    i2: i4
+    conditioning: {}
+    label: tenant2-server01-ens2<->lfsw0101-Ethernet1/3
+  - id: l19
+    n1: n5
+    n2: n2
+    i1: i1
+    i2: i4
+    conditioning: {}
+    label: tenant2-server01-ens3<->lfsw0102-Ethernet1/3
+  - id: l20
+    n1: n13
+    n2: n12
+    i1: i1
+    i2: i0
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet0/0<->mgmtnw(mgagsw01)-port
+  - id: l21
+    n1: n13
+    n2: n1
+    i1: i2
+    i2: i1
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet0/1<->spsw0101-mgmt0
+  - id: l22
+    n1: n13
+    n2: n3
+    i1: i3
+    i2: i1
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet0/2<->spsw0102-mgmt0
+  - id: l23
+    n1: n13
+    n2: n0
+    i1: i4
+    i2: i1
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet0/3<->lfsw0101-mgmt0
+  - id: l24
+    n1: n13
+    n2: n2
+    i1: i5
+    i2: i1
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet1/0<->lfsw0102-mgmt0
+  - id: l25
+    n1: n13
+    n2: n7
+    i1: i6
+    i2: i1
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet1/1<->lfsw0103-mgmt0
+  - id: l26
+    n1: n13
+    n2: n8
+    i1: i7
+    i2: i1
+    conditioning: {}
+    label: mgagsw01-GigabitEthernet1/2<->lfsw0104-mgmt0
+lab:
+  description: ''
+  notes: ''
+  title: Leaf-Spine-01
+  version: 0.3.0

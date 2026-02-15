@@ -1,0 +1,471 @@
+lfsw03# show nve peers
+Interface Peer-IP                                 State LearnType Uptime   Router-Mac       
+--------- --------------------------------------  ----- --------- -------- -----------------
+nve1      10.0.1.1                                Up    CP        01:23:03 0cdf.ab00.1b08   
+nve1      10.0.1.2                                Up    CP        01:23:00 0ce7.bc00.1b08   
+nve1      10.0.2.1                                Up    CP        01:23:03 0200.0a00.0201   
+
+lfsw03# show nve vni
+Codes: CP - Control Plane        DP - Data Plane          
+       UC - Unconfigured         SA - Suppress ARP        
+       S-ND - Suppress ND        
+       SU - Suppress Unknown Unicast 
+       Xconn - Crossconnect      
+       MS-IR - Multisite Ingress Replication 
+       HYB - Hybrid IRB mode
+    
+Interface VNI      Multicast-group   State Mode Type [BD/VRF]      Flags
+--------- -------- ----------------- ----- ---- ------------------ -----
+nve1      10100    UnicastBGP        Up    CP   L2 [10]                 
+nve1      10101    UnicastBGP        Up    CP   L2 [11]                 
+nve1      19001    n/a               Up    CP   L3 [tenant1-vpc1]       
+nve1      20200    UnicastBGP        Up    CP   L2 [20]                 
+nve1      29001    n/a               Up    CP   L3 [tenant2-vpc1]       
+
+lfsw03# show bgp l2vpn evpn summary
+BGP summary information for VRF default, address family L2VPN EVPN
+BGP router identifier 10.0.0.3, local AS number 65001
+BGP table version is 155, L2VPN EVPN config peers 2, capable peers 2
+70 network entries and 122 paths using 21592 bytes of memory
+BGP attribute entries [93/34224], BGP AS path entries [0/0]
+BGP community entries [0/0], BGP clusterlist entries [4/16]
+
+Neighbor        V    AS    MsgRcvd    MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd
+10.0.0.253      4 65001        153         91      155    0    0 01:26:19 32        
+10.0.0.254      4 65001        155         92      155    0    0 01:26:20 32        
+
+Neighbor        T    AS PfxRcd     Type-2     Type-3     Type-4     Type-5     Type-12   
+10.0.0.253      I 65001 32         19         4          0          9          0         
+10.0.0.254      I 65001 32         19         4          0          9          0         
+lfsw03# show bgp l2vpn evpn
+BGP routing table information for VRF default, address family L2VPN EVPN
+BGP table version is 155, Local Router ID is 10.0.0.3
+Status: s-suppressed, x-deleted, S-stale, d-dampened, h-history, *-valid, >-best
+Path type: i-internal, e-external, c-confed, l-local, a-aggregate, r-redist, I-injected
+Origin codes: i - IGP, e - EGP, ? - incomplete, | - multipath, & - backup, 2 - best2
+
+   Network            Next Hop            Metric     LocPrf     Weight Path
+Route Distinguisher: 10.0.0.1:5
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.1.1                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.1.1                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.1:6
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.1.1                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+*>i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.1.1                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.1:32867
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[32]:[172.16.0.1]/272
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[128]:[fd21:0:0:1::101]/368
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.1:32967
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[32]:[172.17.0.1]/272
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.2:4
+* i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[5]:[0]:[0]:[64]:[fd12:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+*>i                   10.0.1.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.2:5
+* i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+*>i                   10.0.1.2                 0        100          0 ?
+* i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+*>i                   10.0.1.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.2:6
+* i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+*>i                   10.0.1.2                 0        100          0 ?
+* i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+*>i                   10.0.1.2                 0        100          0 ?
+
+Route Distinguisher: 10.0.0.2:32867
+* i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[32]:[172.16.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[128]:[fd21:0:0:1::101]/368
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.2:32967
+* i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[32]:[172.17.0.1]/272
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+* i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+
+Route Distinguisher: 10.0.0.3:32777    (L2VNI 10100)
+*>l[2]:[0]:[0]:[48]:[0c8e.cf00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100      32768 i
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>l[2]:[0]:[0]:[48]:[aac1.aba8.e3b0]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100      32768 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[32]:[172.16.0.1]/272
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[128]:[fd21:0:0:1::101]/368
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+* i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>l[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100      32768 i
+
+Route Distinguisher: 10.0.0.3:32778    (L2VNI 10101)
+*>l[2]:[0]:[0]:[48]:[0c8e.cf00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100      32768 i
+*>l[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100      32768 i
+*>l[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[32]:[172.16.1.1]/272
+                      10.0.2.2                          100      32768 i
+*>l[2]:[0]:[0]:[48]:[aac1.ab14.7342]:[128]:[fd21:0:0:2::101]/368
+                      10.0.2.2                          100      32768 i
+*>l[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100      32768 i
+
+Route Distinguisher: 10.0.0.3:32787    (L2VNI 20200)
+*>l[2]:[0]:[0]:[48]:[0c8e.cf00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100      32768 i
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>l[2]:[0]:[0]:[48]:[aac1.ab9b.9af4]:[0]:[0.0.0.0]/216
+                      10.0.2.2                          100      32768 i
+* i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[32]:[172.17.0.1]/272
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>l[2]:[0]:[0]:[48]:[aac1.ab9b.9af4]:[128]:[fd22:0:0:1::102]/368
+                      10.0.2.2                          100      32768 i
+* i[3]:[0]:[32]:[10.0.2.1]/88
+                      10.0.2.1                          100          0 i
+*>i                   10.0.2.1                          100          0 i
+*>l[3]:[0]:[32]:[10.0.2.2]/88
+                      10.0.2.2                          100      32768 i
+
+Route Distinguisher: 10.0.0.3:4    (L3VNI 19001)
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[32]:[172.16.0.1]/272
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.ab67.76d6]:[128]:[fd21:0:0:1::101]/368
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+* i[5]:[0]:[0]:[24]:[172.16.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+*>l                   10.0.2.2                 0        100      32768 ?
+*>l[5]:[0]:[0]:[24]:[172.16.1.0]/224
+                      10.0.2.2                 0        100      32768 ?
+*>i[5]:[0]:[0]:[64]:[fd12:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+* i[5]:[0]:[0]:[64]:[fd21:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+*>l                   10.0.2.2                 0        100      32768 ?
+*>l[5]:[0]:[0]:[64]:[fd21:0:0:2::]/416
+                      10.0.2.2                 0        100      32768 ?
+
+Route Distinguisher: 10.0.0.3:5    (L3VNI 29001)
+*>i[2]:[0]:[0]:[48]:[0cdf.ab00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[0ce7.bc00.1b08]:[0]:[0.0.0.0]/216
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+*>i[2]:[0]:[0]:[48]:[aac1.abfc.b783]:[32]:[172.17.0.1]/272
+                      10.0.2.1                          100          0 i
+* i                   10.0.2.1                          100          0 i
+* i[5]:[0]:[0]:[24]:[172.17.0.0]/224
+                      10.0.1.2                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+*>l                   10.0.2.2                 0        100      32768 ?
+*>i[5]:[0]:[0]:[64]:[fd12:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+* i[5]:[0]:[0]:[64]:[fd22:0:0:1::]/416
+                      10.0.1.2                 0        100          0 ?
+* i                   10.0.1.1                 0        100          0 ?
+*>l                   10.0.2.2                 0        100      32768 ?
+
+lfsw03# show l2route evpn mac all
+
+Flags -(Rmac):Router MAC (Stt):Static (L):Local (R):Remote 
+(Dup):Duplicate (Spl):Split (Rcv):Recv (AD):Auto-Delete (D):Del Pending
+(S):Stale (C):Clear, (Ps):Peer Sync (O):Re-Originated (Nho):NH-Override
+(Asy):Asymmetric (Gw):Gateway
+(Bh):Blackhole, (Dum):Dummy
+(Pf):Permanently-Frozen, (Orp): Orphan
+
+(PipOrp): Directly connected Orphan to PIP based vPC BGW 
+(PipPeerOrp): Orphan connected to peer of PIP based vPC BGW 
+Topology    Mac Address    Prod   Flags              Seq No     Next-Hops                              
+----------- -------------- ------ ------------------ ---------- ---------------------------------------------------------
+10          0c8e.cf00.1b08 VXLAN  Stt,Nho,Dum,       0          10.0.2.2
+10          aac1.ab67.76d6 BGP    SplRcv             0          10.0.2.1 (Label: 10100)
+10          aac1.aba8.e3b0 Local  L,                 0          Po11
+11          0c8e.cf00.1b08 VXLAN  Stt,Nho,Dum,       0          10.0.2.2
+11          aac1.ab14.7342 Local  L,                 0          Po12
+20          0c8e.cf00.1b08 VXLAN  Stt,Nho,Dum,       0          10.0.2.2
+20          aac1.ab9b.9af4 Local  L,                 0          Po13
+20          aac1.abfc.b783 BGP    SplRcv             0          10.0.2.1 (Label: 20200)
+3001        0200.0a00.0201 VXLAN  Rmac,              0          10.0.2.1
+3001        0c8e.cf00.1b08 VXLAN  Stt,Nho,Dum,       0          10.0.2.2
+3001        0cdf.ab00.1b08 VXLAN  Rmac,              0          10.0.1.1
+3001        0ce7.bc00.1b08 VXLAN  Rmac,              0          10.0.1.2
+3002        0200.0a00.0201 VXLAN  Rmac,              0          10.0.2.1
+3002        0c8e.cf00.1b08 VXLAN  Stt,Nho,Dum,       0          10.0.2.2
+3002        0cdf.ab00.1b08 VXLAN  Rmac,              0          10.0.1.1
+3002        0ce7.bc00.1b08 VXLAN  Rmac,              0          10.0.1.2
+lfsw03# show l2route evpn mac-ip all
+Flags -(Rmac):Router MAC (Stt):Static (L):Local (R):Remote 
+(Dup):Duplicate (Spl):Split (Rcv):Recv(D):Del Pending (S):Stale (C):Clear
+(Ps):Peer Sync (Ro):Re-Originated (Orp):Orphan (Asy):Asymmetric (Gw):Gateway
+(Bh):Blackhole
+(Piporp): Directly connected Orphan to PIP based vPC BGW 
+(Pipporp): Orphan connected to peer of PIP based vPC BGW 
+Topology    Mac Address    Host IP                                 Prod   Flags              Seq No     Next-Hops                              
+----------- -------------- --------------------------------------- ------ ----------------- ---------- ---------------------------------------------------------
+10          aac1.ab67.76d6 172.16.0.1                              BGP    --                 0         10.0.2.1 (Label: 10100)
+10          aac1.ab67.76d6 fd21:0:0:1::101                         BGP    --                 0         10.0.2.1 (Label: 10100)
+11          aac1.ab14.7342 172.16.1.1                              HMM    L,                 0         Local                                  
+11          aac1.ab14.7342 fd21:0:0:2::101                         HMM    L,                 0         Local                                  
+20          aac1.abfc.b783 172.17.0.1                              BGP    --                 0         10.0.2.1 (Label: 20200)
+20          aac1.ab9b.9af4 fd22:0:0:1::102                         HMM    L,                 0         Local                                  
+lfsw03# show vpc brief
+Legend:
+                (*) - local vPC is down, forwarding via vPC peer-link
+
+vPC domain id                     : 1   
+Peer status                       : peer adjacency formed ok      
+vPC keep-alive status             : peer is alive                 
+Configuration consistency status  : success 
+Per-vlan consistency status       : success                       
+Type-2 consistency status         : success 
+vPC role                          : primary                       
+Number of vPCs configured         : 3   
+Peer Gateway                      : Enabled
+Dual-active excluded VLANs        : -
+Graceful Consistency Check        : Enabled
+Auto-recovery status              : Enabled, timer is off.(timeout = 240s)
+Delay-restore status              : Timer is off.(timeout = 150s)
+Delay-restore SVI status          : Timer is off.(timeout = 10s)
+Delay-restore Orphan-port status  : Timer is off.(timeout = 0s)
+Operational Layer3 Peer-router    : Disabled
+Virtual-peerlink mode             : Enabled
+
+vPC Peer-link status
+---------------------------------------------------------------------
+id    Port   Status Active vlans    
+--    ----   ------ -------------------------------------------------
+1     Po1    up     1,10-11,20,3001-3002                                                 
+
+vPC status
+----------------------------------------------------------------------------
+Id    Port          Status Consistency Reason                Active vlans
+--    ------------  ------ ----------- ------                ---------------
+11    Po11          up     success     success               1,10-11,20,                 
+                                                             3001-3002                   
+12    Po12          up     success     success               1,10-11,20,                 
+                                                             3001-3002                   
+13    Po13          up     success     success               1,10-11,20,                 
+                                                             3001-3002                   
+
+Please check "show vpc consistency-parameters vpc <vpc-num>" for the 
+consistency reason of down vpc and for type-2 consistency reasons for 
+any vpc.
+
+lfsw03# show ip route vrf all
+IP Route Table for VRF "default"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+10.0.0.1/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:26:19, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:26:25, ospf-UNDERLAY, intra
+10.0.0.2/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:26:13, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:26:13, ospf-UNDERLAY, intra
+10.0.0.3/32, ubest/mbest: 2/0, attached
+    *via 10.0.0.3, Lo0, [0/0], 01:26:35, local
+    *via 10.0.0.3, Lo0, [0/0], 01:26:35, direct
+10.0.0.4/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:26:19, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:26:19, ospf-UNDERLAY, intra
+10.0.0.253/32, ubest/mbest: 1/0
+    *via 10.0.4.5, Eth1/7, [110/41], 01:26:25, ospf-UNDERLAY, intra
+10.0.0.254/32, ubest/mbest: 1/0
+    *via 10.0.3.5, Eth1/8, [110/41], 01:26:19, ospf-UNDERLAY, intra
+10.0.1.1/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:23:08, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:23:08, ospf-UNDERLAY, intra
+10.0.1.2/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:23:08, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:23:08, ospf-UNDERLAY, intra
+10.0.1.3/32, ubest/mbest: 2/0, attached
+    *via 10.0.1.3, Lo1, [0/0], 01:23:14, local
+    *via 10.0.1.3, Lo1, [0/0], 01:23:14, direct
+10.0.1.4/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:23:14, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:23:14, ospf-UNDERLAY, intra
+10.0.2.1/32, ubest/mbest: 2/0
+    *via 10.0.3.5, Eth1/8, [110/81], 01:23:08, ospf-UNDERLAY, intra
+    *via 10.0.4.5, Eth1/7, [110/81], 01:23:08, ospf-UNDERLAY, intra
+10.0.2.2/32, ubest/mbest: 2/0, attached
+    *via 10.0.2.2, Lo1, [0/0], 01:23:14, local
+    *via 10.0.2.2, Lo1, [0/0], 01:23:14, direct
+10.0.3.0/31, ubest/mbest: 1/0
+    *via 10.0.3.5, Eth1/8, [110/80], 01:26:19, ospf-UNDERLAY, intra
+10.0.3.2/31, ubest/mbest: 1/0
+    *via 10.0.3.5, Eth1/8, [110/80], 01:26:19, ospf-UNDERLAY, intra
+10.0.3.4/31, ubest/mbest: 1/0, attached
+    *via 10.0.3.4, Eth1/8, [0/0], 01:26:52, direct
+10.0.3.4/32, ubest/mbest: 1/0, attached
+    *via 10.0.3.4, Eth1/8, [0/0], 01:26:52, local
+10.0.3.6/31, ubest/mbest: 1/0
+    *via 10.0.3.5, Eth1/8, [110/80], 01:26:19, ospf-UNDERLAY, intra
+10.0.4.0/31, ubest/mbest: 1/0
+    *via 10.0.4.5, Eth1/7, [110/80], 01:26:25, ospf-UNDERLAY, intra
+10.0.4.2/31, ubest/mbest: 1/0
+    *via 10.0.4.5, Eth1/7, [110/80], 01:26:25, ospf-UNDERLAY, intra
+10.0.4.4/31, ubest/mbest: 1/0, attached
+    *via 10.0.4.4, Eth1/7, [0/0], 01:26:53, direct
+10.0.4.4/32, ubest/mbest: 1/0, attached
+    *via 10.0.4.4, Eth1/7, [0/0], 01:26:53, local
+10.0.4.6/31, ubest/mbest: 1/0
+    *via 10.0.4.5, Eth1/7, [110/80], 01:26:25, ospf-UNDERLAY, intra
+
+IP Route Table for VRF "management"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+0.0.0.0/0, ubest/mbest: 1/0
+    *via 10.0.0.2, [1/0], 01:27:46, static
+10.0.0.0/24, ubest/mbest: 1/0, attached
+    *via 10.0.0.15, mgmt0, [0/0], 01:27:47, direct
+10.0.0.15/32, ubest/mbest: 1/0, attached
+    *via 10.0.0.15, mgmt0, [0/0], 01:27:47, local
+
+IP Route Table for VRF "tenant1-vpc1"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+172.16.0.0/24, ubest/mbest: 1/0, attached
+    *via 172.16.0.254, Vlan10, [0/0], 01:27:17, direct
+172.16.0.1/32, ubest/mbest: 1/0
+    *via 10.0.2.1%default, [200/0], 01:22:35, bgp-65001, internal, tag 65001, segid: 19001 tunnelid: 0xa000201 encap: VXLAN
+ 
+172.16.0.254/32, ubest/mbest: 1/0, attached
+    *via 172.16.0.254, Vlan10, [0/0], 01:27:17, local
+172.16.1.0/24, ubest/mbest: 1/0, attached
+    *via 172.16.1.254, Vlan11, [0/0], 01:27:16, direct
+172.16.1.1/32, ubest/mbest: 1/0, attached
+    *via 172.16.1.1, Vlan11, [190/0], 00:27:41, hmm
+172.16.1.254/32, ubest/mbest: 1/0, attached
+    *via 172.16.1.254, Vlan11, [0/0], 01:27:16, local
+
+IP Route Table for VRF "tenant2-vpc1"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+172.17.0.0/24, ubest/mbest: 1/0, attached
+    *via 172.17.0.254, Vlan20, [0/0], 01:27:15, direct
+172.17.0.1/32, ubest/mbest: 1/0
+    *via 10.0.2.1%default, [200/0], 00:06:14, bgp-65001, internal, tag 65001, segid: 29001 tunnelid: 0xa000201 encap: VXLAN
+ 
+172.17.0.254/32, ubest/mbest: 1/0, attached
+    *via 172.17.0.254, Vlan20, [0/0], 01:27:15, local
+
+IP Route Table for VRF "egress-loadbalance-resolution-"
+'*' denotes best ucast next-hop
+'**' denotes best mcast next-hop
+'[x/y]' denotes [preference/metric]
+'%<string>' in via output denotes VRF <string>
+
+
+lfsw03# 
