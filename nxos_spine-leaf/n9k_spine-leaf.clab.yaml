@@ -15,6 +15,7 @@ topology:
         QEMU_MEMORY: 12288 # 6GiB だと BGP がメモリ不足で使用できない
         # QEMU_MEMORY: 6144 # N9kv-lite requires minimum 6GB memory
         QEMU_SMP: 2 # N9kv-lite requires minimum 2 CPUs
+        CLAB_MGMT_PASSTHROUGH: "true" # https://containerlab.dev/manual/vrnetlab/#management-interface
     linux:
       image: ghcr.io/hellt/network-multitool:latest
       binds:
@@ -25,21 +26,27 @@ topology:
     spsw0101:
       kind: cisco_n9kv
       mgmt-ipv4: 192.168.129.89
+      group: spine1
     spsw0102:
       kind: cisco_n9kv
       mgmt-ipv4: 192.168.129.88
+      group: spine1
     lfsw0101:
       kind: cisco_n9kv
       mgmt-ipv4: 192.168.129.81
+      group: leaf1
     lfsw0102:
       kind: cisco_n9kv
       mgmt-ipv4: 192.168.129.82
+      group: leaf1
     lfsw0103:
       kind: cisco_n9kv
       mgmt-ipv4: 192.168.129.83
+      group: leaf2
     lfsw0104:
       kind: cisco_n9kv
       mgmt-ipv4: 192.168.129.84
+      group: leaf2
 
     controller-server01:
       kind: linux
@@ -49,6 +56,7 @@ topology:
         DEF_GW: "100.64.0.254"
         IPV6_CIDR: "fd12:0:0:1::101/64"
         DEF_GW6: "fd12:0:0:1::1"
+      group: server1
     tenant1-server01:
       kind: linux
       env:
@@ -57,6 +65,7 @@ topology:
         DEF_GW: "172.16.0.254"
         IPV6_CIDR: "fd21:0:0:1::101/64"
         DEF_GW6: "fd21:0:0:1::1"
+      group: server1
     tenant1-server02:
       kind: linux
       env:
@@ -65,6 +74,7 @@ topology:
         DEF_GW: "172.16.0.254"
         IPV6_CIDR: "fd21:0:0:1::102/64"
         DEF_GW6: "fd21:0:0:1::1"
+      group: server2
     tenant1-server03:
       kind: linux
       env:
@@ -73,6 +83,7 @@ topology:
         DEF_GW: "172.16.1.254"
         IPV6_CIDR: "fd21:0:0:2::101/64"
         DEF_GW6: "fd21:0:0:2::1"
+      group: server2
     tenant2-server01:
       kind: linux
       env:
@@ -81,6 +92,7 @@ topology:
         DEF_GW: "172.17.0.254"
         IPV6_CIDR: "fd22:0:0:1::101/64"
         DEF_GW6: "fd22:0:0:1::1"
+      group: server1
     tenant2-server02:
       kind: linux
       env:
@@ -89,6 +101,7 @@ topology:
         DEF_GW: "172.17.0.254"
         IPV6_CIDR: "fd22:0:0:1::102/64"
         DEF_GW6: "fd22:0:0:1::1"
+      group: server2
 
   links:
     # spine#1 - leaf

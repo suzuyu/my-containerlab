@@ -15,35 +15,12 @@ N9Kv での Leaf-Spine 構成は CML コードで先に実行していたので�
 ![cml図](./cml/images/CML_Lab_LEAF-SPINE-01.png)
 
 - 下記が現状での CML 実施との差分
-  - mgmt0 の IP は Config では固定にしてない
-  - vPC 設定の `peer-keepalive` は mgmt0 の IP を指定せずに、`virtual peer-link`と同じにしている
-  - 外部アクセス用の IP は重複回避のため別の IP となるようにしている
+  - 外部アクセス用の IP は CML 同時起動時の重複回避のため別の IP となるようにしている
+  - サーバの bonding 設定は大きく異なる (cloud-init ではなく、起動時のスクリプトとしている)
 
 実行サーバの**メモリ消費量は 90 GiB 近くになった**ので実施する場合には注意
 
-### 書き替え場所
-
-mgmt0 は実質使えないので、書き換える必要がある。`peer-keepalive`個所は書き換えて、vrf management の IP はコメントアウトする(もしくは削除)
-
-```diff_sh:lfsw0101.cfg
-...
-vpc domain 1
--  peer-keepalive destination 192.168.129.72 source 192.168.129.71
-+  peer-keepalive destination 10.0.0.2 source 10.0.0.1 vrf default
-...
-vrf context management
-!  ip name-server 192.168.129.254
-!  ip route 0.0.0.0/0 192.168.129.254
-...
-!interface mgmt0
-!  vrf member management
-!  ip address 192.168.129.81/24
-...
-```
-
-`vrf management` の IP 設定は containerlab 側が設定するので外部アクセス観点では設定不要
-
-## 事前準備： N9K image import
+## 事前準備
 
 コンテナ化されてない VM イメージの実行お試しとして Cisco Nexus 9000v を動かす
 
@@ -54,7 +31,8 @@ vrf context management
 
 ### N9Kv イメージダウンロード
 
-ここでは構成試験用として Lite モードを選択してダウンロードする
+ここでは構成試験用として Lite モードを選択してダウンロードする 
+(別途記載するが、メモリを減らすと不足してうまく動かなかったので、この用途では Lite じゃなくて良さそう)
 
 [Cisco ページ](https://software.cisco.com/download/home)へログインして、
 `Switches > Data Center Switches > Nexus 9000 Series Switches > Nexus 9000v Switch` で動作させたいバージョンを指定して`.qcow2`イメージをダウンロードする
