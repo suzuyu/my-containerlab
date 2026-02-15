@@ -2,6 +2,8 @@
 
 Cisco Nexus 9000v (N9Kv) で Leaf-Spine 構成を containerlab で動かす試験コード置き場
 
+![graph結果](./images/N9KSPINELEAF01_graph01.png)
+
 ## 概要
 
 N9Kv での Leaf-Spine 構成は CML コードで先に実行していたので、CML 内容とできるだけ同じになるように再現を試した
@@ -286,6 +288,28 @@ af0b5dde8e4e   vrnetlab/cisco_n9kv:10.4.5.M             "uv run /launch.py -…"
 0d7ed29dd43f   vrnetlab/cisco_n9kv:10.4.5.M             "uv run /launch.py -…"   55 minutes ago   Up 55 minutes (healthy)                     clab-n9kspineleaf01-lfsw0104
 [suzuyu@clab01 nxos_spine-leaf]$ 
 ```
+
+`containerlab graph` を実行するとグラフで構成が見れる
+
+```sh:containerlab_graph_出力例
+[suzuyu@clab01 nxos_spine-leaf]$ containerlab graph
+23:29:00 INFO Parsing & checking topology file=n9k_spine-leaf.clab.yaml
+23:29:00 INFO Serving topology graph
+  addresses=
+  │   http://172.17.0.1:50080
+  │   http://192.168.129.59:50080
+
+
+```
+
+ブラウザでアクセスした表示結果が下記の通り (階層構成はドラックで動かした後の状態。こんな綺麗には最初ならない)
+
+![graph結果1](./images/N9KSPINELEAF01_graph01.png)
+
+対象機器をクリックすると情報も見れる
+
+![graph結果2](./images/N9KSPINELEAF01_graph02.png)
+
 
 ### 機器操作
 
