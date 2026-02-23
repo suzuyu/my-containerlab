@@ -1,0 +1,47 @@
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: peer-bgprtr01-ipv4
+  namespace: metallb-system
+spec:
+  myASN: 65011
+  peerASN: 65535
+  peerAddress: 172.16.3.4
+  ebgpMultiHop: false
+  # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない
+---
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: peer-bgprtr01-ipv6
+  namespace: metallb-system
+spec:
+  myASN: 65011
+  peerASN: 65535
+  peerAddress: fd21:0:0:3::4
+  ebgpMultiHop: false
+  # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない
+---
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: peer-bgprtr02-ipv4
+  namespace: metallb-system
+spec:
+  myASN: 65011
+  peerASN: 65535
+  peerAddress: 172.16.3.5
+  ebgpMultiHop: false
+  # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない
+---
+apiVersion: metallb.io/v1beta2
+kind: BGPPeer
+metadata:
+  name: peer-bgprtr02-ipv6
+  namespace: metallb-system
+spec:
+  myASN: 65011
+  peerASN: 65535
+  peerAddress: fd21:0:0:3::5
+  ebgpMultiHop: false
+  # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない

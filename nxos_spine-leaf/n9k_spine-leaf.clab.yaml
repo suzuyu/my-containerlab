@@ -12,8 +12,7 @@ topology:
       image: vrnetlab/cisco_n9kv:10.4.5.M
       startup-config: configs/__clabNodeName__.cfg
       env:
-        QEMU_MEMORY: 12288 # 6GiB だと BGP がメモリ不足で使用できない
-        # QEMU_MEMORY: 6144 # N9kv-lite requires minimum 6GB memory
+        QEMU_MEMORY: 12288 # 10.4(5)M では 6GiB だと BGP がメモリ不足で使用できない
         QEMU_SMP: 2 # N9kv-lite requires minimum 2 CPUs
         CLAB_MGMT_PASSTHROUGH: "true" # https://containerlab.dev/manual/vrnetlab/#management-interface
     linux:

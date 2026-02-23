@@ -1,0 +1,21 @@
+# https://kind.sigs.k8s.io/docs/user/configuration/#nodes
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: dual
+nodes:
+  - role: control-plane
+    extraMounts:
+      - hostPath: /home/suzuyu/containerlab/nxos_spine-leaf_k8s/k8s_kind/node # 環境によって書き換えが必要
+        containerPath: /scripts
+        readOnly: true
+  - role: worker
+    extraMounts:
+      - hostPath: /home/suzuyu/containerlab/nxos_spine-leaf_k8s/k8s_kind/node # 環境によって書き換えが必要
+        containerPath: /scripts
+        readOnly: true
+  - role: worker
+    extraMounts:
+      - hostPath: /home/suzuyu/containerlab/nxos_spine-leaf_k8s/k8s_kind/node # 環境によって書き換えが必要
+        containerPath: /scripts
+        readOnly: true

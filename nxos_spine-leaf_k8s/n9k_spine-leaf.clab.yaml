@@ -1,0 +1,308 @@
+name: n9kspineleaf02
+
+mgmt:
+  network: mgmt-ext
+  ipv4-subnet: 192.168.129.0/24
+  ipv4-range: 192.168.129.112/28
+  bridge: bridge0
+
+topology:
+  kinds:
+    cisco_n9kv:
+      image: vrnetlab/cisco_n9kv:10.5.4.M.lite
+      # # Leaf 起動が途中で止まる事象が実施環境で見つかったので、一時的な回避のため leaf の初期設定をスキップさせる
+      # startup-config: configs/__clabNodeName__.cfg
+      env:
+        # QEMU_MEMORY: 12288
+        QEMU_MEMORY: 6144 # Minimum RAM 4.5 G (basic bootup) 10.5(3)F ~ . Recommended RAM 8G 
+        QEMU_SMP: 4 # N9kv-lite requires minimum 2 CPUs. Recommended 4 CPUs.
+        CLAB_MGMT_PASSTHROUGH: "true" # https://containerlab.dev/manual/vrnetlab/#management-interface
+    linux:
+      image: ghcr.io/hellt/network-multitool:latest
+      # binds:
+      #   - linux_scripts:/scripts:ro
+      # exec:
+      #   - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+    k8s-kind:
+      image: kindest/node:v1.34.3 # Kubernetes Version 指定
+    keysight_ixia-c-one:
+      image: ghcr.io/open-traffic-generator/ixia-c-one:1.43.0-7 # 1.44.0-8 2026.02.23 Latest
+
+  nodes:
+# Network Fabric
+    spsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.90
+      group: spine1
+      startup-config: configs/__clabNodeName__.cfg
+    spsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.89
+      group: spine1
+      startup-config: configs/__clabNodeName__.cfg
+    lfsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.81
+      group: leaf1
+    lfsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.82
+      group: leaf1
+    lfsw0103:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.83
+      group: leaf2
+    lfsw0104:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.84
+      group: leaf2
+    lfsw0105:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.85
+      group: leaf3
+    lfsw0106:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.86
+      group: leaf3
+
+# Network Function
+    bgrt0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.101
+      group: network-function1
+      startup-config: configs/__clabNodeName__.cfg
+    bgrt0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.102
+      group: network-function1
+      startup-config: configs/__clabNodeName__.cfg
+    trge0101:
+      kind: keysight_ixia-c-one
+      mgmt-ipv4: 192.168.129.100
+      group: network-function1
+
+
+# Server
+    controller-server01:
+      kind: linux
+      env:
+        VLAN_ID: "2001"
+        IP_CIDR: "100.64.0.1/24"
+        DEF_GW: "100.64.0.254"
+        IPV6_CIDR: "fd12:0:0:1::101/64"
+        DEF_GW6: "fd12:0:0:1::1"
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+      group: server1
+    tenant1-server01:
+      kind: linux
+      env:
+        VLAN_ID: "100"
+        IP_CIDR: "172.16.0.1/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::101/64"
+        DEF_GW6: "fd21:0:0:1::1"
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+      group: server1
+    tenant1-server02:
+      kind: linux
+      env:
+        VLAN_ID: "10"
+        IP_CIDR: "172.16.0.2/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::102/64"
+        DEF_GW6: "fd21:0:0:1::1"
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+      group: server2
+    tenant1-server03:
+      kind: linux
+      env:
+        VLAN_ID: "11"
+        IP_CIDR: "172.16.1.1/24"
+        DEF_GW: "172.16.1.254"
+        IPV6_CIDR: "fd21:0:0:2::101/64"
+        DEF_GW6: "fd21:0:0:2::1"
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+      group: server2
+    tenant2-server01:
+      kind: linux
+      env:
+        VLAN_ID: "200"
+        IP_CIDR: "172.17.0.1/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::101/64"
+        DEF_GW6: "fd22:0:0:1::1"
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+      group: server1
+    tenant2-server02:
+      kind: linux
+      env:
+        VLAN_ID: "20"
+        IP_CIDR: "172.17.0.2/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::102/64"
+        DEF_GW6: "fd22:0:0:1::1"
+      binds:
+        - linux_scripts:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-vlan-v4v6-modprobe.sh'
+      group: server2
+
+# k8s cluster kind k01
+    # --- kind cluster managed by containerlab ---
+    k01:
+      kind: k8s-kind
+      startup-config: k8s_kind/k01/k01.kind.yaml
+      extras:
+        k8s_kind:
+          deploy:
+            kubeconfig: k8s_kind/k01/kubeconfig-k01
+            wait: 0s
+    k01-control-plane:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="103";
+            export IP_CIDR="172.16.3.11/24";
+            export DEF_GW="172.16.3.1";
+            export IPV6_CIDR="fd21:0:0:3::1:1/64";
+            export DEF_GW6="fd21:0:0:3::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.3.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:3::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+    k01-worker:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      env:
+        VLAN_ID: "103"
+        IP_CIDR: "172.16.3.21/24"
+        DEF_GW: "172.16.3.1"
+        IPV6_CIDR: "fd21:0:0:3::2:1/64"
+        DEF_GW6: "fd21:0:0:3::1"
+        MTU: "9000"
+        SET_DEFAULT_ROUTE: "false"
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="103";
+            export IP_CIDR="172.16.3.21/24";
+            export DEF_GW="172.16.3.1";
+            export IPV6_CIDR="fd21:0:0:3::2:1/64";
+            export DEF_GW6="fd21:0:0:3::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.3.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:3::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+    k01-worker2:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="13";
+            export IP_CIDR="172.16.3.22/24";
+            export DEF_GW="172.16.3.1";
+            export IPV6_CIDR="fd21:0:0:3::2:2/64";
+            export DEF_GW6="fd21:0:0:3::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.3.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:3::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+  links:
+    # spine#1 - leaf
+    - endpoints: ["spsw0101:Ethernet1/1", "lfsw0101:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/2", "lfsw0102:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/3", "lfsw0103:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/4", "lfsw0104:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/5", "lfsw0105:Ethernet1/8"]
+    - endpoints: ["spsw0101:Ethernet1/6", "lfsw0106:Ethernet1/8"]
+    # - endpoints: ["spsw0101:Ethernet1/7", "bgw0101:Ethernet1/1"] # Reserve
+    # - endpoints: ["spsw0101:Ethernet1/8", "bgw0102:Ethernet1/1"] # Reserve
+
+    # spine#2 - leaf
+    - endpoints: ["spsw0102:Ethernet1/1", "lfsw0101:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/2", "lfsw0102:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/3", "lfsw0103:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/4", "lfsw0104:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/5", "lfsw0105:Ethernet1/7"]
+    - endpoints: ["spsw0102:Ethernet1/6", "lfsw0106:Ethernet1/7"]
+    # - endpoints: ["spsw0102:Ethernet1/7", "bgw0101:Ethernet1/1"] # Reserve
+    # - endpoints: ["spsw0102:Ethernet1/8", "bgw0102:Ethernet1/1"] # Reserve
+
+    # leaf#1 - server/router
+    - endpoints: ["lfsw0101:Ethernet1/1",  "controller-server01:eth1"]
+    - endpoints: ["lfsw0101:Ethernet1/2",  "tenant1-server01:eth1"]
+    - endpoints: ["lfsw0101:Ethernet1/3",  "tenant2-server01:eth1"]
+    - endpoints: ["lfsw0101:Ethernet1/4",  "k01-control-plane:eth1"]
+    - endpoints: ["lfsw0101:Ethernet1/5",  "k01-worker:eth1"]
+
+    # leaf#2 - server/router
+    - endpoints: ["lfsw0102:Ethernet1/1",  "controller-server01:eth2"]
+    - endpoints: ["lfsw0102:Ethernet1/2",  "tenant1-server01:eth2"]
+    - endpoints: ["lfsw0102:Ethernet1/3",  "tenant2-server01:eth2"]
+    - endpoints: ["lfsw0102:Ethernet1/4",  "k01-control-plane:eth2"]
+    - endpoints: ["lfsw0102:Ethernet1/5",  "k01-worker:eth2"]
+
+    # leaf#3 - server
+    - endpoints: ["lfsw0103:Ethernet1/1", "tenant1-server02:eth1"]
+    - endpoints: ["lfsw0103:Ethernet1/2", "tenant1-server03:eth1"]
+    - endpoints: ["lfsw0103:Ethernet1/3", "tenant2-server02:eth1"]
+    - endpoints: ["lfsw0103:Ethernet1/4", "k01-worker2:eth1"]
+
+    # leaf#4 - server
+    - endpoints: ["lfsw0104:Ethernet1/1", "tenant1-server02:eth2"]
+    - endpoints: ["lfsw0104:Ethernet1/2", "tenant1-server03:eth2"]
+    - endpoints: ["lfsw0104:Ethernet1/3", "tenant2-server02:eth2"]
+    - endpoints: ["lfsw0104:Ethernet1/4", "k01-worker2:eth2"]
+
+    # leaf#5 - network-function
+    - endpoints: ["lfsw0105:Ethernet1/1",  "trge0101:eth1"] # Reserve
+    - endpoints: ["lfsw0105:Ethernet1/2",  "trge0101:eth2"] # Reserve
+    - endpoints: ["lfsw0105:Ethernet1/49", "bgrt0101:Ethernet1/49"]
+    - endpoints: ["lfsw0105:Ethernet1/50", "bgrt0101:Ethernet1/50"]
+    - endpoints: ["lfsw0105:Ethernet1/51", "bgrt0101:Ethernet1/51"]
+    - endpoints: ["lfsw0105:Ethernet1/52", "bgrt0101:Ethernet1/52"]
+
+    # leaf#6 - network-function
+    - endpoints: ["lfsw0106:Ethernet1/49", "bgrt0102:Ethernet1/49"]
+    - endpoints: ["lfsw0106:Ethernet1/50", "bgrt0102:Ethernet1/50"]
+    - endpoints: ["lfsw0106:Ethernet1/51", "bgrt0102:Ethernet1/51"]
+    - endpoints: ["lfsw0106:Ethernet1/52", "bgrt0102:Ethernet1/52"]

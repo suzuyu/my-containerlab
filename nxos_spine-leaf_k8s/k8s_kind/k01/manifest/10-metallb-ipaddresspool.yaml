@@ -1,0 +1,11 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: pool-vip
+  namespace: metallb-system
+spec:
+  addresses:
+    - 172.16.4.10-172.16.4.50
+    - fd21:0:0:4:0:0:1:0-fd21:0:0:4:0:0:1:ffff
+  # autoAssign: false
+  # avoidBuggyIPs: false
