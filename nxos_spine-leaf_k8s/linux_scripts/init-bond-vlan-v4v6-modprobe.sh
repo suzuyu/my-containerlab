@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# init-bond-singlevlan.sh
+# init-bond-vlan-v4v6-modprobe.sh
 # - Create LACP bond0 (802.3ad) on eth1+eth2
 # - Create a single VLAN sub-interface bond0.<VLAN_ID>
 # - Assign IPv4/IPv6 address and default routes

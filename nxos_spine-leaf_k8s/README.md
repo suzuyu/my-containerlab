@@ -285,10 +285,31 @@ Commercial support is available at
 <p><em>Thank you for using nginx.</em></p>
 </body>
 </html>
-bash-5.0# curl http://[fd21::4:0:0:1:0/]
-curl: (3) bad range in URL position 9:
-http://[fd21::4:0:0:1:0/]
-        ^
+
+bash-5.0# curl http://[fd21::4:0:0:1:0]
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
 bash-5.0# 
 bash-5.0# exit
 exit
@@ -327,3 +348,27 @@ False 2026-02-22 14:39:22,022: decorators CRITICAL operation timed out, closing 
 ssh でログインしてコンフィグを入れ直すことができるが、内部でクラッシュしてしばらくするとコンテナが消えてしまうので、Leaf 系は startup-config の自動投入を諦めて起動後に手動投入とした
 
 原因は不明。調査中
+
+## containerlab knowledges
+
+### デフォルトパスワード変更時
+
+`admin` などデフォルトで入れるユーザをのパスワードを変えてしまうと、そのままだと `container save` がうまくいかなくなる
+
+```sh
+$ containerlab save
+02:23:42 INFO Parsing & checking topology file=n9k_spine-leaf.clab.yaml
+02:23:43 INFO Saved configuration to path nodeName=lfsw0106 path=/home/suzuyu/containerlab/nxos_spine-leaf_k8s/clab-n9kspineleaf01/lfsw0106/config/startup-config.cfg
+02:23:43 INFO Saved configuration to path nodeName=lfsw0105 path=/home/suzuyu/containerlab/nxos_spine-leaf_k8s/clab-n9kspineleaf01/lfsw0105/config/startup-config.cfg
+02:23:46 ERRO node "bgrt0101" save failed: failed to open generic driver for clab-n9kspineleaf01-bgrt0101: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:47 ERRO node "lfsw0101" save failed: failed to open generic driver for clab-n9kspineleaf01-lfsw0101: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:47 ERRO node "lfsw0104" save failed: failed to open generic driver for clab-n9kspineleaf01-lfsw0104: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:47 ERRO node "lfsw0103" save failed: failed to open generic driver for clab-n9kspineleaf01-lfsw0103: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:48 ERRO node "lfsw0102" save failed: failed to open generic driver for clab-n9kspineleaf01-lfsw0102: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:48 ERRO node "bgrt0102" save failed: failed to open generic driver for clab-n9kspineleaf01-bgrt0102: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:48 ERRO node "spsw0101" save failed: failed to open generic driver for clab-n9kspineleaf01-spsw0101: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+02:23:48 ERRO node "spsw0102" save failed: failed to open generic driver for clab-n9kspineleaf01-spsw0102: ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password keyboard-interactive], no supported methods remain
+```
+
+`clab-n9kspineleaf01/ansible-inventory.yml` の該当する `ansible_password:` を書き換えると成功する
+
