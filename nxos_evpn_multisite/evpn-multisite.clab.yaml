@@ -1,0 +1,440 @@
+name: evpn-multisite
+
+mgmt:
+  network: mgmt-ext
+  ipv4-subnet: 192.168.129.0/24
+  ipv4-range: 192.168.129.176/28
+  bridge: bridge0
+
+topology:
+  kinds:
+    cisco_n9kv:
+      image: vrnetlab/cisco_n9kv:10.5.4.M.lite
+      # startup-config: raw/__clabNodeName___run.txt
+      env:
+        QEMU_MEMORY: 4608 # 6144 (6G) # Minimum RAM 4.5 G (4608 MB) (basic bootup) 10.5(3)F ~ . Recommended RAM 8G 
+        QEMU_SMP: 2
+        CLAB_MGMT_PASSTHROUGH: "true"
+    nokia_srlinux:
+      image: ghcr.io/nokia/srlinux:24.10
+      type: ixr-d3
+    arista_ceos:
+      image: ceos:4.35.4M # ceos:4.32.0F
+      env:
+        CLAB_MGMT_VRF: MGMT
+    linux:
+      image: ghcr.io/hellt/network-multitool:latest
+    # k8s-kind:
+    #   image: kindest/node:v1.34.3 # Kubernetes Version 指定
+  nodes:
+    # wan
+    ## p
+    p01:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.170
+      group: wan
+      startup-config: configs/ceos_wan_underlay/__clabNodeName__.cfg
+    ## pe
+    pe01:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.161
+      group: wan
+      startup-config: configs/ceos_wan_underlay/__clabNodeName__.cfg
+    pe02:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.162
+      group: wan
+      startup-config: configs/ceos_wan_underlay/__clabNodeName__.cfg
+    pe03:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.163
+      group: wan
+      startup-config: configs/ceos_wan_underlay/__clabNodeName__.cfg
+    pe04:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.164
+      group: wan
+      startup-config: configs/ceos_wan_underlay/__clabNodeName__.cfg
+    # route-server
+    adc-rs0101: 
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.171
+      group: rs
+      startup-delay: 1800 # 30*60sec
+    adc-rs0102: 
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.172
+      group: rs
+      startup-delay: 1800 # 30*60sec
+    bdc-rs0101: 
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.173
+      group: rs
+      startup-delay: 1800 # 30*60sec
+    bdc-rs0102: 
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.174
+      group: rs
+      startup-delay: 1800 # 30*60sec
+    # A DataCenter
+    ## bgw
+    adc-bgw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.138
+      group: bgw
+    adc-bgw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.137
+      group: bgw
+    ## spine
+    adc-spsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.140
+      group: spine
+    adc-spsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.139
+      group: spine
+    ## leaf
+    adc-lfsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.131
+      group: leaf
+    adc-lfsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.132
+      group: leaf
+    adc-lfsw0103:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.133
+      group: leaf
+      startup-delay: 600 # 10*60sec 
+    adc-lfsw0104:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.134
+      group: leaf
+      startup-delay: 600 # 10*60sec
+    # B DataCenter
+    ## bgw
+    bdc-bgw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.148
+      group: bgw
+      startup-delay: 600 # 10*60sec
+    bdc-bgw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.147
+      group: bgw
+      startup-delay: 600 # 10*60sec
+    ## spine
+    bdc-spsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.150
+      group: spine
+      startup-delay: 600 # 10*60sec
+    ## leaf
+    bdc-lfsw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.141
+      group: leaf
+      startup-delay: 1200 # 20*60sec
+    bdc-lfsw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.142
+      group: leaf
+      startup-delay: 1200 # 20*60sec
+
+    # C DataCenter
+    ## bgw
+    cdc-bgw0101:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.158
+      group: bgw
+      startup-delay: 1200 # 20*60sec
+    cdc-bgw0102:
+      kind: cisco_n9kv
+      mgmt-ipv4: 192.168.129.157
+      group: bgw
+      startup-delay: 1200 # 20*60sec
+    ## l3sw
+    cdc-l3sw0101:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.151
+      group: l3sw
+      startup-config: configs/__clabNodeName__.cfg
+      # startup-delay: 420 # 7*60sec 
+    cdc-l3sw0102:
+      kind: arista_ceos
+      mgmt-ipv4: 192.168.129.152
+      group: l3sw
+      startup-config: configs/__clabNodeName__.cfg
+      # startup-delay: 420 # 7*60sec 
+
+# Server
+    controller-server01:
+      kind: linux
+      env:
+        VLAN_ID: "2001"
+        IP_CIDR: "100.64.0.1/24"
+        DEF_GW: "100.64.0.254"
+        IPV6_CIDR: "fd12:0:0:1::101/64"
+        DEF_GW6: "fd12:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    controller-server02:
+      kind: linux
+      env:
+        VLAN_ID: "2002"
+        IP_CIDR: "100.64.1.1/24"
+        DEF_GW: "100.64.1.254"
+        IPV6_CIDR: "fd12:0:0:2::101/64"
+        DEF_GW6: "fd12:0:0:2::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    tenant1-server01:
+      kind: linux
+      env:
+        VLAN_ID: "100"
+        IP_CIDR: "172.16.0.1/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::101/64"
+        DEF_GW6: "fd21:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    tenant1-server02:
+      kind: linux
+      env:
+        VLAN_ID: "10"
+        IP_CIDR: "172.16.0.2/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::102/64"
+        DEF_GW6: "fd21:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    tenant1-server03:
+      kind: linux
+      env:
+        VLAN_ID: "11"
+        IP_CIDR: "172.16.1.1/24"
+        DEF_GW: "172.16.1.254"
+        IPV6_CIDR: "fd21:0:0:2::101/64"
+        DEF_GW6: "fd21:0:0:2::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    tenant1-server04:
+      kind: linux
+      env:
+        VLAN_ID: "100"
+        IP_CIDR: "172.16.0.4/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::104/64"
+        DEF_GW6: "fd21:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    tenant2-server01:
+      kind: linux
+      env:
+        VLAN_ID: "200"
+        IP_CIDR: "172.17.0.1/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::101/64"
+        DEF_GW6: "fd22:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    tenant2-server02:
+      kind: linux
+      env:
+        VLAN_ID: "20"
+        IP_CIDR: "172.17.0.2/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::102/64"
+        DEF_GW6: "fd22:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    # tenant2-server03:
+    #   kind: linux
+    #   env:
+    #     VLAN_ID: "21"
+    #     IP_CIDR: "172.17.1.1/24"
+    #     DEF_GW: "172.17.1.254"
+    #     IPV6_CIDR: "fd22:0:0:2::101/64"
+    #     DEF_GW6: "fd22:0:0:2::1"
+    #     SET_DEFAULT_ROUTE: "true"
+    #   binds:
+    #     - scripts/linux:/scripts:ro
+    #   exec:
+    #     - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+    #   group: server
+    cdc-server01:
+      kind: linux
+      env:
+        VLAN_ID: "300"
+        IP_CIDR: "172.18.0.1/24"
+        DEF_GW: "172.18.0.254"
+        IPV6_CIDR: "fd22:0:1:1::101/64"
+        DEF_GW6: "fd22:0:1:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    cdc-server02:
+      kind: linux
+      env:
+        VLAN_ID: "301"
+        IP_CIDR: "172.17.0.10/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::10a/64"
+        DEF_GW6: "fd22:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+
+  links:
+    # WAN
+    # P
+    - endpoints: ["p01:eth1", "pe01:eth8"]
+    - endpoints: ["p01:eth2", "pe02:eth8"]
+    - endpoints: ["p01:eth3", "pe03:eth8"]
+    - endpoints: ["p01:eth4", "pe04:eth8"]
+    # PE01
+    - endpoints: ["pe01:eth1", "adc-rs0101:Ethernet1/1"]
+    - endpoints: ["pe01:eth2", "adc-rs0102:Ethernet1/1"]
+    - endpoints: ["pe01:eth3", "adc-bgw0101:Ethernet1/8"]
+    - endpoints: ["pe01:eth4", "adc-bgw0102:Ethernet1/8"]
+    - endpoints: ["pe01:eth7", "pe02:eth7"]
+    # PE02
+    - endpoints: ["pe02:eth1", "adc-rs0101:Ethernet1/2"]
+    - endpoints: ["pe02:eth2", "adc-rs0102:Ethernet1/2"]
+    - endpoints: ["pe02:eth3", "adc-bgw0101:Ethernet1/7"]
+    - endpoints: ["pe02:eth4", "adc-bgw0102:Ethernet1/7"]
+    # PE03
+    - endpoints: ["pe03:eth1", "bdc-rs0101:Ethernet1/1"]
+    - endpoints: ["pe03:eth2", "bdc-rs0102:Ethernet1/1"]
+    - endpoints: ["pe03:eth3", "bdc-bgw0101:Ethernet1/8"]
+    - endpoints: ["pe03:eth4", "bdc-bgw0102:Ethernet1/8"]
+    - endpoints: ["pe03:eth5", "cdc-bgw0101:Ethernet1/8"]
+    - endpoints: ["pe03:eth6", "cdc-bgw0102:Ethernet1/8"]
+    - endpoints: ["pe03:eth7", "pe04:eth7"]
+    # PE04
+    - endpoints: ["pe04:eth1", "bdc-rs0101:Ethernet1/2"]
+    - endpoints: ["pe04:eth2", "bdc-rs0102:Ethernet1/2"]
+    - endpoints: ["pe04:eth3", "bdc-bgw0101:Ethernet1/7"]
+    - endpoints: ["pe04:eth4", "bdc-bgw0102:Ethernet1/7"]
+    - endpoints: ["pe04:eth5", "cdc-bgw0101:Ethernet1/7"]
+    - endpoints: ["pe04:eth6", "cdc-bgw0102:Ethernet1/7"]
+
+    # DC Site A
+    # adc-bgw0101
+    - endpoints: ["adc-bgw0101:Ethernet1/1", "adc-spsw0101:Ethernet1/8"]
+    - endpoints: ["adc-bgw0101:Ethernet1/2", "adc-spsw0102:Ethernet1/8"]
+    # adc-bgw0102
+    - endpoints: ["adc-bgw0102:Ethernet1/1", "adc-spsw0101:Ethernet1/7"]
+    - endpoints: ["adc-bgw0102:Ethernet1/2", "adc-spsw0102:Ethernet1/7"]
+    # adc-spsw0101
+    - endpoints: ["adc-spsw0101:Ethernet1/1", "adc-lfsw0101:Ethernet1/8"]
+    - endpoints: ["adc-spsw0101:Ethernet1/2", "adc-lfsw0102:Ethernet1/8"]
+    - endpoints: ["adc-spsw0101:Ethernet1/3", "adc-lfsw0103:Ethernet1/8"]
+    - endpoints: ["adc-spsw0101:Ethernet1/4", "adc-lfsw0104:Ethernet1/8"]
+    # adc-spsw0102
+    - endpoints: ["adc-spsw0102:Ethernet1/1", "adc-lfsw0101:Ethernet1/7"]
+    - endpoints: ["adc-spsw0102:Ethernet1/2", "adc-lfsw0102:Ethernet1/7"]
+    - endpoints: ["adc-spsw0102:Ethernet1/3", "adc-lfsw0103:Ethernet1/7"]
+    - endpoints: ["adc-spsw0102:Ethernet1/4", "adc-lfsw0104:Ethernet1/7"]
+    # adc-lfsw0101
+    - endpoints: ["adc-lfsw0101:Ethernet1/1",  "controller-server01:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/2",  "tenant1-server01:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/3",  "tenant2-server01:eth1"]
+    # adc-lfsw0102
+    - endpoints: ["adc-lfsw0102:Ethernet1/1",  "controller-server01:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/2",  "tenant1-server01:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/3",  "tenant2-server01:eth2"]
+    # adc-lfsw0103
+    - endpoints: ["adc-lfsw0103:Ethernet1/1", "tenant1-server02:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/2", "tenant1-server03:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/3", "tenant2-server02:eth1"]
+    # adc-lfsw0104
+    - endpoints: ["adc-lfsw0104:Ethernet1/1", "tenant1-server02:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/2", "tenant1-server03:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/3", "tenant2-server02:eth2"]
+
+    # DC Site B
+    # bdc-bgw0101
+    - endpoints: ["bdc-bgw0101:Ethernet1/1", "bdc-spsw0101:Ethernet1/8"]
+    # bdc-bgw0102
+    - endpoints: ["bdc-bgw0102:Ethernet1/1", "bdc-spsw0101:Ethernet1/7"]
+    # bdc-spsw0101
+    - endpoints: ["bdc-spsw0101:Ethernet1/1", "bdc-lfsw0101:Ethernet1/8"]
+    - endpoints: ["bdc-spsw0101:Ethernet1/2", "bdc-lfsw0102:Ethernet1/8"]
+    # bdc-lfsw0101
+    - endpoints: ["bdc-lfsw0101:Ethernet1/1",  "controller-server02:eth1"]
+    - endpoints: ["bdc-lfsw0101:Ethernet1/2",  "tenant1-server04:eth1"]
+    # - endpoints: ["bdc-lfsw0101:Ethernet1/3",  "tenant2-server03:eth1"]
+    # bdc-lfsw0102
+    - endpoints: ["bdc-lfsw0102:Ethernet1/1",  "controller-server02:eth2"]
+    - endpoints: ["bdc-lfsw0102:Ethernet1/2",  "tenant1-server04:eth2"]
+    # - endpoints: ["bdc-lfsw0102:Ethernet1/3",  "tenant2-server03:eth2"]
+
+    # DC Site C
+    # cdc-bgw0101
+    - endpoints: ["cdc-bgw0101:Ethernet1/1", "cdc-l3sw0101:eth8"] # L2 vPC/MLAG
+    - endpoints: ["cdc-bgw0101:Ethernet1/2", "cdc-l3sw0102:eth8"] # L2 vPC/MLAG
+    - endpoints: ["cdc-bgw0101:Ethernet1/3", "cdc-l3sw0101:eth10"] # L3 Mesh VRF SubIF
+    - endpoints: ["cdc-bgw0101:Ethernet1/4", "cdc-l3sw0102:eth10"] # L3 Mesh VRF SubIF
+    - endpoints: ["cdc-bgw0101:Ethernet1/5", "cdc-bgw0102:Ethernet1/5"] # WATARI 
+    - endpoints: ["cdc-bgw0101:Ethernet1/6", "cdc-bgw0102:Ethernet1/6"] # WATARI
+    # - endpoints: ["cdc-bgw0101:Ethernet1/7", "pe04:eth5"] # 重複のためコメント
+    # - endpoints: ["cdc-bgw0101:Ethernet1/8", "pe03:eth5"] # 重複のためコメント
+    # cdc-bgw0102
+    - endpoints: ["cdc-bgw0102:Ethernet1/1", "cdc-l3sw0101:eth7"] # L2 vPC/MLAG
+    - endpoints: ["cdc-bgw0102:Ethernet1/2", "cdc-l3sw0102:eth7"] # L2 vPC/MLAG
+    - endpoints: ["cdc-bgw0102:Ethernet1/3", "cdc-l3sw0101:eth9"] # L3 Mesh VRF SubIF
+    - endpoints: ["cdc-bgw0102:Ethernet1/4", "cdc-l3sw0102:eth9"] # L3 Mesh VRF SubIF
+    # - endpoints: ["cdc-bgw0102:Ethernet1/5", "cdc-bgw0101:Ethernet1/5"] # 重複のためコメント
+    # - endpoints: ["cdc-bgw0102:Ethernet1/6", "cdc-bgw0101:Ethernet1/6"] # 重複のためコメント
+    # - endpoints: ["cdc-bgw0102:Ethernet1/7", "pe04:eth6"] # 重複のためコメント
+    # - endpoints: ["cdc-bgw0102:Ethernet1/8", "pe03:eth6"] # 重複のためコメント
+    # cdc-l3sw0101
+    - endpoints: ["cdc-l3sw0101:eth1", "cdc-server01:eth1"]
+    - endpoints: ["cdc-l3sw0101:eth2", "cdc-server02:eth1"]
+    - endpoints: ["cdc-l3sw0101:eth5", "cdc-l3sw0102:eth5"]
+    - endpoints: ["cdc-l3sw0101:eth6", "cdc-l3sw0102:eth6"]
+    # cdc-l3sw0102
+    - endpoints: ["cdc-l3sw0102:eth1", "cdc-server01:eth2"]
+    - endpoints: ["cdc-l3sw0102:eth2", "cdc-server02:eth2"]

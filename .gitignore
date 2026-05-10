@@ -56,3 +56,18 @@ test/*
 
 # Local clab directories
 **/clab*/*
+*/raw/
+*/logs/
+*/tmp/
+*copy*
+*/configs/old*
+*/configs/back*
+
+# for alred
+logs
+hosts.yaml
+hosts.lab.yaml
+*/samples/*
+clab_credentials.yaml
+
+.codex
