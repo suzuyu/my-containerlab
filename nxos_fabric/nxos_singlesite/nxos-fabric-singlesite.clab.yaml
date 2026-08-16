@@ -1,0 +1,404 @@
+name: nxos-fabric-singlesite
+
+mgmt:
+  network: mgmt-ext
+  ipv4-subnet: 192.168.129.0/24
+  # ipv4-range: 192.168.129.176/28 # multisite
+  ipv4-range: 192.168.129.112/28 # singlesite
+  bridge: bridge0
+
+topology:
+  kinds:
+    cisco_n9kv:
+      image: vrnetlab/cisco_n9kv:10.5.4.M.lite
+      # startup-config: configs/singlesite/cisco_n9kv/__clabNodeName___run.txt
+      env:
+        QEMU_MEMORY: 4608 # 6144 (6G) # Minimum RAM 4.5 G (4608 MB) (basic bootup) 10.5(3)F ~ . Recommended RAM 8G
+        QEMU_SMP: 2
+        CLAB_MGMT_PASSTHROUGH: "true"
+    linux:
+      image: ghcr.io/hellt/network-multitool:latest
+    k8s-kind:
+      image: kindest/node:v1.34.3 # Kubernetes Version 指定
+  nodes:
+    # A DataCenter
+    ## spine
+    adc-spsw0101:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.140 # multisite
+      mgmt-ipv4: 192.168.129.90 # singlesite
+      group: spine
+    adc-spsw0102:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.139 # multisite
+      mgmt-ipv4: 192.168.129.89 # singlesite
+      group: spine
+    ## leaf
+    adc-lfsw0101:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.131 # multisite
+      mgmt-ipv4: 192.168.129.81 # singlesite
+      group: leaf
+    adc-lfsw0102:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.132 # multisite
+      mgmt-ipv4: 192.168.129.82 # singlesite
+      group: leaf
+    adc-lfsw0103:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.133 # multisite
+      mgmt-ipv4: 192.168.129.83 # singlesite
+      group: leaf
+      startup-delay: 600 # 10*60sec
+    adc-lfsw0104:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.134 # multisite
+      mgmt-ipv4: 192.168.129.84 # singlesite
+      group: leaf
+      startup-delay: 600 # 10*60sec
+    # ## BorderLeaf
+    # adc-blsw0101:
+    #   kind: cisco_n9kv
+    #   mgmt-ipv4: 192.168.129.135 # multisite
+    #   # mgmt-ipv4: 192.168.129.85 # singlesite
+    #   group: leaf
+    #   startup-delay: 1800 # 30*60sec
+    # adc-blsw0102:
+    #   kind: cisco_n9kv
+    #   mgmt-ipv4: 192.168.129.136 # multisite
+    #   # mgmt-ipv4: 192.168.129.86 # singlesite
+    #   group: leaf
+    #   startup-delay: 1800 # 30*60sec
+
+    ## # Network Function
+    adc-bgrt0101:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.167 # multisite
+      mgmt-ipv4: 192.168.129.101 # singlesite
+      group: network-function
+      startup-delay: 600 # 10*60sec
+    adc-bgrt0102:
+      kind: cisco_n9kv
+      # mgmt-ipv4: 192.168.129.168 # multisite
+      mgmt-ipv4: 192.168.129.102 # singlesite
+      group: network-function
+      startup-delay: 600 # 10*60sec
+
+# Server
+    adc-ctsv0101:
+      kind: linux
+      env:
+        VLAN_ID: "2001"
+        IP_CIDR: "100.64.0.1/24"
+        DEF_GW: "100.64.0.254"
+        IPV6_CIDR: "fd12:0:0:1::101/64"
+        DEF_GW6: "fd12:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+
+    adc-t1sv0101:
+      kind: linux
+      env:
+        VLAN_ID: "100"
+        IP_CIDR: "172.16.0.1/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::101/64"
+        DEF_GW6: "fd21:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    adc-t1sv0102:
+      kind: linux
+      env:
+        VLAN_ID: "10"
+        IP_CIDR: "172.16.0.2/24"
+        DEF_GW: "172.16.0.254"
+        IPV6_CIDR: "fd21:0:0:1::102/64"
+        DEF_GW6: "fd21:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    adc-t1sv0201:
+      kind: linux
+      env:
+        VLAN_ID: "11"
+        IP_CIDR: "172.16.1.1/24"
+        DEF_GW: "172.16.1.254"
+        IPV6_CIDR: "fd21:0:0:2::101/64"
+        DEF_GW6: "fd21:0:0:2::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    adc-t2sv0101:
+      kind: linux
+      env:
+        VLAN_ID: "200"
+        IP_CIDR: "172.17.0.1/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::101/64"
+        DEF_GW6: "fd22:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+    adc-t2sv0102:
+      kind: linux
+      env:
+        VLAN_ID: "20"
+        IP_CIDR: "172.17.0.2/24"
+        DEF_GW: "172.17.0.254"
+        IPV6_CIDR: "fd22:0:0:1::102/64"
+        DEF_GW6: "fd22:0:0:1::1"
+        SET_DEFAULT_ROUTE: "true"
+      binds:
+        - scripts/linux:/scripts:ro
+      exec:
+        - sh -lc '/scripts/init-bond-singlevlan-route.sh'
+      group: server
+
+# k8s cluster kind k01
+    # --- kind cluster managed by containerlab ---
+    adc-k01:
+      kind: k8s-kind
+      startup-config: k8s_kind/k01/k01.kind.yaml
+      extras:
+        k8s_kind:
+          deploy:
+            kubeconfig: k8s_kind/k01/kubeconfig-k01
+            wait: 0s
+    adc-k01-control-plane:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="103";
+            export IP_CIDR="172.16.3.11/24";
+            export DEF_GW="172.16.3.1";
+            export IPV6_CIDR="fd21:0:0:3::1:1/64";
+            export DEF_GW6="fd21:0:0:3::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.3.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:3::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+    adc-k01-worker:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      env:
+        VLAN_ID: "103"
+        IP_CIDR: "172.16.3.21/24"
+        DEF_GW: "172.16.3.1"
+        IPV6_CIDR: "fd21:0:0:3::2:1/64"
+        DEF_GW6: "fd21:0:0:3::1"
+        MTU: "9000"
+        SET_DEFAULT_ROUTE: "false"
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="103";
+            export IP_CIDR="172.16.3.21/24";
+            export DEF_GW="172.16.3.1";
+            export IPV6_CIDR="fd21:0:0:3::2:1/64";
+            export DEF_GW6="fd21:0:0:3::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.3.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:3::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+    adc-k01-worker2:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="13";
+            export IP_CIDR="172.16.3.22/24";
+            export DEF_GW="172.16.3.1";
+            export IPV6_CIDR="fd21:0:0:3::2:2/64";
+            export DEF_GW6="fd21:0:0:3::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.3.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:3::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+# k8s cluster kind k02
+    # --- kind cluster managed by containerlab ---
+    adc-k02:
+      kind: k8s-kind
+      startup-config: k8s_kind/k02/k02.kind.yaml
+      extras:
+        k8s_kind:
+          deploy:
+            kubeconfig: k8s_kind/k02/kubeconfig-k02
+            wait: 0s
+    adc-k02-control-plane:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="14";
+            export IP_CIDR="172.16.4.11/24";
+            export DEF_GW="172.16.4.1";
+            export IPV6_CIDR="fd21:0:0:4::1:1/64";
+            export DEF_GW6="fd21:0:0:4::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.4.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+    adc-k02-worker:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      env:
+        VLAN_ID: "104"
+        IP_CIDR: "172.16.4.21/24"
+        DEF_GW: "172.16.4.1"
+        IPV6_CIDR: "fd21:0:0:4::2:1/64"
+        DEF_GW6: "fd21:0:0:4::1"
+        MTU: "9000"
+        SET_DEFAULT_ROUTE: "false"
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="14";
+            export IP_CIDR="172.16.4.21/24";
+            export DEF_GW="172.16.4.1";
+            export IPV6_CIDR="fd21:0:0:4::2:1/64";
+            export DEF_GW6="fd21:0:0:4::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.4.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+
+    adc-k02-worker2:
+      kind: ext-container
+      binds:
+        - k8s_kind/node:/scripts:ro
+      exec:
+        - |
+          sh -lc '
+            export VLAN_ID="104";
+            export IP_CIDR="172.16.4.22/24";
+            export DEF_GW="172.16.4.1";
+            export IPV6_CIDR="fd21:0:0:4::2:2/64";
+            export DEF_GW6="fd21:0:0:4::1";
+            export MTU="9000";
+            export SET_DEFAULT_ROUTE="false";
+
+            export ROUTES4="172.16.0.0/16 via 172.16.4.1";
+            export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
+
+            ls -l /scripts || true;
+            /scripts/init-bond-singlevlan-route.sh
+          '
+  links:
+    # DC Site A
+    # adc-spsw0101
+    - endpoints: ["adc-spsw0101:Ethernet1/1", "adc-lfsw0101:Ethernet1/8"]
+    - endpoints: ["adc-spsw0101:Ethernet1/2", "adc-lfsw0102:Ethernet1/8"]
+    - endpoints: ["adc-spsw0101:Ethernet1/3", "adc-lfsw0103:Ethernet1/8"]
+    - endpoints: ["adc-spsw0101:Ethernet1/4", "adc-lfsw0104:Ethernet1/8"]
+    # - endpoints: ["adc-spsw0101:Ethernet1/5", "adc-blsw0101:Ethernet1/8"] # 重複のためコメント
+    # - endpoints: ["adc-spsw0101:Ethernet1/6", "adc-blsw0102:Ethernet1/8"] # 重複のためコメント
+    # - endpoints: ["adc-spsw0101:Ethernet1/7", "adc-bgw0102:Ethernet1/8"] # 重複のためコメント
+    # - endpoints: ["adc-spsw0101:Ethernet1/8", "adc-bgw0101:Ethernet1/8"] # 重複のためコメント
+    # adc-spsw0102
+    - endpoints: ["adc-spsw0102:Ethernet1/1", "adc-lfsw0101:Ethernet1/7"]
+    - endpoints: ["adc-spsw0102:Ethernet1/2", "adc-lfsw0102:Ethernet1/7"]
+    - endpoints: ["adc-spsw0102:Ethernet1/3", "adc-lfsw0103:Ethernet1/7"]
+    - endpoints: ["adc-spsw0102:Ethernet1/4", "adc-lfsw0104:Ethernet1/7"]
+    # - endpoints: ["adc-spsw0102:Ethernet1/5", "adc-blsw0101:Ethernet1/7"] # 重複のためコメント
+    # - endpoints: ["adc-spsw0102:Ethernet1/6", "adc-blsw0102:Ethernet1/7"] # 重複のためコメント
+    # - endpoints: ["adc-spsw0102:Ethernet1/7", "adc-bgw0102:Ethernet1/7"] # 重複のためコメント
+    # - endpoints: ["adc-spsw0102:Ethernet1/8", "adc-bgw0101:Ethernet1/7"] # 重複のためコメント
+    # adc-lfsw0101
+    - endpoints: ["adc-lfsw0101:Ethernet1/1",  "adc-ctsv0101:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/2",  "adc-t1sv0101:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/3",  "adc-t2sv0101:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/4",  "adc-k01-control-plane:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/5",  "adc-k01-worker:eth1"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/6",  "adc-k02-worker2:eth1"]
+    # - endpoints: ["adc-lfsw0101:Ethernet1/7",  "adc-spsw0102:Ethernet1/1"] # 重複のためコメント
+    # - endpoints: ["adc-lfsw0101:Ethernet1/8",  "adc-spsw0101:Ethernet1/1"] # 重複のためコメント
+    - endpoints: ["adc-lfsw0101:Ethernet1/49", "adc-bgrt0101:Ethernet1/49"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/50", "adc-bgrt0101:Ethernet1/50"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/51", "adc-bgrt0101:Ethernet1/51"]
+    - endpoints: ["adc-lfsw0101:Ethernet1/52", "adc-bgrt0101:Ethernet1/52"]
+    # adc-lfsw0102
+    - endpoints: ["adc-lfsw0102:Ethernet1/1",  "adc-ctsv0101:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/2",  "adc-t1sv0101:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/3",  "adc-t2sv0101:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/4",  "adc-k01-control-plane:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/5",  "adc-k01-worker:eth2"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/6",  "adc-k02-worker2:eth2"]
+    # - endpoints: ["adc-lfsw0102:Ethernet1/7",  "adc-spsw0102:Ethernet1/2"] # 重複のためコメント
+    # - endpoints: ["adc-lfsw0102:Ethernet1/8",  "adc-spsw0101:Ethernet1/2"] # 重複のためコメント
+    - endpoints: ["adc-lfsw0102:Ethernet1/49", "adc-bgrt0102:Ethernet1/49"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/50", "adc-bgrt0102:Ethernet1/50"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/51", "adc-bgrt0102:Ethernet1/51"]
+    - endpoints: ["adc-lfsw0102:Ethernet1/52", "adc-bgrt0102:Ethernet1/52"]
+    # adc-lfsw0103
+    - endpoints: ["adc-lfsw0103:Ethernet1/1", "adc-t1sv0102:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/2", "adc-t1sv0201:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/3", "adc-t2sv0102:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/4", "adc-k01-worker2:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/5", "adc-k02-control-plane:eth1"]
+    - endpoints: ["adc-lfsw0103:Ethernet1/6", "adc-k02-worker:eth1"]
+    # - endpoints: ["adc-lfsw0103:Ethernet1/7",  "adc-spsw0102:Ethernet1/3"] # 重複のためコメント
+    # - endpoints: ["adc-lfsw0103:Ethernet1/8",  "adc-spsw0101:Ethernet1/3"] # 重複のためコメント
+    # adc-lfsw0104
+    - endpoints: ["adc-lfsw0104:Ethernet1/1", "adc-t1sv0102:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/2", "adc-t1sv0201:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/3", "adc-t2sv0102:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/4", "adc-k01-worker2:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/5", "adc-k02-control-plane:eth2"]
+    - endpoints: ["adc-lfsw0104:Ethernet1/6", "adc-k02-worker:eth2"]
+    # - endpoints: ["adc-lfsw0104:Ethernet1/7",  "adc-spsw0102:Ethernet1/4"] # 重複のためコメント
+    # - endpoints: ["adc-lfsw0104:Ethernet1/8",  "adc-spsw0101:Ethernet1/4"] # 重複のためコメント

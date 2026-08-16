@@ -1,0 +1,37 @@
+# WAN Provider
+192.168.129.161 pe01 # eos
+192.168.129.162 pe02 # eos
+192.168.129.163 pe03 # eos
+192.168.129.164 pe04 # eos
+192.168.129.170 p01  # eos
+
+# Router Server
+192.168.129.171 adc-rs0101  # nxos
+192.168.129.172 adc-rs0102  # nxos
+192.168.129.173 bdc-rs0101  # nxos
+192.168.129.174 bdc-rs0102  # nxos
+
+# DataCenter A
+192.168.129.131 adc-lfsw0101 # nxos
+192.168.129.132 adc-lfsw0102 # nxos
+192.168.129.133 adc-lfsw0103 # nxos
+192.168.129.134 adc-lfsw0104 # nxos
+192.168.129.137 adc-bgw0102  # nxos
+192.168.129.138 adc-bgw0101  # nxos
+192.168.129.139 adc-spsw0102 # nxos
+192.168.129.140 adc-spsw0101 # nxos
+192.168.129.167 adc-bgrt0101  # nxos
+192.168.129.168 adc-bgrt0102  # nxos
+
+# DataCenter B
+192.168.129.141 bdc-lfsw0101 # nxos
+192.168.129.142 bdc-lfsw0102 # nxos
+192.168.129.147 bdc-bgw0102  # nxos
+192.168.129.148 bdc-bgw0101  # nxos
+192.168.129.150 bdc-spsw0101 # nxos
+
+# DataCenter C
+192.168.129.151 cdc-l3sw0101 # eos
+192.168.129.152 cdc-l3sw0102 # eos
+192.168.129.157 cdc-bgw0102  # nxos
+192.168.129.158 cdc-bgw0101  # nxos

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sanitize Fabric Configs"
+  short_description: "Sanitize and check public lab configurations"
+  default_prompt: "Use $sanitize-fabric-configs to sanitize and validate nxos_fabric before publication."

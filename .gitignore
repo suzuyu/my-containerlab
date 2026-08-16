@@ -41,13 +41,14 @@ id_rsa*
 # bak
 *.bak
 *.old
+**/*.bak*/*
 
 # Cred
 *.cred
 *.pub
 
-# txt
-*.txt
+# # txt
+#*.txt
 
 # # tfvars
 # *.tfvars
@@ -68,6 +69,23 @@ logs
 hosts.yaml
 hosts.lab.yaml
 */samples/*
+**/samples/*
 clab_credentials.yaml
+description_rules.yaml
+mappings.yaml
+*.annotations.json
+roles.yaml
+sites.yaml
 
 .codex
+generate_as_changes.py
+standardize_nxos_management.py
+
+# Maintained multisite config generator
+!/nxos_fabric/nxos_multisite/scripts/generate_as_changes.py
+
+# operations logs
+**/operations/*
+
+# old multisite path
+/nxos_evpn_multisite/
