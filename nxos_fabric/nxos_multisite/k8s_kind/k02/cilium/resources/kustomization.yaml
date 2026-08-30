@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 10-lb-ipam.yaml
+  - 20-bgp.yaml
+  - 21-bgp-planned-shut.yaml
+  - 30-clustermesh-apiserver-service.yaml

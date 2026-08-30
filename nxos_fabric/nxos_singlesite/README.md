@@ -6,6 +6,9 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric を検証する
 
 ![構成概要1](./images/evpn-singlesite-001.png)
 
+Cilium、Hubble、Tetragonを`adc-k02`へ段階構築する計画は
+[Cilium / Hubble / Tetragon ラボ検討](../docs/cilium-lab/README.md)を参照する。
+
 - DataCenter(DC) Site は 1サイトとする
   - DC Site A
     - 通常の Fabric サイト想定用
@@ -25,7 +28,7 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric を検証する
   - containerlab 上の検証ネットワーク向けにデフォルトルートを作成して疎通試験するようにする
   - eth0 は外部からアクセス用として containerlab サーバの bridge0 へ接続する
     - 基本的には `docker exec -it [container name] bash` などでアクセスするので IP は固定してない
-- kind (kubernetes in docker) は `v1.34.3` を使用する
+- kind (Kubernetes in Docker) は Kubernetes `v1.35.5` の Node image を使用する
 
 使用するコンテナイメージ:
 
@@ -33,7 +36,7 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric を検証する
 REPOSITORY                        TAG
 vrnetlab/cisco_n9kv               10.5.4.M.lite
 ghcr.io/hellt/network-multitool   latest
-kindest/node                      v1.34.3
+kindest/node                      v1.35.5
 ```
 
 - Default User/Password
@@ -236,6 +239,12 @@ docker exec -it clab-${CLABNAME}-adc-t1sv0101 curl http://172.16.13.10
 docker exec -it clab-${CLABNAME}-adc-t1sv0101 curl -g "http://[fd21::13:0:0:1:0]/"
 ```
 
+### k02 Cilium 構築
+
+k01 の MetalLB 動作確認後、k02 は Cilium CNI、Cilium LoadBalancer、BGP Control Plane、Hubble、
+Egress Gateway、Tetragon を初期構築する。kubeconfig の準備、preflight、Helm values の生成と導入順序は
+[adc-k02 Cilium 初期構築手順](k8s_kind/k02/cilium/README.md)を参照する。
+
 ### 停止
 
 ```sh
@@ -247,3 +256,73 @@ containerlab destroy -t ${CLABNAME}.clab.yaml
 ```sh
 containerlab destroy -t ${CLABNAME}.clab.yaml -c
 ```
+
+## Appendix: kind Node の `inotify` instance 上限不足
+
+### 症状
+
+Containerlab の deploy 中に kind worker の `kubelet` が起動と crash を繰り返し、worker log に次のような
+message が記録されることがある。
+
+```text
+error creating fsnotify watcher: too many open files
+Registration of the raw container factory failed: inotify_init: too many open files
+Failed to start cAdvisor
+kubelet.service: Main process exited, status=1/FAILURE
+```
+
+このとき、`containerlab deploy` の出力では根本原因ではなく、次のような `kubeadm join` 失敗として表示される。
+時刻、cluster 名、Node 名は実行環境によって異なる。
+
+```text
+14:49:42 ERRO node "adc-k01" deploy: failed to join node with kubeadm: command "docker exec --privileged adc-k01-worker kubeadm join --config /kind/kubeadm.conf --v=6" failed with error: exit status 1
+```
+
+この `ERRO` だけでは原因を特定できないため、失敗した worker の `kubelet` log で前述の
+`inotify_init: too many open files` と cAdvisor 起動失敗があることを確認する。
+
+control-plane API への IPv4／IPv6 疎通と TLS 接続が正常な場合、この事象は DNS や kubeadm 設定ではなく、
+Containerlab host の `fs.inotify.max_user_instances` 不足を疑う。`inotify` resource は kind Node container ごとに
+分離されず host で共有されるため、多 Node 構成では Linux の既定値 `128` を使い切る場合がある。
+
+現在値は host 上で確認する。
+
+```bash
+sysctl fs.inotify.max_user_instances
+sysctl fs.inotify.max_user_watches
+```
+
+Kind 公式資料でも、多 Node cluster では `fs.inotify.max_user_instances=128` と
+`fs.inotify.max_user_watches=8192` が不足する場合があると説明されている。
+
+- [kind Known Issues: Pod errors due to too many open files](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files)
+
+### 一時対応と再実行
+
+今回確認した `max_user_instances` 不足には、Containerlab host 上で次を実行する。この変更は reboot すると失われる。
+
+```bash
+sudo sysctl -w fs.inotify.max_user_instances=512
+```
+
+設定値を確認してから single-site topology を再実行する。
+
+```bash
+sysctl fs.inotify.max_user_instances
+containerlab deploy -t nxos-fabric-singlesite.clab.yaml
+```
+
+### 永続化
+
+再起動後も維持する場合は、Containerlab host の `/etc/sysctl.d/` へ設定する。
+
+```bash
+echo 'fs.inotify.max_user_instances = 512' \
+  | sudo tee /etc/sysctl.d/99-kind.conf
+
+sudo sysctl --system
+sysctl fs.inotify.max_user_instances
+```
+
+同じ `too many open files` が継続する場合は `fs.inotify.max_user_watches` の使用状況も確認し、変更する場合は
+Kind 公式資料の推奨値と host 上の他 workload への影響を確認する。

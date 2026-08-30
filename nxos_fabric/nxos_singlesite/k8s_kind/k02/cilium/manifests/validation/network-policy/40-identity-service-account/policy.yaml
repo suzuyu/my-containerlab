@@ -1,0 +1,35 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-tiefighter-service-account-ingress
+  namespace: cilium-lab-policy
+spec:
+  endpointSelector:
+    matchLabels:
+      app: deathstar
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.cilium.k8s.policy.serviceaccount: tiefighter-sa
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-tiefighter-service-account-egress
+  namespace: cilium-lab-policy
+spec:
+  endpointSelector:
+    matchLabels:
+      io.cilium.k8s.policy.serviceaccount: tiefighter-sa
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: deathstar
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

@@ -205,7 +205,7 @@ interface Vlan105
   mtu 9216
   vrf member tenant1-vpc1
   no ip redirects
-  ip address 172.16.5.254/24
+  ip address 172.16.5.1/24
   ipv6 address fd21:0:0:5::1/64
   ipv6 link-local fe80::1
   ipv6 nd suppress-ra

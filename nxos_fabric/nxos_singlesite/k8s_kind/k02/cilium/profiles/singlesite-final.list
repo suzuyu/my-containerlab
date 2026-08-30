@@ -1,0 +1,10 @@
+# order | component | source | initial-state
+10 | Cilium Helm | cilium/values/00-base.yaml,cilium/values/10-observability.yaml,cilium/values/20-singlesite-egress.yaml | enabled
+20 | worker BGP label | ../../../../scripts/cilium-lab/configure-cilium-node-labels.sh | enabled
+30 | Service aggregate blackhole | ../../../../scripts/cilium-lab/configure-bgp-aggregate-blackhole.sh | enabled
+40 | LB IPAM | cilium/resources/10-lb-ipam.yaml | enabled
+50 | normal BGP | cilium/resources/20-bgp.yaml | enabled
+60 | planned-shut BGP profile | cilium/resources/21-bgp-planned-shut.yaml | enabled, selector inactive
+70 | Tetragon Helm | tetragon/values/00-observe-only.yaml | enabled
+# Validation workload, Egress policy, Network Policy, and TracingPolicy are not
+# part of the initial platform convergence. Apply them by Stage after acceptance.

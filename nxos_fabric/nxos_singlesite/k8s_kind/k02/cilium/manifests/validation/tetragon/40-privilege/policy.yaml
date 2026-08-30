@@ -1,0 +1,21 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicyNamespaced
+metadata:
+  name: tetragon-lab-capability
+  namespace: cilium-lab-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: tetragon-probe
+  kprobes:
+    - call: cap_capable
+      syscall: false
+      return: true
+      args:
+        - index: 1
+          type: user_namespace
+        - index: 2
+          type: capability
+      returnArg:
+        index: 0
+        type: int

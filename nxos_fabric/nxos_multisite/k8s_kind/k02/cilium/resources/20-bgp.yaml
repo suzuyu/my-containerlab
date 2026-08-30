@@ -1,0 +1,123 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k02-loadbalancer
+  labels:
+    advertise: k02
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        aggregationLengthIPv4: 26
+        aggregationLengthIPv6: 112
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          bgp-advertise: "true"
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          dci-export: clustermesh
+      attributes:
+        communities:
+          standard:
+            - "65012:510"
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: k02-direct
+spec:
+  timers:
+    connectRetryTimeSeconds: 5
+    holdTimeSeconds: 30
+    keepAliveTimeSeconds: 10
+  gracefulRestart:
+    enabled: false
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: k02
+    - afi: ipv6
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: k02
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: k02-workers
+spec:
+  nodeSelector:
+    matchLabels:
+      bgp-speaker: "true"
+    matchExpressions:
+      - key: bgp-maintenance
+        operator: DoesNotExist
+  bgpInstances:
+    - name: k02-65012
+      localASN: 65012
+      peers:
+        - name: adc-bgrt0101-ipv4
+          peerASN: 65010
+          peerAddress: 172.16.4.4
+          peerConfigRef:
+            name: k02-direct
+        - name: adc-bgrt0101-ipv6
+          peerASN: 65010
+          peerAddress: fd21:0:0:4::4
+          peerConfigRef:
+            name: k02-direct
+        - name: adc-bgrt0102-ipv4
+          peerASN: 65010
+          peerAddress: 172.16.4.5
+          peerConfigRef:
+            name: k02-direct
+        - name: adc-bgrt0102-ipv6
+          peerASN: 65010
+          peerAddress: fd21:0:0:4::5
+          peerConfigRef:
+            name: k02-direct
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPNodeConfigOverride
+metadata:
+  name: adc-k02-worker
+spec:
+  bgpInstances:
+    - name: k02-65012
+      routerID: 172.16.4.21
+      peers:
+        - name: adc-bgrt0101-ipv4
+          localAddress: 172.16.4.21
+        - name: adc-bgrt0101-ipv6
+          localAddress: fd21:0:0:4::2:1
+        - name: adc-bgrt0102-ipv4
+          localAddress: 172.16.4.21
+        - name: adc-bgrt0102-ipv6
+          localAddress: fd21:0:0:4::2:1
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPNodeConfigOverride
+metadata:
+  name: adc-k02-worker2
+spec:
+  bgpInstances:
+    - name: k02-65012
+      routerID: 172.16.4.22
+      peers:
+        - name: adc-bgrt0101-ipv4
+          localAddress: 172.16.4.22
+        - name: adc-bgrt0101-ipv6
+          localAddress: fd21:0:0:4::2:2
+        - name: adc-bgrt0102-ipv4
+          localAddress: 172.16.4.22
+        - name: adc-bgrt0102-ipv6
+          localAddress: fd21:0:0:4::2:2

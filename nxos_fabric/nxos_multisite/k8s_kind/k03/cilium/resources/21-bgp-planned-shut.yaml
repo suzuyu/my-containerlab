@@ -1,0 +1,92 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k03-loadbalancer-planned-shut
+  labels:
+    advertise: k03-planned-shut
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        aggregationLengthIPv4: 26
+        aggregationLengthIPv6: 112
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          bgp-advertise: "true"
+      attributes:
+        communities:
+          wellKnown:
+            - planned-shut
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          dci-export: clustermesh
+      attributes:
+        communities:
+          standard:
+            - "65022:510"
+          wellKnown:
+            - planned-shut
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: k03-multihop-planned-shut
+spec:
+  ebgpMultihop: 5
+  timers:
+    connectRetryTimeSeconds: 5
+    holdTimeSeconds: 30
+    keepAliveTimeSeconds: 10
+  gracefulRestart:
+    enabled: false
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: k03-planned-shut
+    - afi: ipv6
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: k03-planned-shut
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: k03-workers-planned-shut
+spec:
+  nodeSelector:
+    matchLabels:
+      bgp-speaker: "true"
+      bgp-maintenance: planned-shut
+  bgpInstances:
+    - name: k03-65022
+      localASN: 65022
+      peers:
+        - name: bdc-lfsw0101-ipv4
+          peerASN: 65020
+          peerAddress: 172.16.253.101
+          peerConfigRef:
+            name: k03-multihop-planned-shut
+        - name: bdc-lfsw0101-ipv6
+          peerASN: 65020
+          peerAddress: fd21:0:0:253::101
+          peerConfigRef:
+            name: k03-multihop-planned-shut
+        - name: bdc-lfsw0102-ipv4
+          peerASN: 65020
+          peerAddress: 172.16.253.102
+          peerConfigRef:
+            name: k03-multihop-planned-shut
+        - name: bdc-lfsw0102-ipv6
+          peerASN: 65020
+          peerAddress: fd21:0:0:253::102
+          peerConfigRef:
+            name: k03-multihop-planned-shut

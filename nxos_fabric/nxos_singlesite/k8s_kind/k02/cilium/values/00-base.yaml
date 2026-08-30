@@ -1,0 +1,80 @@
+cluster:
+  name: adc-k02
+  id: 2
+
+identityAllocationMode: crd
+
+ipv4:
+  enabled: true
+ipv6:
+  enabled: true
+
+ipam:
+  mode: kubernetes
+
+routingMode: tunnel
+tunnelProtocol: vxlan
+autoDirectNodeRoutes: false
+MTU: 9000
+
+kubeProxyReplacement: true
+
+devices: "eth0,bond0.+"
+nodePort:
+  addresses:
+    - 172.16.4.0/24
+    - fd21:0:0:4::/64
+
+enableIPv4Masquerade: true
+enableIPv6Masquerade: true
+
+bgpControlPlane:
+  enabled: true
+defaultLBServiceIPAM: none
+
+egressGateway:
+  enabled: false
+ciliumEndpointSlice:
+  enabled: false
+
+pmtuDiscovery:
+  enabled: true
+  packetizationLayerPMTUDMode: blackhole
+
+rollOutCiliumPods: true
+
+loadBalancer:
+  mode: snat
+  algorithm: random
+  acceleration: disabled
+
+bpf:
+  autoMount:
+    enabled: true
+  preallocateMaps: false
+  mapDynamicSizeRatio: 0.0025
+  masquerade: false
+  lbAlgorithmAnnotation: true
+
+l7Proxy: true
+envoy:
+  enabled: true
+  xdsMode: ads
+  rollOutPods: true
+
+policyEnforcementMode: default
+
+operator:
+  replicas: 1
+  rollOutPods: true
+
+clustermesh:
+  useAPIServer: false
+  maxConnectedClusters: 255
+  cacheTTL: 0s
+  enableEndpointSliceSynchronization: false
+  defaultGlobalNamespace: false
+  policyDefaultLocalCluster: true
+  config:
+    enabled: false
+    domain: mesh.cilium.io

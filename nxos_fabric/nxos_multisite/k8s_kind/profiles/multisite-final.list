@@ -1,0 +1,13 @@
+# order | cluster | component | source | initial-state
+10 | adc-k02 | Cilium Helm | k02/cilium/values/00-base.yaml,k02/cilium/values/10-observability.yaml,k02/cilium/values/20-multisite-clustermesh.yaml | enabled
+20 | adc-k02 | worker BGP label and aggregate blackhole | scripts/cilium-lab | enabled
+30 | adc-k02 | LB IPAM and normal/planned-shut BGP | k02/cilium/resources/10,20,21 | enabled
+40 | adc-k02 | Cluster Mesh API Service | k02/cilium/resources/30-clustermesh-apiserver-service.yaml | enabled
+50 | shared | copy and verify cilium-ca | scripts/cilium-lab/prepare-clustermesh-shared-ca.sh | required before k03 Cilium
+60 | bdc-k03 | Cilium Helm | k03/cilium/values/00-base.yaml,k03/cilium/values/10-observability.yaml,k03/cilium/values/20-multisite-clustermesh.yaml | enabled
+70 | bdc-k03 | worker BGP label and aggregate blackhole | scripts/cilium-lab | enabled
+80 | bdc-k03 | LB IPAM and normal/planned-shut BGP | k03/cilium/resources/10,20,21 | enabled
+90 | bdc-k03 | Cluster Mesh API Service | k03/cilium/resources/30-clustermesh-apiserver-service.yaml | enabled
+100 | both | Tetragon Helm | k02,k03/tetragon/values/00-observe-only.yaml | enabled
+# Egress Gateway is intentionally absent. Validation workloads and policies are
+# applied separately after platform and Cluster Mesh acceptance.

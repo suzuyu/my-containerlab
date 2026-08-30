@@ -1,0 +1,29 @@
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: k03-infra
+spec:
+  disabled: false
+  blocks:
+    - start: 172.16.15.10
+      stop: 172.16.15.19
+    - start: fd21:0:0:15:0:0:1:0
+      stop: fd21:0:0:15:0:0:1:ff
+  serviceSelector:
+    matchLabels:
+      lb-pool: infra
+---
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: k03-app
+spec:
+  disabled: false
+  blocks:
+    - start: 172.16.15.20
+      stop: 172.16.15.50
+    - start: fd21:0:0:15:0:0:1:100
+      stop: fd21:0:0:15:0:0:1:ffff
+  serviceSelector:
+    matchLabels:
+      lb-pool: app

@@ -1,0 +1,19 @@
+tetragon:
+  clusterName: bdc-k03
+  hostProcPath: /procHost
+  debug: false
+  enableK8sAPI: true
+  enablePolicyFilter: true
+  enableKeepSensorsOnExit: false
+  processCacheSize: 32768
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+tetragonOperator:
+  enabled: true
+  replicas: 1
+
+rthooks:
+  enabled: false

@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tiefighter-to-deathstar-ingress
+  namespace: cilium-lab-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: deathstar
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tiefighter
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tiefighter-to-deathstar-egress
+  namespace: cilium-lab-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: tiefighter
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: deathstar
+      ports:
+        - protocol: TCP
+          port: 8080

@@ -1,0 +1,20 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicyNamespaced
+metadata:
+  name: tetragon-lab-network
+  namespace: cilium-lab-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: tetragon-probe
+  kprobes:
+    - call: tcp_connect
+      syscall: false
+      args:
+        - index: 0
+          type: sock
+    - call: tcp_close
+      syscall: false
+      args:
+        - index: 0
+          type: sock

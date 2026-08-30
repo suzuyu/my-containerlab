@@ -5,5 +5,5 @@
 192.168.129.84 adc-lfsw0104 # nxos
 192.168.129.89 adc-spsw0102 # nxos
 192.168.129.90 adc-spsw0101 # nxos
-192.168.129.101 adc-bgrt0102 # nxos
-192.168.129.102 adc-bgrt0101 # nxos
+192.168.129.101 adc-bgrt0101 # nxos
+192.168.129.102 adc-bgrt0102 # nxos

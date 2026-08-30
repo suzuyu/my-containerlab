@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clustermesh-apiserver
+  namespace: kube-system
+  labels:
+    k8s-app: clustermesh-apiserver
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: clustermesh-apiserver
+    lb-pool: infra
+    bgp-advertise: "true"
+    dci-export: clustermesh
+  annotations:
+    lbipam.cilium.io/ips: "172.16.15.10,fd21:0:0:15:0:0:1:10"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: io.cilium/bgp-control-plane
+  ipFamilyPolicy: RequireDualStack
+  ipFamilies:
+    - IPv4
+    - IPv6
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  selector:
+    k8s-app: clustermesh-apiserver
+  ports:
+    - name: etcd-client
+      protocol: TCP
+      port: 2379
+      targetPort: 2379

@@ -205,7 +205,7 @@ interface Vlan105
   mtu 9216
   vrf member tenant1-vpc1
   no ip redirects
-  ip address 172.16.5.254/24
+  ip address 172.16.5.1/24
   ipv6 address fd21:0:0:5::1/64
   ipv6 link-local fe80::1
   ipv6 nd suppress-ra
@@ -310,7 +310,7 @@ interface port-channel14
   vpc 14
 
 interface port-channel15
-  description bdc-k03-worker0 bond0
+  description bdc-k03-worker bond0
   switchport mode trunk
   storm-control broadcast level 40.00
   storm-control multicast level 40.00
@@ -384,7 +384,7 @@ interface Ethernet1/4
   channel-group 14 mode active
 
 interface Ethernet1/5
-  description bdc-k03-worker0 eth1
+  description bdc-k03-worker eth1
   no shutdown
   lacp rate fast
   switchport mode trunk

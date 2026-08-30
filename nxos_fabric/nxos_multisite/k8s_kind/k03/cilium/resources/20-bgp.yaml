@@ -1,0 +1,124 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k03-loadbalancer
+  labels:
+    advertise: k03
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        aggregationLengthIPv4: 26
+        aggregationLengthIPv6: 112
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          bgp-advertise: "true"
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchLabels:
+          dci-export: clustermesh
+      attributes:
+        communities:
+          standard:
+            - "65022:510"
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: k03-multihop
+spec:
+  ebgpMultihop: 5
+  timers:
+    connectRetryTimeSeconds: 5
+    holdTimeSeconds: 30
+    keepAliveTimeSeconds: 10
+  gracefulRestart:
+    enabled: false
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: k03
+    - afi: ipv6
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: k03
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: k03-workers
+spec:
+  nodeSelector:
+    matchLabels:
+      bgp-speaker: "true"
+    matchExpressions:
+      - key: bgp-maintenance
+        operator: DoesNotExist
+  bgpInstances:
+    - name: k03-65022
+      localASN: 65022
+      peers:
+        - name: bdc-lfsw0101-ipv4
+          peerASN: 65020
+          peerAddress: 172.16.253.101
+          peerConfigRef:
+            name: k03-multihop
+        - name: bdc-lfsw0101-ipv6
+          peerASN: 65020
+          peerAddress: fd21:0:0:253::101
+          peerConfigRef:
+            name: k03-multihop
+        - name: bdc-lfsw0102-ipv4
+          peerASN: 65020
+          peerAddress: 172.16.253.102
+          peerConfigRef:
+            name: k03-multihop
+        - name: bdc-lfsw0102-ipv6
+          peerASN: 65020
+          peerAddress: fd21:0:0:253::102
+          peerConfigRef:
+            name: k03-multihop
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPNodeConfigOverride
+metadata:
+  name: bdc-k03-worker
+spec:
+  bgpInstances:
+    - name: k03-65022
+      routerID: 172.16.5.21
+      peers:
+        - name: bdc-lfsw0101-ipv4
+          localAddress: 172.16.5.21
+        - name: bdc-lfsw0101-ipv6
+          localAddress: fd21:0:0:5::2:1
+        - name: bdc-lfsw0102-ipv4
+          localAddress: 172.16.5.21
+        - name: bdc-lfsw0102-ipv6
+          localAddress: fd21:0:0:5::2:1
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPNodeConfigOverride
+metadata:
+  name: bdc-k03-worker2
+spec:
+  bgpInstances:
+    - name: k03-65022
+      routerID: 172.16.5.22
+      peers:
+        - name: bdc-lfsw0101-ipv4
+          localAddress: 172.16.5.22
+        - name: bdc-lfsw0101-ipv6
+          localAddress: fd21:0:0:5::2:2
+        - name: bdc-lfsw0102-ipv4
+          localAddress: 172.16.5.22
+        - name: bdc-lfsw0102-ipv6
+          localAddress: fd21:0:0:5::2:2

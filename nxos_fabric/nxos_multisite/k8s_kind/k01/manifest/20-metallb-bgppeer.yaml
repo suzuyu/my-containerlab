@@ -5,7 +5,7 @@ metadata:
   namespace: metallb-system
 spec:
   myASN: 65011
-  peerASN: 65535
+  peerASN: 65010
   peerAddress: 172.16.3.4
   ebgpMultiHop: false
   # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない
@@ -17,7 +17,7 @@ metadata:
   namespace: metallb-system
 spec:
   myASN: 65011
-  peerASN: 65535
+  peerASN: 65010
   peerAddress: fd21:0:0:3::4
   ebgpMultiHop: false
   # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない
@@ -29,7 +29,7 @@ metadata:
   namespace: metallb-system
 spec:
   myASN: 65011
-  peerASN: 65535
+  peerASN: 65010
   peerAddress: 172.16.3.5
   ebgpMultiHop: false
   # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない
@@ -41,7 +41,7 @@ metadata:
   namespace: metallb-system
 spec:
   myASN: 65011
-  peerASN: 65535
+  peerASN: 65010
   peerAddress: fd21:0:0:3::5
   ebgpMultiHop: false
   # bfdProfile: bfdprofile # BFD この環境だとはうまくいってない

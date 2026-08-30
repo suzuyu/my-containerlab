@@ -69,7 +69,9 @@ rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
 rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
 rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
 
-vlan 1,103,3501
+vlan 1,103-104,3501
+vlan 104
+  name tenant1-vpc1-k02-cluster-seg1
 
 no cdp enable
 no spanning-tree vlan 1-3967
@@ -77,6 +79,15 @@ ip prefix-list IPv4_ALL_PREFIX seq 10 permit 0.0.0.0/0 le 32
 ip prefix-list IPv4_DEFAULT-ONLY_PREFIX seq 10 permit 0.0.0.0/0
 ipv6 prefix-list IPv6_ALL_PREFIX seq 10 permit 0::/0 le 128
 ipv6 prefix-list IPv6_DEFAULT-ONLY_PREFIX seq 10 permit 0::/0
+ip prefix-list CILIUM_K02_AGG_V4 seq 10 permit 172.16.14.0/26
+ip prefix-list CILIUM_K02_LB_V4 seq 10 permit 172.16.14.10/31 eq 32
+ip prefix-list CILIUM_K02_LB_V4 seq 20 permit 172.16.14.12/30 eq 32
+ip prefix-list CILIUM_K02_LB_V4 seq 30 permit 172.16.14.16/28 eq 32
+ip prefix-list CILIUM_K02_LB_V4 seq 40 permit 172.16.14.32/28 eq 32
+ip prefix-list CILIUM_K02_LB_V4 seq 50 permit 172.16.14.48/31 eq 32
+ip prefix-list CILIUM_K02_LB_V4 seq 60 permit 172.16.14.50/32
+ipv6 prefix-list CILIUM_K02_AGG_V6 seq 10 permit fd21:0:0:14:0:0:1:0/112
+ipv6 prefix-list CILIUM_K02_LB_V6 seq 10 permit fd21:0:0:14:0:0:1:0/112 eq 128
 route-map IPv4_DEFAULT-ONLY permit 1000
   match ip address prefix-list IPv4_DEFAULT-ONLY_PREFIX
 route-map IPv4_REDISTRIBUTE_ALL permit 1000
@@ -85,6 +96,14 @@ route-map IPv6_DEFAULT-ONLY permit 1000
   match ipv6 address prefix-list IPv6_DEFAULT-ONLY_PREFIX
 route-map IPv6_REDISTRIBUTE_ALL permit 1000
   match ipv6 address prefix-list IPv6_ALL_PREFIX
+route-map CILIUM_K02_IN_V4 permit 10
+  match ip address prefix-list CILIUM_K02_AGG_V4
+route-map CILIUM_K02_IN_V4 permit 20
+  match ip address prefix-list CILIUM_K02_LB_V4
+route-map CILIUM_K02_IN_V6 permit 10
+  match ipv6 address prefix-list CILIUM_K02_AGG_V6
+route-map CILIUM_K02_IN_V6 permit 20
+  match ipv6 address prefix-list CILIUM_K02_LB_V6
 vrf context management
   ip name-server 192.168.129.254
   ip route 0.0.0.0/0 192.168.129.254
@@ -109,6 +128,16 @@ interface Vlan103
   ipv6 nd suppress-ra
   no ipv6 redirects
 
+interface Vlan104
+  no shutdown
+  mtu 9216
+  vrf member tenant1-vpc1
+  no ip redirects
+  ip address 172.16.4.4/24
+  ipv6 address fd21:0:0:4::4/64
+  ipv6 nd suppress-ra
+  no ipv6 redirects
+
 interface Vlan3501
   no shutdown
   mtu 9216
@@ -122,7 +151,7 @@ interface Vlan3501
 interface port-channel149
   description adc-lfsw0101 po149
   switchport mode trunk
-  switchport trunk allowed vlan 103
+  switchport trunk allowed vlan 103,104
   mtu 9216
 
 interface port-channel151
@@ -279,7 +308,7 @@ interface Ethernet1/49
   description adc-lfsw0101 Eth1/49
   lacp rate fast
   switchport mode trunk
-  switchport trunk allowed vlan 103
+  switchport trunk allowed vlan 103,104
   mtu 9216
   channel-group 149 mode active
 
@@ -287,7 +316,7 @@ interface Ethernet1/50
   description adc-lfsw0101 Eth1/50
   lacp rate fast
   switchport mode trunk
-  switchport trunk allowed vlan 103
+  switchport trunk allowed vlan 103,104
   mtu 9216
   channel-group 149 mode active
 
@@ -356,9 +385,10 @@ line vty
   exec-timeout 0
   access-class IPv4_ACL_VTY in
   ipv6 access-class IPv6_ACL_VTY in
-router bgp 65535
+router bgp 65010
   router-id 10.0.250.1
   log-neighbor-changes
+  graceful-shutdown aware
   vrf tenant1-vpc1
     router-id 10.0.250.1
     address-family ipv4 unicast
@@ -368,9 +398,13 @@ router bgp 65535
     neighbor fd21::1:1
       remote-as 65001
       address-family ipv6 unicast
+        route-map IPv6_DEFAULT-ONLY in
+        send-community
     neighbor 172.16.254.1
       remote-as 65001
       address-family ipv4 unicast
+        route-map IPv4_DEFAULT-ONLY in
+        send-community
     neighbor fd21:0:0:3::/64
       bfd singlehop
       remote-as 65011
@@ -385,6 +419,18 @@ router bgp 65535
         as-override
         disable-peer-as-check
         next-hop-self
+    neighbor fd21:0:0:4::/64
+      remote-as 65012
+      timers 10 30
+      address-family ipv6 unicast
+        route-map CILIUM_K02_IN_V6 in
+        maximum-prefix 64 restart 30
+    neighbor 172.16.4.0/24
+      remote-as 65012
+      timers 10 30
+      address-family ipv4 unicast
+        route-map CILIUM_K02_IN_V4 in
+        maximum-prefix 64 restart 30
 ip tcp path-mtu-discovery
 
 logging server 192.168.129.14 use-vrf management facility local0

@@ -19,7 +19,8 @@ topology:
     linux:
       image: ghcr.io/hellt/network-multitool:latest
     k8s-kind:
-      image: kindest/node:v1.34.3 # Kubernetes Version 指定
+      # k01-k02 共通 Kubernetes Node image
+      image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
   nodes:
     # A DataCenter
     ## spine
@@ -277,14 +278,16 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::1:1/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.4.11,fd21:0:0:4::1:1";
 
             export ROUTES4="172.16.0.0/16 via 172.16.4.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
     adc-k02-worker:
@@ -292,12 +295,12 @@ topology:
       binds:
         - k8s_kind/node:/scripts:ro
       env:
-        VLAN_ID: "104"
+        VLAN_ID: "14"
         IP_CIDR: "172.16.4.21/24"
         DEF_GW: "172.16.4.1"
         IPV6_CIDR: "fd21:0:0:4::2:1/64"
         DEF_GW6: "fd21:0:0:4::1"
-        MTU: "9000"
+        MTU: "9100"
         SET_DEFAULT_ROUTE: "false"
       exec:
         - |
@@ -307,14 +310,16 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::2:1/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.4.21,fd21:0:0:4::2:1";
 
             export ROUTES4="172.16.0.0/16 via 172.16.4.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
     adc-k02-worker2:
@@ -329,14 +334,16 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::2:2/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.4.22,fd21:0:0:4::2:2";
 
             export ROUTES4="172.16.0.0/16 via 172.16.4.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
   links:
     # DC Site A

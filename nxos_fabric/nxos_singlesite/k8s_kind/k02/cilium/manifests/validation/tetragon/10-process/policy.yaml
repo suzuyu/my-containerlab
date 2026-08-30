@@ -1,0 +1,27 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicyNamespaced
+metadata:
+  name: tetragon-lab-process-exec
+  namespace: cilium-lab-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: tetragon-probe
+  lists:
+    - name: exec-syscalls
+      type: syscalls
+      values:
+        - sys_execve
+        - sys_execveat
+  tracepoints:
+    - subsystem: raw_syscalls
+      event: sys_enter
+      args:
+        - index: 4
+          type: uint64
+      selectors:
+        - matchArgs:
+            - index: 0
+              operator: InMap
+              values:
+                - list:exec-syscalls

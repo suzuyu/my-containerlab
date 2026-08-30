@@ -1,0 +1,39 @@
+apiVersion: cilium.io/v2
+kind: CiliumEgressGatewayPolicy
+metadata:
+  name: egress-probe-ipv4
+spec:
+  selectors:
+    - podSelector:
+        matchLabels:
+          io.kubernetes.pod.namespace: egress-probe
+          lab.cilium.io/egress-policy: selected
+  destinationCIDRs:
+    - 172.16.0.0/24
+  excludedCIDRs:
+    - 172.16.0.1/32
+  egressGateway:
+    nodeSelector:
+      matchLabels:
+        kubernetes.io/hostname: adc-k02-worker
+    egressIP: 172.16.4.31
+---
+apiVersion: cilium.io/v2
+kind: CiliumEgressGatewayPolicy
+metadata:
+  name: egress-probe-ipv6
+spec:
+  selectors:
+    - podSelector:
+        matchLabels:
+          io.kubernetes.pod.namespace: egress-probe
+          lab.cilium.io/egress-policy: selected
+  destinationCIDRs:
+    - fd21:0:0:1::/64
+  excludedCIDRs:
+    - fd21:0:0:1::101/128
+  egressGateway:
+    nodeSelector:
+      matchLabels:
+        kubernetes.io/hostname: adc-k02-worker
+    egressIP: fd21:0:0:4::3:1

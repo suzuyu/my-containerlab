@@ -1,0 +1,47 @@
+hubble:
+  enabled: true
+  eventBufferCapacity: "4095"
+  metrics:
+    enabled: null
+    dynamic:
+      enabled: true
+      config:
+        createConfigMap: true
+        content:
+          - name: dns
+            contextOptions: []
+            includeFilters: []
+            excludeFilters: []
+          - name: drop
+            contextOptions: []
+            includeFilters: []
+            excludeFilters: []
+          - name: tcp
+            contextOptions: []
+            includeFilters: []
+            excludeFilters: []
+          - name: flow
+            contextOptions: []
+            includeFilters: []
+            excludeFilters: []
+          - name: icmp
+            contextOptions: []
+            includeFilters: []
+            excludeFilters: []
+  redact:
+    enabled: false
+  tls:
+    enabled: true
+    auto:
+      enabled: true
+      method: cronJob
+      certValidityDuration: 365
+      schedule: "0 0 1 */4 *"
+  relay:
+    enabled: true
+    replicas: 1
+    rollOutPods: true
+  ui:
+    enabled: true
+    replicas: 1
+    rollOutPods: true

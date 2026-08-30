@@ -1,0 +1,39 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-tiefighter-deathstar-http
+  namespace: cilium-lab-policy
+spec:
+  endpointSelector:
+    matchLabels:
+      app: deathstar
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: tiefighter
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+          rules:
+            http:
+              - method: POST
+                path: /v1/request-landing
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-tiefighter-deathstar-egress
+  namespace: cilium-lab-policy
+spec:
+  endpointSelector:
+    matchLabels:
+      app: tiefighter
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: deathstar
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

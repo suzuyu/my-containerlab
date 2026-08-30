@@ -329,7 +329,7 @@ interface port-channel14
   vpc 14
 
 interface port-channel15
-  description adc-k01-worker0 bond0
+  description adc-k01-worker bond0
   switchport mode trunk
   storm-control broadcast level 40.00
   storm-control action shutdown
@@ -338,6 +338,7 @@ interface port-channel15
 interface port-channel16
   description adc-k02-worker2 bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 16
@@ -345,7 +346,7 @@ interface port-channel16
 interface port-channel149
   description adc-bgrt0101 po149
   switchport mode trunk
-  switchport trunk allowed vlan 103
+  switchport trunk allowed vlan 103,104
   mtu 9216
   vpc orphan-port suspend
 
@@ -376,6 +377,7 @@ interface Ethernet1/1
   description adc-ctsv0101 ens2
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 11 mode active
@@ -384,6 +386,7 @@ interface Ethernet1/2
   description adc-t1sv0101 ens2
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 12 mode active
@@ -392,6 +395,7 @@ interface Ethernet1/3
   description adc-t2sv0101 ens2
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 13 mode active
@@ -400,14 +404,16 @@ interface Ethernet1/4
   description adc-k01-control-plane eth1
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 14 mode active
 
 interface Ethernet1/5
-  description adc-k01-worker0 eth1
+  description adc-k01-worker eth1
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 15 mode active
@@ -416,6 +422,7 @@ interface Ethernet1/6
   description adc-k02-worker2 eth1
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 16 mode active
@@ -566,7 +573,7 @@ interface Ethernet1/49
   description adc-bgrt0101 Eth1/49
   lacp rate fast
   switchport mode trunk
-  switchport trunk allowed vlan 103
+  switchport trunk allowed vlan 103,104
   mtu 9216
   channel-group 149 mode active
 
@@ -574,7 +581,7 @@ interface Ethernet1/50
   description adc-bgrt0101 Eth1/50
   lacp rate fast
   switchport mode trunk
-  switchport trunk allowed vlan 103
+  switchport trunk allowed vlan 103,104
   mtu 9216
   channel-group 149 mode active
 
@@ -657,6 +664,7 @@ router ospf UNDERLAY
 router bgp 65001
   router-id 10.0.0.1
   log-neighbor-changes
+  graceful-shutdown aware
   address-family l2vpn evpn
     advertise-pip
   template peer IBGP_RR_PEER
@@ -688,15 +696,17 @@ router bgp 65001
       redistribute static route-map IPv6_REDISTRIBUTE_ALL
       maximum-paths ibgp 4
     neighbor fd21::1:0
-      remote-as 65535
+      remote-as 65010
       address-family ipv6 unicast
         route-map IPv6_DEFAULT-ONLY out
         default-originate
+        send-community
     neighbor 172.16.254.0
-      remote-as 65535
+      remote-as 65010
       address-family ipv4 unicast
         route-map IPv4_DEFAULT-ONLY out
         default-originate
+        send-community
   vrf tenant2-vpc1
     address-family ipv4 unicast
       redistribute direct route-map IPv4_REDISTRIBUTE_ALL

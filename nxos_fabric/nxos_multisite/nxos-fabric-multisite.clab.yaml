@@ -26,7 +26,8 @@ topology:
     linux:
       image: ghcr.io/hellt/network-multitool:latest
     k8s-kind:
-      image: kindest/node:v1.34.3 # Kubernetes Version 指定
+      # k01-k03 共通 Kubernetes Node image
+      image: kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95
   nodes:
     # wan
     ## p
@@ -395,8 +396,10 @@ topology:
             wait: 0s
     adc-k01-control-plane:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k01.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       exec:
         - |
           sh -lc '
@@ -417,8 +420,10 @@ topology:
 
     adc-k01-worker:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k01.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       env:
         VLAN_ID: "103"
         IP_CIDR: "172.16.3.21/24"
@@ -447,8 +452,10 @@ topology:
 
     adc-k01-worker2:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k01.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       exec:
         - |
           sh -lc '
@@ -479,8 +486,10 @@ topology:
             wait: 0s
     adc-k02-control-plane:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k02.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       exec:
         - |
           sh -lc '
@@ -489,27 +498,31 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::1:1/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.4.11,fd21:0:0:4::1:1";
 
             export ROUTES4="172.16.0.0/16 via 172.16.4.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
     adc-k02-worker:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k02.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       env:
-        VLAN_ID: "104"
+        VLAN_ID: "14"
         IP_CIDR: "172.16.4.21/24"
         DEF_GW: "172.16.4.1"
         IPV6_CIDR: "fd21:0:0:4::2:1/64"
         DEF_GW6: "fd21:0:0:4::1"
-        MTU: "9000"
+        MTU: "9100"
         SET_DEFAULT_ROUTE: "false"
       exec:
         - |
@@ -519,20 +532,24 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::2:1/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.4.21,fd21:0:0:4::2:1";
 
             export ROUTES4="172.16.0.0/16 via 172.16.4.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
     adc-k02-worker2:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k02.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       exec:
         - |
           sh -lc '
@@ -541,14 +558,16 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::2:2/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.4.22,fd21:0:0:4::2:2";
 
             export ROUTES4="172.16.0.0/16 via 172.16.4.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:4::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
 # k8s cluster kind k03
@@ -563,37 +582,43 @@ topology:
             wait: 0s
     bdc-k03-control-plane:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k03.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       exec:
         - |
           sh -lc '
-            export VLAN_ID="14";
+            export VLAN_ID="105";
             export IP_CIDR="172.16.5.11/24";
             export DEF_GW="172.16.5.1";
             export IPV6_CIDR="fd21:0:0:5::1:1/64";
             export DEF_GW6="fd21:0:0:5::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.5.11,fd21:0:0:5::1:1";
 
             export ROUTES4="172.16.0.0/16 via 172.16.5.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:5::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
     bdc-k03-worker:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k03.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       env:
         VLAN_ID: "105"
         IP_CIDR: "172.16.5.21/24"
         DEF_GW: "172.16.5.1"
         IPV6_CIDR: "fd21:0:0:5::2:1/64"
         DEF_GW6: "fd21:0:0:5::1"
-        MTU: "9000"
+        MTU: "9100"
         SET_DEFAULT_ROUTE: "false"
       exec:
         - |
@@ -603,20 +628,24 @@ topology:
             export DEF_GW="172.16.5.1";
             export IPV6_CIDR="fd21:0:0:5::2:1/64";
             export DEF_GW6="fd21:0:0:5::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.5.21,fd21:0:0:5::2:1";
 
             export ROUTES4="172.16.0.0/16 via 172.16.5.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:5::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
     bdc-k03-worker2:
       kind: ext-container
-      binds:
-        - k8s_kind/node:/scripts:ro
+      # ext-container では既存コンテナへ bind mount を追加できない。
+      # /scripts は k03.kind.yaml の extraMounts で定義する。
+      # binds:
+      #   - k8s_kind/node:/scripts:ro
       exec:
         - |
           sh -lc '
@@ -625,14 +654,16 @@ topology:
             export DEF_GW="172.16.5.1";
             export IPV6_CIDR="fd21:0:0:5::2:2/64";
             export DEF_GW6="fd21:0:0:5::1";
-            export MTU="9000";
+            export MTU="9100";
             export SET_DEFAULT_ROUTE="false";
+            export KUBELET_NODE_IP="172.16.5.22,fd21:0:0:5::2:2";
 
             export ROUTES4="172.16.0.0/16 via 172.16.5.1";
             export ROUTES6="fd21:0:0::/48 via fd21:0:0:5::1";
 
             ls -l /scripts || true;
-            /scripts/init-bond-singlevlan-route.sh
+            /scripts/init-bond-singlevlan-route.sh;
+            /cilium-lab-scripts/configure-kubelet-node-ip.sh
           '
 
   links:

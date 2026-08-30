@@ -1,0 +1,8 @@
+bpf:
+  masquerade: true
+
+egressGateway:
+  enabled: true
+
+ciliumEndpointSlice:
+  enabled: false

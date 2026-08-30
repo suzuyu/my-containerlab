@@ -327,22 +327,24 @@ interface port-channel13
   vpc 13
 
 interface port-channel14
-  description adc-k01-worker1 bond0
+  description adc-k01-worker2 bond0
   switchport mode trunk
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 14
 
 interface port-channel15
-  description adc-k01-worker0 bond0
+  description adc-k02-control-plane bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 15
 
 interface port-channel16
-  description adc-k02-worker2 bond0
+  description adc-k02-worker bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 16
@@ -400,14 +402,16 @@ interface Ethernet1/5
   description adc-k02-control-plane eth1
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 15 mode active
 
 interface Ethernet1/6
-  description adc-k02-worker0 eth1
+  description adc-k02-worker eth1
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 16 mode active

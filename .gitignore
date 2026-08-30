@@ -87,5 +87,14 @@ standardize_nxos_management.py
 # operations logs
 **/operations/*
 
+# Cilium lab client runtime (downloaded binaries and kubeconfigs)
+/nxos_fabric/nxos_singlesite/k8s_kind/client/runtime/
+/nxos_fabric/nxos_multisite/k8s_kind/client/runtime/
+
+# Cilium lab generated Helm values
+/nxos_fabric/nxos_singlesite/k8s_kind/k02/cilium/runtime/
+/nxos_fabric/nxos_multisite/k8s_kind/k02/cilium/runtime/
+/nxos_fabric/nxos_multisite/k8s_kind/k03/cilium/runtime/
+
 # old multisite path
 /nxos_evpn_multisite/

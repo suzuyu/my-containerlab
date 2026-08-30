@@ -1,22 +1,57 @@
-# https://kind.sigs.k8s.io/docs/user/configuration/#nodes
+# https://kind.sigs.k8s.io/docs/user/configuration/
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   ipFamily: dual
-  disableDefaultCNI: true # https://docs.cilium.io/en/latest/installation/kind/#configure-kind
+  disableDefaultCNI: true
+  kubeProxyMode: none
+  podSubnet: "10.203.0.0/16,fd00:10:203::/56"
+  serviceSubnet: "10.103.0.0/16,fd00:10:103::/112"
 nodes:
   - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        apiVersion: kubeadm.k8s.io/v1beta4
+        kind: ClusterConfiguration
+        apiServer:
+          certSANs:
+            - 172.16.5.11
+            - fd21:0:0:5::1:1
+        controllerManager:
+          extraArgs:
+            - name: node-cidr-mask-size-ipv4
+              value: "24"
+            - name: node-cidr-mask-size-ipv6
+              value: "64"
     extraMounts:
       - hostPath: k8s_kind/node
         containerPath: /scripts
+        readOnly: true
+      - hostPath: ../scripts/cilium-lab
+        containerPath: /cilium-lab-scripts
+        readOnly: true
+      - hostPath: /proc
+        containerPath: /procHost
         readOnly: true
   - role: worker
     extraMounts:
       - hostPath: k8s_kind/node
         containerPath: /scripts
         readOnly: true
+      - hostPath: ../scripts/cilium-lab
+        containerPath: /cilium-lab-scripts
+        readOnly: true
+      - hostPath: /proc
+        containerPath: /procHost
+        readOnly: true
   - role: worker
     extraMounts:
       - hostPath: k8s_kind/node
         containerPath: /scripts
+        readOnly: true
+      - hostPath: ../scripts/cilium-lab
+        containerPath: /cilium-lab-scripts
+        readOnly: true
+      - hostPath: /proc
+        containerPath: /procHost
         readOnly: true
