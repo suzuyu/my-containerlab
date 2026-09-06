@@ -111,6 +111,43 @@ ipv6 prefix-list IPv6_IMPORT_LEAK_FILTER_PREFIX_controller-vpc1 seq 20 permit fd
 ip extcommunity-list expanded IMPORT_LEAK_FILTER_contoller-vpc1 seq 10 permit "65002:9001"
 route-map IPv4_DEFAULT-ONLY permit 1000
   match ip address prefix-list IPv4_DEFAULT-ONLY_PREFIX
+ip prefix-list CILIUM_K03_AGG_V4 seq 10 permit 172.16.15.0/26
+ipv6 prefix-list CILIUM_K03_AGG_V6 seq 10 permit fd21:0:0:15:0:0:1:0/112
+ip prefix-list CILIUM_K03_LB_V4 seq 10 permit 172.16.15.10/31 eq 32
+ip prefix-list CILIUM_K03_LB_V4 seq 20 permit 172.16.15.12/30 eq 32
+ip prefix-list CILIUM_K03_LB_V4 seq 30 permit 172.16.15.16/28 eq 32
+ip prefix-list CILIUM_K03_LB_V4 seq 40 permit 172.16.15.32/28 eq 32
+ip prefix-list CILIUM_K03_LB_V4 seq 50 permit 172.16.15.48/31 eq 32
+ip prefix-list CILIUM_K03_LB_V4 seq 60 permit 172.16.15.50/32
+ipv6 prefix-list CILIUM_K03_LB_V6 seq 10 permit fd21:0:0:15:0:0:1:0/112 eq 128
+ip prefix-list CILIUM_K03_EGRESS_V4 seq 5 permit 172.16.25.0/24 le 32
+ipv6 prefix-list CILIUM_K03_EGRESS_V6 seq 5 permit fd21:0:0:25::/64 le 128
+route-map CILIUM_K03_IN_V4 permit 10
+  match ip address prefix-list CILIUM_K03_AGG_V4
+route-map CILIUM_K03_IN_V4 permit 20
+  match ip address prefix-list CILIUM_K03_LB_V4
+route-map CILIUM_K03_IN_V4 permit 30
+  match ip address prefix-list CILIUM_K03_EGRESS_V4
+route-map CILIUM_K03_IN_V6 permit 10
+  match ipv6 address prefix-list CILIUM_K03_AGG_V6
+route-map CILIUM_K03_IN_V6 permit 20
+  match ipv6 address prefix-list CILIUM_K03_LB_V6
+route-map CILIUM_K03_IN_V6 permit 30
+  match ipv6 address prefix-list CILIUM_K03_EGRESS_V6
+ip prefix-list CILIUM_K03_ENDPOINTS_V4 seq 10 permit 172.16.253.101/32
+ip prefix-list CILIUM_K03_ENDPOINTS_V4 seq 20 permit 172.16.253.102/32
+route-map CILIUM_K03_DIRECT_V4 permit 10
+  match ip address prefix-list CILIUM_K03_ENDPOINTS_V4
+  set community no-export additive
+route-map CILIUM_K03_DIRECT_V4 permit 1000
+  match ip address prefix-list IPv4_ALL_PREFIX
+ipv6 prefix-list CILIUM_K03_ENDPOINTS_V6 seq 10 permit fd21:0:0:253::101/128
+ipv6 prefix-list CILIUM_K03_ENDPOINTS_V6 seq 20 permit fd21:0:0:253::102/128
+route-map CILIUM_K03_DIRECT_V6 permit 10
+  match ipv6 address prefix-list CILIUM_K03_ENDPOINTS_V6
+  set community no-export additive
+route-map CILIUM_K03_DIRECT_V6 permit 1000
+  match ipv6 address prefix-list IPv6_ALL_PREFIX
 route-map IPv4_IMPORT_MAP_controller-vpc1 permit 10
   match extcommunity IMPORT_LEAK_FILTER_contoller-vpc1
 route-map IPv4_IMPORT_MAP_controller-vpc1 permit 20
@@ -609,6 +646,11 @@ interface loopback1
   ip address 10.1.1.2/32
   ip address 10.1.2.1/32 secondary
   ip router ospf UNDERLAY area 0.0.0.0
+interface loopback105
+  description Cilium k03 BGP endpoint
+  vrf member tenant1-vpc1
+  ip address 172.16.253.102/32
+  ipv6 address fd21:0:0:253::102/128
 line console
   exec-timeout 0
 line vty
@@ -646,12 +688,57 @@ router bgp 65002
       maximum-paths ibgp 4
   vrf tenant1-vpc1
     address-family ipv4 unicast
-      redistribute direct route-map IPv4_REDISTRIBUTE_ALL
+      maximum-paths 4
+      aggregate-address 172.16.25.0/24
+      redistribute direct route-map CILIUM_K03_DIRECT_V4
       redistribute static route-map IPv4_REDISTRIBUTE_ALL
       maximum-paths ibgp 4
     address-family ipv6 unicast
-      redistribute direct route-map IPv6_REDISTRIBUTE_ALL
+      maximum-paths ibgp 4
+      maximum-paths 4
+      aggregate-address fd21:0:0:25::/64
+      redistribute direct route-map CILIUM_K03_DIRECT_V6
       redistribute static route-map IPv6_REDISTRIBUTE_ALL
+    neighbor 172.16.5.21
+      remote-as 65022
+      local-as 65020 no-prepend replace-as
+      update-source loopback105
+      ebgp-multihop 5
+      timers 10 30
+      address-family ipv4 unicast
+        route-map CILIUM_K03_IN_V4 in
+        maximum-prefix 64 restart 30
+        send-community
+    neighbor 172.16.5.22
+      remote-as 65022
+      local-as 65020 no-prepend replace-as
+      update-source loopback105
+      ebgp-multihop 5
+      timers 10 30
+      address-family ipv4 unicast
+        route-map CILIUM_K03_IN_V4 in
+        maximum-prefix 64 restart 30
+        send-community
+    neighbor fd21:0:0:5::2:1
+      remote-as 65022
+      local-as 65020 no-prepend replace-as
+      update-source loopback105
+      ebgp-multihop 5
+      timers 10 30
+      address-family ipv6 unicast
+        route-map CILIUM_K03_IN_V6 in
+        maximum-prefix 64 restart 30
+        send-community
+    neighbor fd21:0:0:5::2:2
+      remote-as 65022
+      local-as 65020 no-prepend replace-as
+      update-source loopback105
+      ebgp-multihop 5
+      timers 10 30
+      address-family ipv6 unicast
+        route-map CILIUM_K03_IN_V6 in
+        maximum-prefix 64 restart 30
+        send-community
   vrf tenant2-vpc1
     address-family ipv4 unicast
       redistribute direct route-map IPv4_REDISTRIBUTE_ALL

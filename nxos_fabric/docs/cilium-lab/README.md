@@ -31,9 +31,17 @@
 14. [Fabric 側 Kubernetes client と CLI 準備](client-tools.md)
 15. [段階的な構築計画](build-plan.md)
 16. [Stage 成果物台帳](stage-artifact-inventory.md)
-17. [2026-08-30 single-site k02 検証スナップショット](validation-status-2026-08-30.md)
+17. [2026-09-06 single-site k02 検証ステータス](validation-status-2026-09-06.md)（[2026-08-30 の履歴](validation-status-2026-08-30.md)）
 18. [試験課題台帳](test-issue-register.md)
 19. [参照 URL 台帳](references.md)
+
+Egress Gateway の実施時は [構築・試験手順](egress-gateway-test-plan.md) を使用する。
+今回の接続先・配置パス・転送運用は [実際の試験環境：single-site k02](execution-environment-singlesite-k02.md) に分離し、
+別環境へ流用するときは環境メモの設定値を置き換える。
+
+connectivity 試験の検証用 CLI を再作成する場合は、
+[公式ソース取得・修正パッチ適用・ビルド手順](cli-lab-flowfix-build.md) を使用する。
+`v0.19.7-lab-flowfix.3` の修正コード、適用前後のハッシュ、変更範囲と判定上の制約を同梱する。
 
 設計確認後に single-site の k02 を実際に構築する場合は、
 [adc-k02 Cilium 初期構築手順](../../nxos_singlesite/k8s_kind/k02/cilium/README.md)に従う。
@@ -43,15 +51,19 @@
 ## 現在の位置付け
 
 - 状態: `Single-site validation in progress`
-- 最終更新: 2026-08-30
+- 試験記録日: 2026-09-06（2026-09-07 未明の MTU 再試験を含めて整理）
 - single-site `adc-k02` は Kubernetes `v1.35.5`、Cilium `v1.20.1`、Hubble、Tetragon `v1.7.0` の
   初期構築を完了した
-- LB IPAM／BGP の基本通信と Network Policy `NP-00`～`NP-07` は合格した。Service 冗長性は
-  `TI-001`／`TI-002`、Tetragon 本試験は `TG-00`～`TG-08` として継続する
-- 2026-08-30 終了時点の適用範囲、判定、runtime 差分、次回再開点は
-  [検証スナップショット](validation-status-2026-08-30.md)を正本とする
-- multisite `adc-k02`／`bdc-k03` の Cluster Mesh と、single-site の Egress Gateway は未実施である
+- LB／BGP 基本通信、Network Policy `NP-00`～`NP-07`、Tetragon `TG-00`～`TG-08` の定義した観測範囲を確認した。
+  IPv6 Cluster LB は checksum 回避策ありの条件付き合格。TG の一部原本・転送ハッシュには確認範囲の制約が残る
+- single-site Egress は基本機能、除外・対象外、異常設定時の拒否、計画切替、MTU 修正後のサイズ境界が成功。
+  高負荷性能、SNAT 枯渇、全体 connectivity 再受入、Fabric 経路設計と実測の差分は未完了
+- 最新の適用範囲・判定・残課題は [2026-09-06 検証ステータス](validation-status-2026-09-06.md) を正本とする。
+  [2026-08-30 のスナップショット](validation-status-2026-08-30.md) は当時の履歴として保持する
+- multisite `adc-k02`／`bdc-k03` は config／manifest の静的確認まで。Cluster Mesh と DCI の実測は未実施である
 - ADC Leaf 4 台の k02 Node-facing MTU／description 修正は startup-config へ保存済みである
+- 追加の server 向け Leaf0103／0104 Po11 MTU 9216 は running-config と保存 config に反映済み。
+  この追加変更の startup-config 保存は未実施であり、上記 Node-facing の保存履歴とは分ける
 - 確定した設計値と segment 内の host assignment は
   [パラメータ・アドレス割り当て台帳](parameter-and-address-allocation.md)で管理する
 - 実行時取得値、image digest、後続 Stage の BGP policy は該当する構築段階で確定する
@@ -144,3 +156,5 @@ Cilium 設定パラメータを追加・変更するときは、
 [Cilium 設定パラメータ設計](cilium-configuration-parameters.md)の一覧表と項目別の節を同時に更新する。
 項目別の節には、項目の意味、選択肢、採用 Cilium version の既定値、本ラボでの初期設定、選定理由、後からの変更可否、
 変更方法、変更時の影響と確認事項を記録する。
+
+Egress のアドレス割当と個別経路は [Egress 専用 IP・BGP 経路設計](egress-gateway-routed-design.md) を参照する。

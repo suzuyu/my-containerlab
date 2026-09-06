@@ -1,0 +1,8 @@
+0707b688147f8a5eb339f135d4ba87a856214e3c5b82bb38235e5db87c1d0a3e  go.mod
+a3c848d684d1af45e89ac6f385d88475ac73df05b50c523c6fd8ae5769a69dd5  go.sum
+96a7f14fff90ed5214839621d6a720727d636b77324ddb977fa85288ac507604  vendor/github.com/cilium/cilium/cilium-cli/connectivity/builder/to_fqdns.go
+46dec595b2eb7b4e85419ca9214ebeb06975cc2c201bb6a2b8e76c7bf181b6ca  vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/action.go
+613ed5edd159dd0052c62fd38e6d867bab7d817b17322530b0ab8118998d53b0  vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/check.go
+2bec0c9aecc1bfaec774a22cb5f7e0d4a9707ca83fb06dcee08ad4ca62f7be3f  vendor/github.com/cilium/cilium/cilium-cli/connectivity/filters/filters.go
+5c23f7fd115a450e71a57d106765921aef0ed7628059b5106453052add522837  vendor/github.com/cilium/cilium/cilium-cli/connectivity/tests/service.go
+679e7d43f3fd07b8f645d8e5ae81bb76ff9f44d8b70db704ff86c934872e7694  vendor/modules.txt

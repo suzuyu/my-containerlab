@@ -6,6 +6,9 @@
 作成状態を管理する。`Created` は実ファイルの作成と offline render が完了したことを意味し、
 稼働環境での apply／合格を意味しない。実行結果が合格した成果物だけを `Validated` とする。
 
+最新の判定は [2026-09-06 検証ステータス](validation-status-2026-09-06.md) を参照する。
+表の `Validated (single-site)` は記載した機能・条件だけの確認であり、multisite や障害・性能試験全体の合格を意味しない。
+
 ## 2. Stage 別成果物
 
 | Stage | 成果物 | 実ファイル／文書 | 状態 |
@@ -30,9 +33,15 @@
 | Stage 2A | single-site LB／BGP 実行手順 | single-site `cilium/manifests/validation/lab-smoke/README.md` | `Created` |
 | Stage 2A | NX-OS 設計／確認手順 | `bgp-config-change-proposal.md`、`bgp-route-aggregation-design.md`、`bgp-maintenance-and-route-drain.md` | `Created` |
 | Stage 2B | Egress feature values | single-site `cilium/values/20-singlesite-egress.yaml` | `Created` |
-| Stage 2B | Egress secondary address | `scripts/cilium-lab/configure-egress-gateway-addresses.sh` | `Created` |
+| Stage 2B | Egress dummy interface／host address | `scripts/cilium-lab/configure-egress-gateway-addresses.sh` | `Validated (single-site)`：適用・確認・撤去 |
+| Stage 2B | Egress 専用 IP・BGP 設計 | [設計](egress-gateway-routed-design.md)、各 cluster の `validation/egress/bgp/` | `Validated (single-site)`：個別経路・集約併存・撤回。multisite は静的確認まで |
+| Stage 2B | NX-OS Egress 受信 filter | 各 topology の基本 config と `configs/changes/cilium-stage2b/` | `Validated (single-site)`：常設化・範囲統一。multisite は未投入 |
 | Stage 2B | probe workload | single-site `cilium/manifests/validation/egress/base/` | `Created` |
 | Stage 2B | `gw-a`／`gw-b` Policy | single-site `cilium/manifests/validation/egress/gw-a/`、`gw-b/` | `Created` |
+| Stage 2B | 構築・試験手順 | [Egress Gateway 構築・試験手順](egress-gateway-test-plan.md) | `Created`：実測結果・端末別コマンド・構成図を反映。保留項目は最新ステータス参照 |
+| Stage 1／2B | checksum 互換設定・監視 | `checksum-compat.py`、`install-checksum-monitor.py`、[運用手順](checksum-compat-operations.md) | `Validated (single-site)`：設定ずれ修復・Cilium Pod 再作成。Node 再起動は未実施 |
+| Stage 1 | 検証用 CLI 修正・再ビルド | [CLI ビルド手順](cli-lab-flowfix-build.md)、`cli-lab-flowfix/` | `Validated (single-site)`：限定 114 actions。公式版・全体合格とは区別 |
+| Stage 2B | サイズ境界・負荷測定 source | `scripts/cilium-lab/egress-probe.go` | `Created`：測定用ツール。終了コードだけで受入判定しない |
 | Stage 2B | 手動 failover／外部観測手順 | `test-workloads.md`、`build-plan.md` Stage 2B | `Created` |
 | Stage 3 | Network Policy workload | single-site `cilium/manifests/validation/network-policy/base/` | `Created` |
 | Stage 3 | default-deny／DNS／L3-L4／identity／FQDN／HTTP layer | single-site `cilium/manifests/validation/network-policy/10-*`～`60-*` | `Created` |

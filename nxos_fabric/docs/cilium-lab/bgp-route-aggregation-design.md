@@ -19,6 +19,10 @@
 したがって、設計 status は `Ready` とする。構築後に blackhole route、割り当て済み VIP、未割り当て VIP、
 withdraw、rollback が合格した時点で `Validated` とする。
 
+Egress IP はこの Service 集約の対象にしない。k02 の `172.16.24.0/24` と k03 の `172.16.25.0/24`、
+対応する IPv6 専用範囲から `/32`／`/128` を割り当て、所有 Node から個別広報する。
+[Egress の経路設計](egress-gateway-routed-design.md)に従い、LB 集約の blackhole route と分離する。
+
 ## 2. 前提と候補プレフィックス
 
 Cilium BGP Control Plane は、既定では Service VIP を exact `/32`／`/128` で広告する。

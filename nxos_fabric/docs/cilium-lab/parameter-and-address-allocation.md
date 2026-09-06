@@ -204,16 +204,31 @@ IPv6 infra pool の `:0-:f` は初期用途なしの管理予約とする。
 
 ## 5. Egress Gateway
 
+専用の routed IP 設計へ変更する。詳細は [Egress IP・BGP 経路設計](egress-gateway-routed-design.md) を参照する。
+以下は設計上の予約であり、Node／NX-OS への適用済みを意味しない。
+
+| Cluster | IPv4 予約範囲 | IPv6 予約範囲 | Gateway A | Gateway B | 状態 |
+|---|---|---|---|---|---|
+| k02 | `172.16.24.0/24` | `fd21:0:0:24::/64` | `.1/32`／`::1/128` | `.2/32`／`::2/128` | `Reserved` |
+| k03 | `172.16.25.0/24` | `fd21:0:0:25::/64` | `.1/32`／`::1/128` | `.2/32`／`::2/128` | `Reserved`（実験 profile 用） |
+
+IPv4 の `.0`／`.255` と IPv6 の `::` は管理上未使用、`.3-.254`／`::3` 以降は将来用とし、LB IPAM に含めない。
+各 Node は `/32`／`/128` を使用・広報し、新しい VLAN／SVI は作成しない。
+NX-OS の BGP 終端では Egress 専用 `/24`／`/64` 集約も生成し、個別経路と併存させる。
+`summary-only` は未採用。single-site の適用・撤回は確認済みで、試験終了後の Node IP は撤去して予約を維持する。
+k03 の所有者は `bdc-k03-worker`／`bdc-k03-worker2` とし、導入時に稼働環境でも重複を再確認する。
+
 | Parameter | Assigned value | 状態 |
 |---|---|---|
 | Initial cluster | `adc-k02` | `Assigned` |
 | Gateway Node A | `adc-k02-worker` | `Assigned` |
 | Gateway Node A profile | `egress/gw-a`、初期選択 | `Assigned` |
-| Gateway Node A IPv4／IPv6 | `172.16.4.31/24`／`fd21:0:0:4::3:1/64` | `Assigned` |
+| Gateway Node A IPv4／IPv6 | `172.16.24.1/32`／`fd21:0:0:24::1/128` | `Reserved` |
 | Gateway Node B | `adc-k02-worker2` | `Assigned` |
 | Gateway Node B profile | `egress/gw-b`、手動切替先 | `Assigned` |
-| Gateway Node B IPv4／IPv6 | `172.16.4.32/24`／`fd21:0:0:4::3:2/64` | `Assigned` |
-| Egress interface | Gateway A は `bond0.14`、Gateway B は `bond0.104` | `Assigned` |
+| Gateway Node B IPv4／IPv6 | `172.16.24.2/32`／`fd21:0:0:24::2/128` | `Reserved` |
+| Address interface | 両 Gateway の専用 dummy `egress0` | `Reserved` |
+| Fabric interface | Gateway A は `bond0.14`、Gateway B は `bond0.104` | `Assigned` |
 | Policy field | IPv4／IPv6 の別 Policy で単一 `egressGateway` と Gateway 固有 `egressIP` を使用し、`interface` は指定しない | `Assigned` |
 | Address owner | 運用者が Policy 適用前に Node へ設定する。Cilium による動的割り当ては行わない | `Assigned` |
 | Selected namespace | `egress-probe` | `Assigned` |
@@ -224,10 +239,10 @@ IPv6 infra pool の `:0-:f` は初期用途なしの管理予約とする。
 | Excluded IPv6 | `fd21:0:0:1::101/128` | `Assigned` |
 | Expected observation server | `adc-t1sv0102`、`172.16.0.2`、`fd21:0:0:1::102` | `Existing` |
 
-Egress IP は LoadBalancer pool から割り当てず、2 台の Gateway Node の Fabric interface に別々の secondary
-address として事前設定する。Cilium は Node interface へ Egress IP を動的に追加しない。Node 再作成時にも
-再現できる専用の idempotent script を実装し、Stage 2B の Policy 適用前に address の実在、IPv4 の ARP、
-IPv6 の NDP、return route を Gateway ごとに確認する。
+Egress IP は運用者が専用 script で `egress0` に設定する。Cilium は IP の動的割当を行わず、
+試験専用 `Interface` advertisement で IP 所有 Node から `/32`／`/128` を広報する。
+Node の Fabric IP、BGP source address、LB 集約は維持する。重複は台帳・全 Node の address・pool・RIB で確認し、
+dummy 上の ARP／NDP を未使用証明にしない。両 Gateway の経路が個別に届くことを Policy 適用前に確認する。
 
 `gw-a`／`gw-b` は同時 active にせず、同名 Policy の排他的 profile として管理する。切替は明示的な apply が必要で、
 既存 connection は切断される。外部側は IPv4／IPv6 とも 2 つの Egress IP を正当な送信元として扱う。
@@ -272,8 +287,6 @@ Stage 5 で DCI へ公開するのは、初期状態では Cluster Mesh API の�
 | `172.16.4.11` | `/24` | `adc-k02-control-plane` Node／Fabric API | `bond0.14` | `Existing` |
 | `172.16.4.21` | `/24` | `adc-k02-worker` Node | `bond0.14` | `Existing` |
 | `172.16.4.22` | `/24` | `adc-k02-worker2` Node | `bond0.104` | `Existing` |
-| `172.16.4.31` | `/24` | k02 Egress Gateway A | `adc-k02-worker` の `bond0.14` secondary | `Assigned` |
-| `172.16.4.32` | `/24` | k02 Egress Gateway B | `adc-k02-worker2` の `bond0.104` secondary | `Assigned` |
 
 #### `fd21:0:0:4::/64`
 
@@ -285,8 +298,6 @@ Stage 5 で DCI へ公開するのは、初期状態では Cluster Mesh API の�
 | `fd21:0:0:4::1:1` | `/64` | `adc-k02-control-plane` Node／Fabric API | `bond0.14` | `Existing` |
 | `fd21:0:0:4::2:1` | `/64` | `adc-k02-worker` Node | `bond0.14` | `Existing` |
 | `fd21:0:0:4::2:2` | `/64` | `adc-k02-worker2` Node | `bond0.104` | `Existing` |
-| `fd21:0:0:4::3:1` | `/64` | k02 Egress Gateway A | `adc-k02-worker` の `bond0.14` secondary | `Assigned` |
-| `fd21:0:0:4::3:2` | `/64` | k02 Egress Gateway B | `adc-k02-worker2` の `bond0.104` secondary | `Assigned` |
 
 ### 6.2 k03 Node segment
 
@@ -311,6 +322,15 @@ Stage 5 で DCI へ公開するのは、初期状態では Cluster Mesh API の�
 k03 の IPv4 集約 route next-hop は `172.16.5.1`、IPv6 next-hop は `fd21:0:0:5::1` とする。
 2026-08-23 に、全 k03 Node の route と両 BDC Leaf の `Vlan105` running／startup config が
 この割り当てに一致することを確認した。
+
+### Egress 専用の routed IP
+
+| IPv4 | IPv6 | 所有 Node／保持先 | 状態 |
+|---|---|---|---|
+| `172.16.24.1/32` | `fd21:0:0:24::1/128` | `adc-k02-worker`／`egress0` | `Reserved` |
+| `172.16.24.2/32` | `fd21:0:0:24::2/128` | `adc-k02-worker2`／`egress0` | `Reserved` |
+| `172.16.25.1/32` | `fd21:0:0:25::1/128` | `bdc-k03-worker`／`egress0` | `Reserved` |
+| `172.16.25.2/32` | `fd21:0:0:25::2/128` | `bdc-k03-worker2`／`egress0` | `Reserved` |
 
 ### 6.3 k02 LoadBalancer segment
 
@@ -402,7 +422,7 @@ k03 の IPv4 集約 route next-hop は `172.16.5.1`、IPv6 next-hop は `fd21:0:
 | Parameter | 決定時期 | 状態 |
 |---|---|---|
 | Application VIP の site-local route-map 詳細 | Stage 5 | `Deferred` |
-| k03 local Egress Gateway Node／Egress IPv4／IPv6 | Stage 5 合格後の同時有効化試験前 | `Deferred` |
+| k03 local Egress の稼働重複・経路確認 | IP は第 5 節で予約済み。Stage 5 合格後の実験前に実測 | `Deferred` |
 | k03 local Egress 外部 observation server | Stage 5 合格後の同時有効化試験前 | `Deferred` |
 | Gateway API `.12` VIP の実使用 | Stage 6 | `Deferred` |
 | Native routing の Pod CIDR advertisement | Stage 6 | `Deferred` |
@@ -415,7 +435,7 @@ certificate は `cronJob` で 365 日、有効期限前の 4 か月周期で再�
 ## 8. 実装前チェック
 
 1. `Existing` の値を topology と公開 config で再照合する。
-2. `Assigned` の host address に対して、Node では ARP／NDP、NX-OS では route／ARP／ND の競合を確認する。
+2. connected address は ARP／NDP と route で競合を確認する。Egress の routed address は全 Node／pool／台帳／NX-OS RIB で照合し、dummy 上の ARP／DAD を重複なしの証明にしない。
 3. k02 の旧 MetalLB manifest が削除済みで、k01 の MetalLB manifest だけが残ることを確認する。
 4. kind 作成前に Pod CIDR、Service CIDR、cluster name／ID、API certificate SAN を render する。
 5. Node Fabric MTU `9100` と Fabric underlay MTU `9214`／`9216` の end-to-end path を確認する。

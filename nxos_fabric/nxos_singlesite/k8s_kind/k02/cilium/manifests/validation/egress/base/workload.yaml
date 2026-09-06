@@ -12,6 +12,9 @@ metadata:
     app: egress-probe
     lab.cilium.io/egress-policy: selected
 spec:
+  # gw-a (worker) と異なる Node からの redirect を必ず確認する。
+  nodeSelector:
+    kubernetes.io/hostname: adc-k02-worker2
   containers:
     - name: client
       image: docker.io/curlimages/curl:8.17.0@sha256:43ebaa53d3806db6b1ce4353b6b26ae638ec1c167ee351524b05690f988bb20d
@@ -26,6 +29,8 @@ metadata:
     app: egress-probe
     lab.cilium.io/egress-policy: unselected
 spec:
+  nodeSelector:
+    kubernetes.io/hostname: adc-k02-worker2
   containers:
     - name: client
       image: docker.io/curlimages/curl:8.17.0@sha256:43ebaa53d3806db6b1ce4353b6b26ae638ec1c167ee351524b05690f988bb20d

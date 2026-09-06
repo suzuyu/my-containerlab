@@ -11,7 +11,7 @@ As-designed 設計と、lab へ反映した As-built 状態を同じ設計単位
 |---|---|---|---|
 | Single-site ADC／k02 | `Ready` | `Applied` | LoadBalancer workload、EVPN Type-5、datapath の受入試験 |
 | Multisite ADC config source | `Ready` | `File-ready` | multisite lab への投入と受入確認 |
-| BDC／k03 | `Ready` | `Candidate-required` | device 別 candidate、parser 確認、投入と受入確認 |
+| BDC／k03 | `Ready` | `File-ready` | multisite 起動後の parser・session・EVPN・DCI 公開範囲の受入確認 |
 | DCI | `Ready` | `Candidate-required` | 現行 policy と sequence を統合した device 別 candidate |
 
 Single-site ADC では設定元ファイル、投入 candidate、稼働機器、k01 MetalLB、k02 Cilium BGP resource を
@@ -249,7 +249,7 @@ NX-OS `10.5(4)` の dynamic neighbor、`maximum-prefix`、route-map の配置は
 Nexus 9000v でも BFD を試験対象にできないため無効とする。Keepalive `10`、Hold `30` で
 Cilium Agent／Node 障害時の収束を測定し、`3/9` は後続の timer 比較 profile とする。
 
-## 6. BDC の変更案
+## 6. BDC の基本 config（ファイル反映済み、実機未確認）
 
 ### 6.1 k03 Node の集約 route
 
@@ -455,7 +455,7 @@ Cluster Mesh 用 VIP が複数へ増えた場合は、専用の小さな infra p
 community が BGW まで保持されることが前提となる。ADC は Cilium → ADC BGR → ADC Leaf → EVPN RR → BGW、
 BDC は Cilium → BDC Leaf → EVPN RR → BGW の各 hop で standard community を送信する。ADC BGR と Leaf の
 tenant VRF neighbor には、IPv4／IPv6 とも `send-community` を追加する。NX-OS `10.5(4)` N9Kv の runtime parser は
-`advertise l2vpn evpn` を deprecated／no effect と表示するため single-site の明示設定から除外し、Cilium Service
+`advertise l2vpn evpn` を deprecated／no effect と表示するため single-site／multisite の基本 config では明示設定を省略し、Cilium Service
 VIP が EVPN Route Type 5 に変換されることを workload 適用後の実 route で受入判定する。別 version へ展開する
 場合は、その version の parser と EVPN external connectivity の仕様を再確認する。
 
@@ -758,3 +758,16 @@ ADC ASN の旧値 `65535` は Reserved であるため、長期的な rollback �
 - [Cisco Nexus 9000 NX-OS 10.5(x): Configuring Layer 4 - Layer 7 Services](https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/105x/configuration/vxlan/cisco-nexus-9000-series-nx-os-vxlan-configuration-guide-release-105x/m_configuring_layer_4-layer_7_network_services_integration.html)
 - [Cisco Nexus 9000 NX-OS 10.5(x): Unicast Routing Configuration Guide](https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/105x/unicast-routing-configuration/cisco-nexus-9000-series-nx-os-unicast-routing-configuration-guide.pdf)
 - [IANA Autonomous System Numbers](https://www.iana.org/assignments/as-numbers)
+
+## 11. Egress 常設化の追記（2026-09-06）
+
+[専用 IP・BGP 設計](egress-gateway-routed-design.md#31-常設-config-と集約併存)に従い、single-site と multisite の基本 config に
+Egress 個別経路の受信許可と NX-OS 集約を追加した。`summary-only` は使わず個別経路を残す。
+multisite の k03 は本書 6 の loopback／neighbor／local-as／filter を device 別に実装し、`as-equals` から `as-changes` を再生成した。
+`advertise-pip` は既存設定を維持し、`advertise l2vpn evpn` の追加は省略する。停止中の multisite へは投入していない。
+controller VRF の Egress 専用 import 除外は両 family とも削除し、既存 import policy に従う。
+k02／k03 の Egress 受信許可はそれぞれの IPv4 `/24 le 32`・IPv6 `/64 le 128` に統合する。
+関連 route-map は同名ごとに sequence 昇順で記載する。k03 endpoint loopback の community は維持する。
+Egress 経路は LB と同じ広報方針とし、Egress 専用の `no-export` は撤去する。endpoint loopback の制御とは分けて扱う。
+本書の DCI filter 候補を実装する際は、Egress の集約・個別経路も許可対象に含めて device 別に検証する。
+この追記は BDC の従来の `Candidate-required` 状態を更新するもので、DCI の他用途の filter 設計を完了扱いにはしない。

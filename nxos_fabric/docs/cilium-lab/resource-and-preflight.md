@@ -33,7 +33,7 @@ single-site 合格後も、k02／k03 の同時起動前に同じ preflight を�
 | 項目 | 必須値 | 本ラボでの扱い |
 |---|---|---|
 | Architecture | `x86_64` または `aarch64` | `x86_64` を使用する |
-| Linux kernel | `5.10.0` 以上 | Cilium `1.20.1` の最低要件として hard fail にする |
+| Linux kernel | 本 lab の数値 gate は `5.10.0` 以上 | 既存スクリプトの保守的な基準。公式要件に含まれるディストリビューションの同等実装とは分ける |
 | cgroup | cgroup v2 | Socket LB と Kind Node の分離を確認する |
 | cgroup namespace | host と各 Kind Node で別 namespace | 各 Node 間も重複しないことを確認する |
 | BTF | `/sys/kernel/btf/vmlinux` が読める | Tetragon と eBPF の preflight で hard fail にする |
@@ -51,6 +51,12 @@ single-site 合格後も、k02／k03 の同時起動前に同じ preflight を�
 ## 4. Preflight スクリプト
 
 共通スクリプトは `nxos_fabric/scripts/cilium-lab/preflight-host-and-kind.sh` である。
+
+**この基本検査の `FAIL=0` だけでは、IPv6 LoadBalancer など個別経路の対応は確認できない。**
+導入前の helper capability 判定、通信方式の選択、導入後の互換設定と実通信の受入は
+[kernel 判定と IPv6 checksum 対応方針](kernel-compatibility-policy.md) に従う。
+追加の helper 判定・互換設定・監視ツールは [運用手順](checksum-compat-operations.md) に記載した。
+基本 preflight からの helper 自動実行や profile の自動選択は行わず、必要機能に応じて追加判定と明示登録を実施する。
 
 ホストだけを確認する。
 

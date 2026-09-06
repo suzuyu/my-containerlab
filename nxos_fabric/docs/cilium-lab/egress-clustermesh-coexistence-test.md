@@ -27,7 +27,7 @@ manager は同時有効化を明示的に拒否していないため、本ラボ
 
 ```bash
 export TOPOLOGY_PROFILE=nxos_multisite
-export REPO_ROOT="$(git rev-parse --show-toplevel)"
+: "${REPO_ROOT:?実行環境のリポジトリ配置先を指定してください}"
 export K8S_CLIENT_RUNTIME="${REPO_ROOT}/nxos_fabric/${TOPOLOGY_PROFILE}/k8s_kind/client/runtime"
 export PATH="${K8S_CLIENT_RUNTIME}/bin:${PATH}"
 hash -r
@@ -71,14 +71,14 @@ kubectl config get-contexts
 flowchart LR
     subgraph K02["adc-k02"]
         P2["selected Pod k02"]
-        G2["local Gateway k02\nlocal Egress IP"]
+        G2["local Gateway k02\negress0: 172.16.24.1/32"]
         C2["Cilium + Cluster Mesh"]
         P2 --> C2 --> G2
     end
 
     subgraph K03["bdc-k03"]
         P3["selected Pod k03"]
-        G3["local Gateway k03\nlocal Egress IP"]
+        G3["local Gateway k03\negress0: 172.16.25.1/32"]
         C3["Cilium + Cluster Mesh"]
         P3 --> C3 --> G3
     end
@@ -107,11 +107,63 @@ k02 と k03 の各 Kubernetes API へ別々に apply し、Node selector と Egr
 - [ ] k02 の Egress Gateway 単独試験が Stage 2B で合格している
 - [ ] k03 の local Gateway Node、Fabric interface、Egress IPv4／IPv6 を割り当てている
 - [ ] k03 から DCI に依存せず確認できる外部 observation server、または DCI 依存を明記した代替 server を決めている
-- [ ] Egress IP が Gateway Node の interface に実在し、重複、ARP／NDP、戻り経路に問題がない
+- [ ] Egress IP が Gateway Node の interface に実在し、台帳・全 Node・pool との重複がなく、BGP 個別経路が所有 Node を指す
 - [ ] 実験 values、Policy、Node label の rollback 手順を render／diff 済みである
 
-k03 の Egress IP と外部 observation server は現時点で未割り当てである。
-[パラメータ・アドレス割り当て台帳](parameter-and-address-allocation.md)を更新してから試験 manifest を確定する。
+k02 の Egress IP は `172.16.24.1/32`／`.2/32` と `fd21:0:0:24::1/128`／`::2/128`、
+k03 は `172.16.25.1/32`／`.2/32` と `fd21:0:0:25::1/128`／`::2/128` を予約済み。
+`.1`／`::1` は worker、`.2`／`::2` は worker2 の `egress0` に保持する。
+[専用 IP・BGP 設計](egress-gateway-routed-design.md)に従い、
+[相応する NX-OS 差分](../../nxos_multisite/configs/changes/cilium-stage2b/README.md)を選ぶ。
+k03 の稼働環境での重複確認と外部 observation server の選定は未完了のため、実施前に確定する。
+
+### 4.1 専用 IP と広報の準備
+
+端末 A は multisite の NX-OS 差分手順で、k02 の ADC BGR と k03 の BDC Leaf の常設受信許可・集約を確認し、Egress 専用の no-export が付いていないことを確認する。未移行の場合のみ差分を適用する。
+端末 B は台帳、各 cluster の全 Node／Service／pool の IP と既存 `egress0`、同名 advertisement がないことを
+[single-site 手順 7](egress-gateway-test-plan.md#egress-routed-setup)と同じ観点で確認する。
+
+各 cluster を別々に実行し、script 出力と route lookup を証跡に残す。
+以下の `apply` は Node IP だけを準備し、Egress feature や Policy を有効化しない。
+
+```bash
+bash "${REPO_ROOT}/nxos_fabric/scripts/cilium-lab/configure-egress-gateway-addresses.sh" --cluster adc-k02 --action apply
+bash "${REPO_ROOT}/nxos_fabric/scripts/cilium-lab/configure-egress-gateway-addresses.sh" --cluster bdc-k03 --action apply
+
+docker exec bdc-k03-worker ip -br addr show dev egress0
+docker exec bdc-k03-worker2 ip -br addr show dev egress0
+```
+
+広報は以下を render／server dry-run／diff で確認する。既存 label に対応する `Interface` advertisement 2 個だけが追加される。
+
+```bash
+(
+  set -euo pipefail
+  for entry in 'k02 kind-adc-k02' 'k03 kind-bdc-k03'; do
+    read -r cluster context <<< "$entry"
+    bgp_root="${REPO_ROOT}/nxos_fabric/nxos_multisite/k8s_kind/${cluster}/cilium/manifests/validation/egress/bgp"
+    kubectl --context "$context" kustomize "$bgp_root"
+    kubectl --context "$context" apply --dry-run=server -k "$bgp_root"
+    kubectl --context "$context" diff -k "$bgp_root" || test "$?" -eq 1
+  done
+)
+```
+
+差分確認後、1 cluster ずつ適用・広報確認する。
+
+```bash
+kubectl --context kind-adc-k02 apply -k "${REPO_ROOT}/nxos_fabric/nxos_multisite/k8s_kind/k02/cilium/manifests/validation/egress/bgp"
+cilium bgp routes advertised ipv4 unicast --context kind-adc-k02
+cilium bgp routes advertised ipv6 unicast --context kind-adc-k02
+
+kubectl --context kind-bdc-k03 apply -k "${REPO_ROOT}/nxos_fabric/nxos_multisite/k8s_kind/k03/cilium/manifests/validation/egress/bgp"
+cilium bgp routes advertised ipv4 unicast --context kind-bdc-k03
+cilium bgp routes advertised ipv6 unicast --context kind-bdc-k03
+```
+
+端末 A は NX-OS 差分手順の RIB／FIB 確認を行い、各 IP の所有 Node までの戻り経路を確認する。
+両 cluster とも各 2 個の `/32`／`/128` だけを広報し、LB 集約と混ぜない。
+選定した外部 observation server への source 指定 route lookup と実通信が通ることを開始条件に追加する。
 
 ## 5. 実験 profile
 
@@ -180,7 +232,7 @@ Gateway 定義へ同時に指定しない。
 ## 7. 適用順序
 
 1. Stage 5 の基準状態、Helm values、Cilium／Cluster Mesh status、BPF Egress map を保存する。
-2. k03 の Gateway Node、Egress IP、外部 observation server を割り当て、Node と NX-OS の経路を確認する。
+2. 予約済み Gateway／IP の重複と外部 observation server を確認し、Node と NX-OS の個別経路を準備する。
 3. k02 だけへ実験 overlay を適用し、Agent／Operator rollout と Cluster Mesh 接続を確認する。
 4. k02 で local Egress の smoke test を実行する。
 5. k03 へ実験 overlay を適用し、Agent／Operator rollout と Cluster Mesh 接続を確認する。
@@ -216,18 +268,18 @@ observation server への経路も失われる可能性があるため、別の�
 実際の context 名、Pod 名、宛先 IP は構築記録で確定する。
 
 ```bash
-cilium status --context <k02-context>
-cilium status --context <k03-context>
-cilium clustermesh status --context <k02-context>
-cilium clustermesh status --context <k03-context>
+cilium status --context kind-adc-k02
+cilium status --context kind-bdc-k03
+cilium clustermesh status --context kind-adc-k02
+cilium clustermesh status --context kind-bdc-k03
 
-kubectl --context <k02-context> -n kube-system exec ds/cilium -- \
+kubectl --context kind-adc-k02 -n kube-system exec ds/cilium -- \
   cilium-dbg bpf egress list
-kubectl --context <k03-context> -n kube-system exec ds/cilium -- \
+kubectl --context kind-bdc-k03 -n kube-system exec ds/cilium -- \
   cilium-dbg bpf egress list
 
-kubectl --context <k02-context> get ciliumegressgatewaypolicies
-kubectl --context <k03-context> get ciliumegressgatewaypolicies
+kubectl --context kind-adc-k02 get ciliumegressgatewaypolicies
+kubectl --context kind-bdc-k03 get ciliumegressgatewaypolicies
 ```
 
 BPF map は少なくとも次を照合する。
@@ -254,13 +306,29 @@ BPF map は少なくとも次を照合する。
 rollback は次の順序で行う。
 
 1. `CiliumEgressGatewayPolicy` と `egress-probe` を両 cluster から削除する。
-2. 実験用 Node label と Egress secondary address を試験前の状態へ戻す。試験前から存在した address は削除しない。
+2. 試験専用 BGP advertisement を削除し、各 site の個別経路撤回を確認してから今回作成した `egress0` と Node label を撤去する。既存の IP／設定は削除しない。
 3. `30-experimental-egress-clustermesh.yaml` を指定しない完全な values set で Helm upgrade する。
 4. Cilium Agent／Operator の rollout と Cluster Mesh 再接続を待つ。
 5. Egress Gateway が無効で、BPF Egress map が空または未作成であることを確認する。
 6. `COEX-00` と同じ Stage 5 基準試験を再実行する。
 
-Node の Egress secondary address 削除は、Policy 削除と BPF map 消去を確認した後に行う。
+今回新規に作成した advertisement／`egress0` の撤去コマンド：
+
+```bash
+kubectl --context kind-adc-k02 delete -k "${REPO_ROOT}/nxos_fabric/nxos_multisite/k8s_kind/k02/cilium/manifests/validation/egress/bgp"
+kubectl --context kind-bdc-k03 delete -k "${REPO_ROOT}/nxos_fabric/nxos_multisite/k8s_kind/k03/cilium/manifests/validation/egress/bgp"
+```
+
+端末 A で NX-OS の `/32`／`/128` 撤回と LB 集約の維持を確認してから Node の IP を撤去する。
+
+```bash
+bash "${REPO_ROOT}/nxos_fabric/scripts/cilium-lab/configure-egress-gateway-addresses.sh" --cluster adc-k02 --action remove
+bash "${REPO_ROOT}/nxos_fabric/scripts/cilium-lab/configure-egress-gateway-addresses.sh" --cluster bdc-k03 --action remove
+```
+
+NX-OS の常設受信 filter・集約は残す。両 family とも既存 import 条件に従い、controller VRF に取り込まれた集約も撤回されることを確認する。全個別経路の撤回後、Egress 集約も撤回されることを確認する。
+
+Node の Egress 専用 address 削除は、Policy 削除と BPF map 消去を確認した後に行う。
 Containerlab／Kind の再作成や lab destroy は、この試験の暗黙の rollback に含めない。
 
 ## 12. 判定と記録

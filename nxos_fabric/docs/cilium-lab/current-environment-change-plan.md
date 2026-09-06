@@ -53,7 +53,7 @@ flowchart LR
 | CHG-05 | kind | Pod／Service CIDR、API Fabric SAN、`/procHost`、Node script mount を設定する | `File-ready` | kind 再作成時 |
 | CHG-06 | kind Node | bond／VLAN 作成後に kubelet dual-stack `--node-ip` を Fabric address へ設定する | `Runtime-ready` | Containerlab の Node attach 時 |
 | CHG-07 | worker Node | Cilium aggregate `/26`／`/112` の blackhole route を 2 worker へ設定する | `Runtime-ready` | BGP resource apply 前 |
-| CHG-08 | k02 worker | Egress profile 使用前に `.31`／`::3:1` と `.32`／`::3:2` を secondary address として設定する | `Runtime-ready` | Stage 2B 前 |
+| CHG-08 | k02 worker | 専用 `egress0` の `172.16.24.1/32`／`.2/32` と IPv6 `/128`、BGP 個別広報・受信 filter を追加する | `Runtime-ready` | Stage 2B 前 |
 | CHG-09 | Kubernetes | worker 2 Node だけへ `bgp-speaker=true` label を設定する | `Runtime-ready` | Cilium BGP resource apply 前 |
 | CHG-10 | Kubernetes | Cilium、Hubble、LB IPAM、BGP、Tetragon を依存順に導入する | `File-ready` | Stage 1／2／4 |
 | CHG-11 | Cluster Mesh | 共通 Cilium CA、site 別 API VIP／DNS、API 2 replica、PDB を構成する | `Runtime-ready` | Stage 5 |
@@ -154,17 +154,20 @@ nxos_fabric/scripts/cilium-lab/configure-bgp-aggregate-blackhole.sh \
 
 multisite では `--cluster bdc-k03` を使用する。スクリプトは既存の非 blackhole route を上書き／削除しない。
 
-### 5.4 Egress Gateway secondary address
+### 5.4 Egress Gateway の専用 IP と BGP 広報
 
 Egress IP は Cilium LB IPAM から割り当てず、Cilium Agent も Node interface へ動的に追加しない。
-Stage 2B の Policy 適用前に次を実行する。
+Stage 2B の [試験手順 7](egress-gateway-test-plan.md#egress-routed-setup)で、事前証跡と重複確認、
+NX-OS の受信 filter、Node の `egress0`、試験専用 BGP advertisement を順に準備する。
+スクリプト単体の apply では BGP 広報や戻り経路は準備されないため、単体実行を試験開始条件の代用にしない。
 
 ```bash
 nxos_fabric/scripts/cilium-lab/configure-egress-gateway-addresses.sh \
   --cluster adc-k02 --action check
-nxos_fabric/scripts/cilium-lab/configure-egress-gateway-addresses.sh \
-  --cluster adc-k02 --action apply
 ```
+
+設定後の上記 check は両 Node の `IPv4=true IPv6=true ownership=OK` を期待する。
+k03 の予約範囲と実験時の設定は [専用 IP・BGP 経路設計](egress-gateway-routed-design.md) を参照する。
 
 初期 profile は `gw-a` とし、`gw-b` は手動切替用である。自動 active-active／自動 failover は前提にしない。
 
@@ -317,7 +320,7 @@ NX-OS では peer state、uptime、best path、ECMP next-hop、community、DCI e
 ## 10. Rollback 境界
 
 - Kind-only 設定は cluster 再作成前の configuration file へ戻し、in-place で kube-proxy／CIDR を戻さない。
-- Egress address と aggregate blackhole は各 script の `--action remove` を使用する。スクリプトが管理対象と
+- Egress は Policy 削除、試験用 BGP advertisement 削除と経路撤回確認の後に専用 script の `--action remove` を使用する。aggregate blackhole は専用 script で撤去する。スクリプトが管理対象と
   判定できない address／route は削除しない。
 - Kubernetes CR は validation layer から逆順に削除し、platform CR と Helm release は最後に扱う。
 - BGP maintenance は planned-shut で traffic を退避してから neighbor を停止する。

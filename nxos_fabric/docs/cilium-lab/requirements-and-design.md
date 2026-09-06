@@ -115,7 +115,7 @@ Cilium Helm values の選択肢、選定値、選定理由、変更可否と変�
 | L-14 | BGP termination | P0 | `Ready` | k02 は ADC BGR で終端し、k03 は BDC Leaf の tenant VRF 専用 loopback で終端する。Anycast Gateway との BGP peering は行わない |
 | L-15 | ASN allocation | P0 | `Ready` | ADC BGR `65010`、k02 `65012`、BDC 論理 BGR `65020`、k03 `65022` とし、BDC Leaf の Fabric ASN `65002` は変更しない |
 | L-16 | BDC BGP endpoint | P0 | `Ready` | `172.16.253.101/32`、`172.16.253.102/32` と対応する IPv6 `/128` を Leaf 固有 endpoint とし、Cilium から 2 台の Leaf peer を手動指定する |
-| L-17 | BGP import policy | P0 | `Ready` | 初期 Cilium aggregate `/26`／`/112`、hybrid の Cluster Mesh API exact route、`externalTrafficPolicy: Local` が生成する LB pool 内の exact route だけを許可する。Neighbor／AF ごとの `maximum-prefix 64` と eBGP `maximum-paths 4` を使用する |
+| L-17 | BGP import policy | P0 | `Ready` | 初期 Cilium aggregate `/26`／`/112`、hybrid の Cluster Mesh API exact route、`externalTrafficPolicy: Local` が生成する LB pool 内の exact route を許可する。Stage 2B では専用 Egress `/32`／`/128` を別 permit で追加する。Neighbor／AF ごとの `maximum-prefix 64` と eBGP `maximum-paths 4` を使用する |
 | L-18 | DCI route export／import scope | P0 | `Ready` | 初期採用は `hybrid-clustermesh-only` とし、DCI には Cluster Mesh API exact route と Node segment だけを公開する。application aggregate と BGP endpoint は site-local とする |
 | L-19 | Service VIP 経路集約 | P0 | `Ready` | 初回から Cilium `/26`／`/112` 送信元集約を使用する。`externalTrafficPolicy: Local` は公式仕様どおり exact route とし、aggregate との longest-prefix 選択を確認する。advertisement 前に worker 2 Node へ aggregate blackhole route を設定し、未割り当て VIP、path attribute、障害、rollback を確認する。不合格時は直接 BGP 終端集約へ切り替える |
 | L-20 | BGP maintenance／経路退避 | P0 | `Ready` | worker は drain 後に `bgp-maintenance=planned-shut` で `65535:0` 付き backup path へ移し、session uptime、best path、FIB、traffic を確認してから `withdrawn` で切り離す。normal／planned-shut の 2 profile は Node 数に依存させず、NX-OS の経路選択点で `graceful-shutdown aware` を有効化する。ADC BGR／BDC Leaf は Graceful Shutdown／GIR 後に切り離す |
@@ -129,8 +129,8 @@ Cilium Helm values の選択肢、選定値、選定理由、変更可否と変�
 | E-03 | CES exclusion | P0 | `Ready` | `ciliumEndpointSlice.enabled: false` を維持し、Egress Gateway と CES を同時に有効化しない |
 | E-04 | source selection | P0 | `Ready` | namespace `egress-probe` と Pod label `lab.cilium.io/egress-policy=selected` で対象と対象外を分離する |
 | E-05 | destination selection | P0 | `Ready` | `172.16.0.0/24`、`fd21:0:0:1::/64` を対象とし、`adc-t1sv0101` の `/32`、`/128` を除外する |
-| E-06 | Gateway selection／冗長化 | P0 | `Ready` | Cilium `1.20.1` の Policy は単一 `egressGateway` だけを持つ。初期は `gw-a` を選択し、計画切替時に `gw-b` profile へ Policy を更新する。hard failure では自動切替を前提にせず、検知と手動切替時間を測定する |
-| E-07 | Egress IP／interface | P0 | `Ready` | Cilium は Egress IP を動的割り当てしない。Policy 適用前に運用者が `adc-k02-worker` へ `.31`／`::3:1`、`adc-k02-worker2` へ `.32`／`::3:2` を secondary address として設定し、IPv4／IPv6 の別 Policy で Gateway ごとの `egressIP` を指定する |
+| E-06 | Gateway selection／冗長化 | P0 | `Ready` | 本ラボの Policy は単一 `egressGateway` を選択する。初期は `gw-a` を選択し、計画切替時に `gw-b` profile へ Policy を更新する。hard failure では自動切替を前提にせず、検知と手動切替時間を測定する |
+| E-07 | Egress IP／interface | P0 | `Ready` | 専用範囲の `/32`／`/128` を `egress0` に設定し、`Interface` 広報と所有 Node への戻り経路を確認する。Policy は `egressIP` を明示する |
 | E-08 | dual-stack SNAT | P0 | `Ready` | IPv4／IPv6 Policy を分離し、選択中 profile の単一 Gateway と site 固有 Egress IP を指定する。各 address family の destination、除外 CIDR、外部観測 source を個別に判定する |
 | E-09 | policy delay | P0 | `Ready` | 新規 Pod への identity／policy 反映前に想定外 source IP で外へ出る時間を測定する |
 | E-10 | failure／rollback | P0 | `Ready` | `gw-a` → `gw-b` の明示的 Policy 切替、Node hard stop、invalid Egress IP、Policy 削除を分ける。切替時は既存 connection 切断を許容し、新規 connection の復旧時間を測定する |
@@ -216,60 +216,27 @@ Cilium Helm values の選択肢、選定値、選定理由、変更可否と変�
 
 ## 12. Egress Gateway の address 管理
 
-E-07 の専用 Egress IP は Cilium LB IPAM の pool から割り当てない。
-Cilium Agent によって Node interface へ動的に追加されることもない。
-明示した `egressIP` は Policy 適用前に Gateway Node の device 上へ実在する必要がある。
-本ラボでは Node の primary address を流用せず、送信元識別と冗長化試験を容易にするため、次の secondary address を運用者が事前設定する。
+設計・設定・復旧の正本は [Egress IP・BGP 経路設計](egress-gateway-routed-design.md)、
+実施コマンドは [Egress Gateway 試験手順](egress-gateway-test-plan.md) とする。
 
-| Gateway ID | Gateway Node／interface | IPv4 | IPv6 | Policy profile |
-|---|---|---|---|---|
-| `gw-a` | `adc-k02-worker`／`bond0.14` | `172.16.4.31/24` | `fd21:0:0:4::3:1/64` | `egress/gw-a`、初期選択 |
-| `gw-b` | `adc-k02-worker2`／`bond0.104` | `172.16.4.32/24` | `fd21:0:0:4::3:2/64` | `egress/gw-b`、切替先 |
+| Cluster | Gateway A の IPv4／IPv6 | Gateway B の IPv4／IPv6 | 保持先 |
+|---|---|---|---|
+| k02 | `172.16.24.1/32`／`fd21:0:0:24::1/128` | `172.16.24.2/32`／`fd21:0:0:24::2/128` | 各 Node の `egress0` |
+| k03 | `172.16.25.1/32`／`fd21:0:0:25::1/128` | `172.16.25.2/32`／`fd21:0:0:25::2/128` | 各 Node の `egress0` |
 
-IPv4／IPv6 は別 Policy とし、それぞれの `spec.egressGateway` に 1 Node と 1 `egressIP` を指定する。
-Cilium `1.20.1` は 1 Policy 内の複数 Gateway list を提供しない。selector が複数 Node に一致した場合も Node 名の
-辞書順で最初の 1 台が選ばれるため、自動 HA として使用しない。本ラボでは同名 Policy を持つ `gw-a`／`gw-b`
-Kustomize profile を排他的に管理し、計画切替では `kubectl diff -k` の後に選択先 profile を apply する。
+Egress 専用 IPv4 `/24`・IPv6 `/64` は予約範囲とし、LB IPAM や Node connected subnet と重ねない。
+Cilium による IP 自動割当は行わず、`configure-egress-gateway-addresses.sh` で所有 marker と既存 IP を検査してから追加する。
+実際の送信 NIC は Fabric 側 NIC とし、Policy は `egressIP` を指定して `interface` を省略する。
+既存の kubelet Node IP、BGP source address、LB 集約を変えない。
 
-Gateway を変更すると既存 Egress connection は切断される。lab では次を別 Test ID とする。
+戻り通信は SNAT した Node の NAT 状態に対応する必要がある。各 Node が固有の IP を広報し、NX-OS は個別経路を保持する。
+`gw-a`／`gw-b` の Policy は排他的に適用し、切替時は新しい接続が `.1` → `.2` に変わることを確認する。
+Cilium の複数 Gateway 機能とは分け、今回の試験では自動切替・単一 IP の移動・既存接続の引継ぎを前提にしない。
 
-1. `gw-a` 使用中に `gw-b` profile へ明示的に切り替え、新規 connection の復旧時間を確認する。
-2. `gw-a` Node を hard stop し、自動切替されないことと fail-closed／blackhole 時間を測定する。
-3. 障害検知後に `gw-b` profile を適用し、手動復旧時間を測定する。
-
-外部 firewall の allowlist は `.31`／`.32` と対応する IPv6 2 address を許可する。単一の floating Egress IP を
-2 Node で共有する方式は Cilium Egress Gateway 単独では構成せず、ARP／NDP、重複 address、外部 routing を
-含む別の HA 機構として扱う。
-
-IPv4 Policy の Gateway 部分は次の形とし、IPv6 Policy は同じ selector で `egressIP` だけを対応する IPv6
-address へ変更する。
-
-```yaml
-spec:
-  egressGateway:
-    nodeSelector:
-      matchLabels:
-        kubernetes.io/hostname: adc-k02-worker
-    egressIP: 172.16.4.31
-```
-
-Node 再作成後も再現できるよう、secondary address の重複、対象 interface、prefix を検証してから
-`ip address replace` を行う `scripts/cilium-lab/configure-egress-gateway-addresses.sh` を作成済みである。既存の
-`configure-kubelet-node-ip.sh` は kubelet の `--node-ip` と restart だけを扱うため変更せず、Egress Gateway
-profile だけが専用 script を呼び出す。Policy 適用前の gate は次のとおりとする。
-
-```bash
-docker exec adc-k02-worker ip -br address show bond0.14
-docker exec adc-k02-worker ip route get 172.16.0.2 from 172.16.4.31
-docker exec adc-k02-worker ip -6 route get fd21:0:0:1::102 from fd21:0:0:4::3:1
-docker exec adc-k02-worker2 ip -br address show bond0.104
-docker exec adc-k02-worker2 ip route get 172.16.0.2 from 172.16.4.32
-docker exec adc-k02-worker2 ip -6 route get fd21:0:0:1::102 from fd21:0:0:4::3:2
-```
-
-Node network を変更した後は Cilium が新しい interface address を認識するまで待ち、Policy を再適用する。
-`interface` だけを指定して device の最初の IPv4／IPv6 address を自動選択する方式も選べるが、Node primary
-address と Egress address の役割が曖昧になるため、本ラボでは採用しない。
+外部 firewall は使用する Gateway の専用 Egress IP を送信元として許可する。
+BGP の広報は Policy の存在と自動連動しないため、Policy 削除、広報削除、個別経路撤回、Node IP 削除を順に確認する。
+BGP session の維持だけで合格にせず、外部サーバの `remote`、BPF map、RIB／FIB、LB 回帰を突き合わせる。
+k03 は Stage 5 後の [実験 profile](egress-clustermesh-coexistence-test.md) に限り適用する。
 
 ## 13. DCI scope と経路集約の責務
 
@@ -319,7 +286,7 @@ kubeconfig directory は `0700`、config は `0600` とし、Git へ含めない
 受入時は「CLI が起動する」だけでなく、送信元 site と Fabric route を確認する。
 
 ```bash
-ip route get <control-plane-fabric-ip>
+ip route get "${CONTROL_PLANE_FABRIC_IP:?対象 site の control-plane Fabric IP を設定する}"
 kubectl --request-timeout=10s get --raw='/readyz'
 kubectl get nodes -o wide
 cilium status --wait

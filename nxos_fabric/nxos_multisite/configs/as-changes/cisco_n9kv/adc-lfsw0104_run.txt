@@ -308,6 +308,7 @@ interface port-channel1
 interface port-channel11
   description adc-t1sv0102 bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 11
@@ -370,6 +371,7 @@ interface Ethernet1/1
   description adc-t1sv0102 ens3
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 11 mode active

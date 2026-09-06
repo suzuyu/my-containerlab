@@ -146,20 +146,23 @@ sequenceDiagram
 
     Pod->>Source: Connect to selected external CIDR
     Source->>Gateway: Redirect to selected gateway node
-    Gateway->>Gateway: SNAT to egress IP on bond0.local-VLAN
+    Gateway->>Gateway: SNAT to dedicated IP held on egress0
     Gateway->>NXOS: Forward with predictable source IP
     NXOS->>External: Route to external server
     External-->>NXOS: Reply to egress IP
-    NXOS-->>Gateway: Return path to gateway node
+    NXOS-->>Gateway: Return via owner-specific /32 or /128 route
     Gateway-->>Pod: Reverse NAT and deliver response
 ```
 
 Egress Gateway は k02 single-site 専用 Helm overlay で有効化する。Gateway Node は
-`adc-k02-worker` と `adc-k02-worker2`、Egress IP はそれぞれ `.31`／`::3:1` と `.32`／`::3:2`、外部試験
+`adc-k02-worker` と `adc-k02-worker2`、Egress IP はそれぞれ `172.16.24.1`／`fd21:0:0:24::1` と `172.16.24.2`／`fd21:0:0:24::2`、外部試験
 server は既存の `adc-t1sv0102` とする。source Pod、destination CIDR、Gateway Node、Egress IP を明示し、
 外部 server の log／capture、Gateway Node の BPF map／capture、NX-OS counter を同じ時刻で比較する。
-Egress IP は Policy 適用前に運用者が worker の `bond0.14` と worker2 の `bond0.104` へ secondary address として
-設定し、Service VIP 用 BGP advertisement とは分離する。Cilium は Egress IP を Node へ動的に追加しない。
+Egress IP は Policy 適用前に各 Node の専用 dummy `egress0` に `/32`／`/128` として設定する。
+Cilium の `Interface` 広報で所有 Node への戻り経路を作り、Service VIP 集約から分離する。
+実通信は既存の `bond0.14`／`bond0.104` から送信する。Cilium は Egress IP を Node へ動的に追加しない。
+k03 は `172.16.25.1`／`.2` と `fd21:0:0:25::1`／`::2` を予約する。
+詳細は [専用 IP・BGP 経路設計](egress-gateway-routed-design.md) を参照する。
 IPv4／IPv6 は別 Policy とし、選択中 profile の単一 `egressGateway` と対応する `egressIP` を明示する。
 
 Cilium `1.20.1` では `gw-a`／`gw-b` の Kustomize profile を排他的に使い、切替は明示的な Policy 更新とする。
@@ -256,8 +259,14 @@ Cluster Meshではcontrol planeとdata planeを分けて確認する。
 | Service IPv6 | `fd00:10:102::/112` | `fd00:10:103::/112` | `Assigned` |
 | LB VIP IPv4 | `172.16.14.10-172.16.14.50` | `172.16.15.10-172.16.15.50` | `Assigned` |
 | LB VIP IPv6 | `fd21:0:0:14:0:0:1:0/112` | `fd21:0:0:15:0:0:1:0/112` | `Assigned` |
+| Egress IP pool IPv4 | `172.16.24.0/24` | `172.16.25.0/24` | k02 検証済み、k03 予約 |
+| Egress IP pool IPv6 | `fd21:0:0:24::/64` | `fd21:0:0:25::/64` | k02 検証済み、k03 予約 |
+| Gateway A（worker） | `172.16.24.1/32`／`fd21:0:0:24::1/128` | `172.16.25.1/32`／`fd21:0:0:25::1/128` | 所有 Node の `egress0` に割り当て |
+| Gateway B（worker2） | `172.16.24.2/32`／`fd21:0:0:24::2/128` | `172.16.25.2/32`／`fd21:0:0:25::2/128` | 所有 Node の `egress0` に割り当て |
+| Egress 経路広報 | Node が `/32`／`/128`、ADC BGR が pool 単位で集約 | Node が `/32`／`/128`、BDC Leaf が pool 単位で集約 | LB VIP と別 pool。詳細は専用経路設計 |
 | Cilium／Pod MTU | `9000` | `9000` | `Assigned` |
 | Node Fabric MTU | `9100` | `9100` | `Assigned` |
+| Leaf の Node／サーバ向け Po11〜16 MTU | `9100` | `9100` | 次回修正目標・未適用（TI-007） |
 
 `172.16.254.0/24` は既存 ADC Leaf–BGR 接続用、`172.16.253.0/24` は BDC の BGR／Leaf 重畳
 BGP endpoint 用として予約する。BDC Leaf の endpoint は pool 内の `/32`、
@@ -375,7 +384,7 @@ VLAN 番号を統一するためだけの Leaf 変更は不要と判断する。
 - 各 local VLAN が同じ L2 VNI、EVPN route target、NVE member へ対応する
 - 同一 subnet の Node 間で ARP／NDP と IPv4／IPv6 通信が成立する
 - Cilium `devices` 設定が各 Node の実 interface 名に match する
-- Node Fabric MTU `9100` と Fabric MTU `9214`／`9216` で Cilium／Pod MTU `9000` が end-to-end で成立する
+- Node Fabric MTU `9100`、Leaf の Node／サーバ向け Po11〜16 の目標 MTU `9100` で、Cilium／Pod MTU `9000` が end-to-end で成立することを次回検証する。Fabric 内部の MTU と変更影響は下記の事前確認対象とする
 
 2026-08-23 に、VLAN `14`／`104` と VNI `10104` が全 ADC Leaf で `Up` となり、k02 Node の MAC が
 local port-channel と remote `nve1` の双方で学習されることを確認した。一方、Node MTU `9000` に対して
@@ -389,6 +398,46 @@ running-config を startup-config へ保存した。
 multisite の k03 は control-plane、worker、worker2 とも `bond0.105` を使用し、Leaf 側の VLAN `105`、
 VNI `10105` と一致している。k02 の VLAN `14`／`104` と VNI `10104` の組み合わせは local VLAN 差を
 許容する設計として維持する。
+
+<a id="mtu-9100-plan"></a>
+
+#### 残課題：Node／サーバ向け MTU の統一（2026-09-06 時点・次回実施）
+
+**次回の開始点は [TI-007](test-issue-register.md#ti-007-mtu-9100)。config・稼働値の変更と再試験は次回実施する。**
+Node 向けだけでなく他のサーバ向けも含め、各 Leaf の既存 `port-channel11`〜`16` を MTU `9100` に揃える。
+未定義の port-channel は番号だけを理由に新設せず、接続先と物理メンバーを棚卸しして対象を確定する。
+
+| 区間 | 次回の目標・扱い |
+|---|---|
+| Cilium／Pod | MTU `9000` を維持 |
+| kind Node の Fabric NIC・bond・VLAN | MTU `9100` を維持し実値を照合 |
+| Leaf の Node／他サーバ向け Po11〜16・物理メンバー | MTU `9100` へ統一。vPC 両端と実 MTU を照合 |
+| その他の Linux サーバの Fabric NIC・bond・VLAN | 現状 `9000` を維持。Leaf 側の許容 MTU `9100` と同値に上げる必要はない |
+| Leaf の SVI・vPC peer-link・Fabric uplink | 別途、カプセル化後のサイズと `system jumbomtu` 変更の影響を確認。全区間を機械的に `9100` へ変更しない |
+
+```mermaid
+flowchart LR
+    P["Pod MTU 9000"] --> N["Node Fabric MTU 9100"]
+    N --> L["Leaf の既存 Po11〜16
+目標 MTU 9100・次回適用"]
+    S["その他サーバ Fabric MTU 9000"] --> L
+    L --> F["Fabric 内部
+SVI・peer-link・uplink の MTU と
+カプセル化後のサイズを事前確認"]
+```
+
+NX-OS の L2 ポートでは、設定可能な MTU が `1500` または `system jumbomtu` に制限され、
+後者の変更が他の jumbo ポートにも波及する場合がある。
+[公式 MTU 設定資料](https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/118994-config-nexus-00.html) と実機の対応を照合し、
+Po11〜16 だけを変更できると仮定せず、変更対象とロールバックを確定してから投入する。
+
+旧設計は Node Fabric `9100` と Leaf／Fabric `9214`・`9216` を区別していた。
+2026-09-06 は既存の Leaf Node 向け `9216` に合わせ、障害区間のサーバ向け Po11 を修正した。
+ただし、全サーバ向けポートを含む設計・config・実値の照合と、Pod MTU `9000` までの受入条件の確認が不足していた。
+以前の `9216` 適用と `8900` byte までの成功は実施履歴として保持し、本計画の `9100` 適用済み・`9000` byte 合格とは扱わない。
+
+Egress IP は第 3 節と専用設計には記載済みだったが、中央のアドレス一覧への反映が漏れていたため、上の一覧にも追加した。
+IP pool は予約・設計値であり、試験後の Policy／`egress0` の存在を保証する表ではない。試験開始時に専用手順で準備する。
 
 ### 5.3 Hubble UIのアクセス経路
 

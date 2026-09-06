@@ -1,0 +1,588 @@
+--- a/vendor/github.com/cilium/cilium/cilium-cli/connectivity/builder/to_fqdns.go
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/builder/to_fqdns.go
+@@ -32,33 +32,21 @@
+ 		).
+ 		WithFeatureRequirements(features.RequireEnabled(features.L7Proxy)).
+ 		WithExpectations(func(a *check.Action) (egress, ingress check.Result) {
+-			if a.Destination().Address(features.IPFamilyAny) == ct.Params().ExternalOtherTarget {
+-				if a.Destination().Path() == "/" || a.Destination().Path() == "" {
+-					// Expect packets to other external target to be dropped.
+-					return check.ResultDropCurlTimeout, check.ResultNone
+-				}
+-				// Else expect HTTP drop by proxy
+-				return check.ResultDNSOKDropCurlHTTPError, check.ResultNone
+-			}
++			return plainFQDNExpectation(a.Destination(), ct.Params().ExternalTarget, ct.Params().ExternalOtherTarget), check.ResultNone
++		})
++}
+ 
+-			extTarget := ct.Params().ExternalTarget
+-			if a.Destination().Port() == 80 && a.Destination().Address(features.GetIPFamily(extTarget)) == extTarget {
+-				if a.Destination().Path() == "/" || a.Destination().Path() == "" {
+-					egress = check.ResultDNSOK
+-					egress.HTTP = check.HTTP{
+-						Method: "GET",
+-						// Trim the trailing dot, if any, to match the behavior of the curl
+-						// action and make sure that flow validation can succeed.
+-						URL: fmt.Sprintf("http://%s/", strings.TrimSuffix(extTarget, ".")),
+-					}
+-					return egress, check.ResultNone
+-				}
+-				// Else expect HTTP drop by proxy
+-				return check.ResultDNSOKDropCurlHTTPError, check.ResultNone
+-			}
+-			// No HTTP proxy on other ports
+-			return check.ResultDNSOKDropCurlTimeout, check.ResultNone
+-		})
++// plainFQDNExpectation belongs to the DNS-proxy + L3/L4 policy above.
++// No HTTP rules are installed: paths do not affect permission, and HTTP
++// access-log events must not be required. Curl success is still mandatory.
++func plainFQDNExpectation(dst check.TestPeer, target, other string) check.Result {
++	if dst.Address(features.IPFamilyAny) == other {
++		return check.ResultDropCurlTimeout
++	}
++	if dst.Port() == 80 && dst.Address(features.GetIPFamily(target)) == target {
++		return check.ResultDNSOK
++	}
++	return check.ResultDNSOKDropCurlTimeout
+ }
+ 
+ type toFqdnsWithProxy struct{}
+--- /dev/null
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/builder/to_fqdns_lab_test.go
+@@ -0,0 +1,31 @@
++package builder
++
++import (
++	flow "github.com/cilium/cilium/api/v1/flow"
++	"github.com/cilium/cilium/cilium-cli/connectivity/check"
++	"testing"
++)
++
++func TestLabPlainFQDNExpectations(t *testing.T) {
++	for _, tc := range []struct {
++		url  string
++		want check.Result
++	}{
++		{"http://one.one.one.one./", check.ResultDNSOK},
++		{"http://one.one.one.one./other-path", check.ResultDNSOK},
++		{"https://one.one.one.one./", check.ResultDNSOKDropCurlTimeout},
++		{"https://one.one.one.one./other-path", check.ResultDNSOKDropCurlTimeout},
++		{"http://k8s.io./", check.ResultDropCurlTimeout},
++		{"http://k8s.io./other-path", check.ResultDropCurlTimeout},
++	} {
++		t.Run(tc.url, func(t *testing.T) {
++			got := plainFQDNExpectation(check.HTTPEndpoint("destination", tc.url), "one.one.one.one.", "k8s.io.")
++			if got.Drop != tc.want.Drop || got.DNSProxy != tc.want.DNSProxy || got.L7Proxy || got.HTTP.Method != "" || got.HTTP.URL != "" || got.ExitCode != tc.want.ExitCode {
++				t.Fatalf("got %+v want %+v", got, tc.want)
++			}
++			if got.DropReasonFunc != nil && !got.DropReasonFunc(&flow.Flow{Verdict: flow.Verdict_DROPPED, DropReasonDesc: flow.DropReason_POLICY_DENIED}) {
++				t.Fatal("policy denial no longer recognized")
++			}
++		})
++	}
++}
+--- a/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/action.go
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/action.go
+@@ -625,7 +625,9 @@
+ 		}
+ 
+ 		for _, f := range req.Except {
+-			match(false, f, &flowCtx)
++			if _, found, _ := match(false, f, &flowCtx); found && req.RejectExceptions {
++				return r
++			}
+ 		}
+ 
+ 		// Check if successfully fully matched
+@@ -652,6 +654,13 @@
+ 	if len(p.AltDstIP) != 0 && p.AltDstIP != dstIP {
+ 		ipRequest = filters.Or(filters.IP(srcIP, p.AltDstIP), ipRequest)
+ 		ipResponse = filters.Or(filters.IP(p.AltDstIP, srcIP), ipResponse)
++	}
++
++	for _, ip := range p.AltDstIPs {
++		if ip != "" && ip != dstIP {
++			ipRequest = filters.Or(filters.IP(srcIP, ip), ipRequest)
++			ipResponse = filters.Or(filters.IP(ip, srcIP), ipResponse)
++		}
+ 	}
+ 
+ 	var egress filters.FlowSetRequirement
+--- a/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/check.go
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/check.go
+@@ -362,6 +362,9 @@
+ 	// case with HostReachableServices
+ 	AltDstIP string
+ 
++	// AltDstIPs lists additional, explicitly selected Service backend addresses.
++	AltDstIPs []string
++
+ 	// AltDstPort, if non-zero, indicates an alternative port number for the
+ 	// DstPort to be matched. This is useful if the destination port is NATed,
+ 	// which is for example the case for service ports, NodePort or HostPort
+--- /dev/null
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/self_service.go
+@@ -0,0 +1,96 @@
++// SPDX-License-Identifier: Apache-2.0
++// Copyright Authors of Cilium
++
++package check
++
++import (
++	"fmt"
++	"net"
++
++	flow "github.com/cilium/cilium/api/v1/flow"
++	"github.com/cilium/cilium/cilium-cli/connectivity/filters"
++	"github.com/cilium/cilium/cilium-cli/utils/features"
++)
++
++// SelfServiceSocketRequirements is limited to the lab self-Service scenario.
++// PRE proves a socket lookup of the Service, not translation completion or a
++// TCP handshake. ExecInPod must separately validate the curl result.
++func SelfServiceSocketRequirements(pod Pod, svc Service, peers map[string]Pod, family features.IPFamily) ([]filters.FlowSetRequirement, error) {
++	src, dst := pod.Address(family), svc.Address(family)
++	if pod.NameWithoutNamespace() == "" || svc.NameWithoutNamespace() == "" ||
++		net.ParseIP(src) == nil || net.ParseIP(dst) == nil || svc.Port() == 0 ||
++		pod.Namespace() != svc.Service.Namespace || len(svc.Service.Spec.Selector) == 0 {
++		return nil, fmt.Errorf("requires a named Pod and literal-IP Service in the same namespace")
++	}
++	count := 0
++	for _, peer := range peers {
++		if peer.Namespace() != svc.Service.Namespace {
++			continue
++		}
++		matches := true
++		for key, value := range svc.Service.Spec.Selector {
++			if peer.Pod.Labels[key] != value {
++				matches = false
++				break
++			}
++		}
++		if matches {
++			if peer.Name() != pod.Name() || peer.Address(family) != src {
++				return nil, fmt.Errorf("Service selects another test Pod: %s", peer.Name())
++			}
++			count++
++		}
++	}
++	if count != 1 {
++		return nil, fmt.Errorf("expected exactly one matching test Pod, got %d", count)
++	}
++	f := &selfSocketFilter{src: src, dst: dst, ns: pod.Namespace(), pod: pod.NameWithoutNamespace(), service: svc.NameWithoutNamespace(), port: svc.Port()}
++	req := filters.FlowRequirement{Filter: f, Msg: "self-Service PRE socket lookup (HTTP result checked by curl)"}
++	// A single observation is sufficient. It is deliberately not labelled SYN/FIN.
++	return []filters.FlowSetRequirement{{First: req, Last: req, RejectExceptions: true,
++		Except: []filters.FlowRequirement{{Filter: &selfSocketFailure{src: src, dst: dst, port: svc.Port()}, Msg: "self-Service drop or RST"}},
++	}}, nil
++}
++
++type selfSocketFilter struct {
++	src, dst, ns, pod, service string
++	port                       uint32
++}
++
++func (s *selfSocketFilter) String(*filters.FlowContext) string {
++	return fmt.Sprintf("socket(%s/%s %s -> %s/%s %s:%d PRE)", s.ns, s.pod, s.src, s.ns, s.service, s.dst, s.port)
++}
++func (s *selfSocketFilter) Match(f *flow.Flow, _ *filters.FlowContext) bool {
++	ip, tcp, source, service := f.GetIP(), f.GetL4().GetTCP(), f.GetSource(), f.GetDestinationService()
++	expectedFamily := flow.IPVersion_IPv6
++	if net.ParseIP(s.src).To4() != nil {
++		expectedFamily = flow.IPVersion_IPv4
++	}
++	return f.GetType() == flow.FlowType_SOCK && f.GetVerdict() == flow.Verdict_TRACED &&
++		f.GetSockXlatePoint() == flow.SocketTranslationPoint_SOCK_XLATE_POINT_PRE_DIRECTION_FWD &&
++		f.GetSocketCookie() != 0 && f.GetCgroupId() != 0 &&
++		ip.GetSource() == s.src && ip.GetDestination() == s.dst && ip.GetIpVersion() == expectedFamily &&
++		tcp != nil && tcp.GetDestinationPort() == s.port &&
++		source.GetNamespace() == s.ns && source.GetPodName() == s.pod &&
++		service.GetNamespace() == s.ns && service.GetName() == s.service
++}
++
++// PRE has no ephemeral source port. Reject any observed failure for this exact
++// Pod/VIP or Pod/self-IP port tuple within the action window, conservatively.
++type selfSocketFailure struct {
++	src, dst string
++	port     uint32
++}
++
++func (s *selfSocketFailure) String(*filters.FlowContext) string {
++	return "scoped self-Service drop/RST"
++}
++func (s *selfSocketFailure) Match(f *flow.Flow, _ *filters.FlowContext) bool {
++	ip, tcp := f.GetIP(), f.GetL4().GetTCP()
++	if ip == nil || tcp == nil {
++		return false
++	}
++	forward := ip.Source == s.src && (ip.Destination == s.dst || ip.Destination == s.src) && tcp.DestinationPort == s.port
++	reverse := ip.Destination == s.src && (ip.Source == s.dst || ip.Source == s.src) && tcp.SourcePort == s.port
++	return (forward || reverse) && (f.GetVerdict() == flow.Verdict_DROPPED || f.GetDropReasonDesc() != flow.DropReason_DROP_REASON_UNKNOWN || tcp.GetFlags().GetRST())
++}
+--- /dev/null
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/self_service_test.go
+@@ -0,0 +1,132 @@
++package check
++
++import (
++	flow "github.com/cilium/cilium/api/v1/flow"
++	"github.com/cilium/cilium/api/v1/observer"
++	"github.com/cilium/cilium/cilium-cli/utils/features"
++	"testing"
++)
++
++func TestLabSelfSocketMatching(t *testing.T) {
++	for _, family := range []features.IPFamily{features.IPFamilyV4, features.IPFamilyV6} {
++		svc := fixtureService()
++		pod := fixturePod("lab", "echo", "10.0.0.2", "fd00::2")
++		pod.Pod.Name = "self"
++		reqs, err := SelfServiceSocketRequirements(pod, svc, map[string]Pod{"self": pod}, family)
++		if err != nil {
++			t.Fatal(err)
++		}
++		good := func() *flow.Flow {
++			version := flow.IPVersion_IPv4
++			if family == features.IPFamilyV6 {
++				version = flow.IPVersion_IPv6
++			}
++			return &flow.Flow{Type: flow.FlowType_SOCK, Verdict: flow.Verdict_TRACED,
++				SockXlatePoint: flow.SocketTranslationPoint_SOCK_XLATE_POINT_PRE_DIRECTION_FWD, SocketCookie: 123, CgroupId: 456,
++				IP:     &flow.IP{Source: pod.Address(family), Destination: svc.Address(family), IpVersion: version},
++				L4:     &flow.Layer4{Protocol: &flow.Layer4_TCP{TCP: &flow.TCP{DestinationPort: 8080}}},
++				Source: &flow.Endpoint{Namespace: "lab", PodName: "self"}, DestinationService: &flow.Service{Namespace: "lab", Name: "echo"}}
++		}
++		for _, tc := range []struct {
++			name   string
++			mutate func(*flow.Flow)
++			want   bool
++		}{
++			{"correct-PRE", func(*flow.Flow) {}, true},
++			{"wrong-pod", func(f *flow.Flow) { f.Source.PodName = "other" }, false},
++			{"wrong-source-namespace", func(f *flow.Flow) { f.Source.Namespace = "other" }, false},
++			{"wrong-source-IP", func(f *flow.Flow) { f.IP.Source = "10.99.0.1" }, false},
++			{"wrong-service", func(f *flow.Flow) { f.DestinationService.Name = "other" }, false},
++			{"wrong-service-namespace", func(f *flow.Flow) { f.DestinationService.Namespace = "other" }, false},
++			{"wrong-VIP", func(f *flow.Flow) { f.IP.Destination = "10.99.0.2" }, false},
++			{"wrong-port", func(f *flow.Flow) { f.L4.GetTCP().DestinationPort = 80 }, false},
++			{"wrong-family", func(f *flow.Flow) { f.IP.IpVersion = flow.IPVersion_IP_NOT_USED }, false},
++			{"no-cookie", func(f *flow.Flow) { f.SocketCookie = 0 }, false},
++			{"no-cgroup", func(f *flow.Flow) { f.CgroupId = 0 }, false},
++			{"not-PRE", func(f *flow.Flow) { f.SockXlatePoint = flow.SocketTranslationPoint_SOCK_XLATE_POINT_POST_DIRECTION_FWD }, false},
++			{"packet-not-socket", func(f *flow.Flow) { f.Type = flow.FlowType_L3_L4; f.L4.GetTCP().Flags = &flow.TCPFlags{SYN: true} }, false},
++			{"dropped-socket", func(f *flow.Flow) { f.Verdict = flow.Verdict_DROPPED }, false},
++			{"nil-L4", func(f *flow.Flow) { f.L4 = nil }, false},
++		} {
++			t.Run(family.String()+"/"+tc.name, func(t *testing.T) {
++				tt := NewTest("lab", false, false)
++				tt.ctx = &ConnectivityTest{}
++				a := &Action{test: tt}
++				f := good()
++				tc.mutate(f)
++				r := a.matchFlowRequirements(flowsSet{&observer.GetFlowsResponse_Flow{Flow: f}}, &reqs[0])
++				if (r.Failures == 0 && !r.NeedMoreFlows) != tc.want {
++					t.Fatalf("unexpected match: %+v", r)
++				}
++			})
++		}
++		for _, rst := range []bool{false, true} {
++			for _, before := range []bool{false, true} {
++				tt := NewTest("lab", false, false)
++				tt.ctx = &ConnectivityTest{}
++				a := &Action{test: tt}
++				bad := tcpFlow(pod.Address(family), svc.Address(family), &flow.TCPFlags{SYN: !rst, RST: rst}, !rst)
++				fs := flowsSet{&observer.GetFlowsResponse_Flow{Flow: good()}, bad, &observer.GetFlowsResponse_Flow{Flow: good()}}
++				if before {
++					fs = append(flowsSet{bad}, fs...)
++				}
++				r := a.matchFlowRequirements(fs, &reqs[0])
++				if r.Failures == 0 && !r.NeedMoreFlows {
++					t.Fatalf("ignored failure rst=%v before=%v", rst, before)
++				}
++			}
++		}
++	}
++}
++
++func TestLabSelfServiceFixtureGuard(t *testing.T) {
++	for _, tc := range []string{"wrong-label", "wrong-namespace", "second-backend", "headless", "missing-backend"} {
++		t.Run(tc, func(t *testing.T) {
++			svc := fixtureService()
++			pod := fixturePod("lab", "echo", "10.0.0.2", "fd00::2")
++			pod.Pod.Name = "self"
++			peers := map[string]Pod{"self": pod}
++			switch tc {
++			case "wrong-label":
++				pod.Pod.Labels["app"] = "other"
++			case "wrong-namespace":
++				svc.Service.Namespace = "other"
++			case "second-backend":
++				other := fixturePod("lab", "echo", "10.0.0.3", "fd00::3")
++				other.Pod.Name = "other"
++				peers["other"] = other
++			case "headless":
++				svc.Service.Spec.ClusterIP = "None"
++			case "missing-backend":
++				peers = nil
++			}
++			if _, err := SelfServiceSocketRequirements(pod, svc, peers, features.IPFamilyV4); err == nil {
++				t.Fatal("accepted invalid fixture")
++			}
++		})
++	}
++}
++
++func TestLabHTTPProxyStillRequiresHTTPEvent(t *testing.T) {
++	svc := fixtureService()
++	client := fixturePod("lab", "client", "10.0.0.1", "fd00::1")
++	tt := NewTest("lab", false, false)
++	tt.ctx = &ConnectivityTest{}
++	a := &Action{test: tt, src: &client, dst: svc, ipFam: features.IPFamilyV4, expEgress: Result{HTTP: HTTP{Method: "GET", URL: "http://echo/"}}}
++	reqs := a.GetEgressRequirements(FlowParameters{})
++	if len(reqs) != 2 {
++		t.Fatalf("HTTP requirement missing: %d", len(reqs))
++	}
++	fs := flowsSet{tcpFlow("10.0.0.1", "10.96.0.1", &flow.TCPFlags{SYN: true}, false), tcpFlow("10.0.0.1", "10.96.0.1", &flow.TCPFlags{SYN: true, ACK: true}, false), tcpFlow("10.0.0.1", "10.96.0.1", &flow.TCPFlags{FIN: true, ACK: true}, false)}
++	r := a.matchFlowRequirements(fs, &reqs[1])
++	if r.Failures == 0 && !r.NeedMoreFlows {
++		t.Fatal("TCP-only accepted for HTTP proxy")
++	}
++	f := tcpFlow("10.0.0.1", "10.96.0.1", &flow.TCPFlags{ACK: true}, false)
++	f.Flow.L7 = &flow.Layer7{Record: &flow.Layer7_Http{Http: &flow.HTTP{Method: "GET", Url: "http://echo/"}}}
++	fs = append(fs, f)
++	r = a.matchFlowRequirements(fs, &reqs[1])
++	if r.Failures != 0 || r.NeedMoreFlows {
++		t.Fatalf("matching HTTP rejected: %+v", r)
++	}
++}
+--- /dev/null
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/service_flow.go
+@@ -0,0 +1,39 @@
++// SPDX-License-Identifier: Apache-2.0
++// Lab candidate: preserve concrete Service/backend destinations after Socket LB.
++package check
++
++import (
++	"github.com/cilium/cilium/cilium-cli/utils/features"
++	"net"
++	"slices"
++)
++
++// ServiceFlowParameters accepts the Service VIP and only matching echo backends.
++// This lab helper covers selector-based echo Services with unchanged target ports.
++func ServiceFlowParameters(svc Service, pods map[string]Pod, family features.IPFamily) FlowParameters {
++	p := FlowParameters{DNSRequired: net.ParseIP(svc.Address(family)) == nil, AltDstPort: svc.Port()}
++	if len(svc.Service.Spec.Selector) == 0 {
++		return p
++	}
++	for _, pod := range pods {
++		if pod.Pod.Namespace != svc.Service.Namespace {
++			continue
++		}
++		matches := true
++		for k, v := range svc.Service.Spec.Selector {
++			if got, ok := pod.Pod.Labels[k]; !ok || got != v {
++				matches = false
++				break
++			}
++		}
++		if !matches {
++			continue
++		}
++		ip := pod.Address(family)
++		if ip != "" && !slices.Contains(p.AltDstIPs, ip) {
++			p.AltDstIPs = append(p.AltDstIPs, ip)
++		}
++	}
++	slices.Sort(p.AltDstIPs)
++	return p
++}
+--- /dev/null
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/service_flow_test.go
+@@ -0,0 +1,89 @@
++package check
++
++import (
++	flow "github.com/cilium/cilium/api/v1/flow"
++	"github.com/cilium/cilium/api/v1/observer"
++	"github.com/cilium/cilium/cilium-cli/utils/features"
++	core "k8s.io/api/core/v1"
++	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
++	"testing"
++)
++
++func fixturePod(ns, label, v4, v6 string) Pod {
++	return Pod{Pod: &core.Pod{ObjectMeta: meta.ObjectMeta{Namespace: ns, Labels: map[string]string{"app": label}}, Status: core.PodStatus{PodIPs: []core.PodIP{{IP: v4}, {IP: v6}}}}}
++}
++func fixtureService() Service {
++	return Service{Service: &core.Service{ObjectMeta: meta.ObjectMeta{Name: "echo", Namespace: "lab"}, Spec: core.ServiceSpec{Selector: map[string]string{"app": "echo"}, ClusterIP: "10.96.0.1", ClusterIPs: []string{"10.96.0.1", "fd00:96::1"}, IPFamilies: []core.IPFamily{core.IPv4Protocol, core.IPv6Protocol}, Ports: []core.ServicePort{{Port: 8080}}}}}
++}
++func TestLabServiceDestinations(t *testing.T) {
++	svc := fixtureService()
++	pods := map[string]Pod{"valid": fixturePod("lab", "echo", "10.0.0.2", "fd00::2"), "wrong-label": fixturePod("lab", "other", "10.0.0.3", "fd00::3"), "wrong-ns": fixturePod("other", "echo", "10.0.0.4", "fd00::4")}
++	for _, family := range []features.IPFamily{features.IPFamilyV4, features.IPFamilyV6} {
++		p := ServiceFlowParameters(svc, pods, family)
++		want := pods["valid"].Address(family)
++		if p.DNSRequired || len(p.AltDstIPs) != 1 || p.AltDstIPs[0] != want {
++			t.Fatalf("unexpected parameters: %+v", p)
++		}
++	}
++	svc.Service.Spec.Selector = nil
++	if p := ServiceFlowParameters(svc, pods, features.IPFamilyV4); len(p.AltDstIPs) != 0 {
++		t.Fatal("empty selector accepted backends")
++	}
++	svc.Service.Spec.ClusterIP = core.ClusterIPNone
++	if !ServiceFlowParameters(svc, pods, features.IPFamilyV4).DNSRequired {
++		t.Fatal("headless name lost DNS requirement")
++	}
++}
++func tcpFlow(src, dst string, flags *flow.TCPFlags, drop bool) *observer.GetFlowsResponse_Flow {
++	f := &flow.Flow{IP: &flow.IP{Source: src, Destination: dst}, L4: &flow.Layer4{Protocol: &flow.Layer4_TCP{TCP: &flow.TCP{SourcePort: 43000, DestinationPort: 8080, Flags: flags}}}, Verdict: flow.Verdict_FORWARDED}
++	if flags.ACK && flags.SYN {
++		f.IP.Source = dst
++		f.IP.Destination = src
++		f.L4.GetTCP().SourcePort = 8080
++		f.L4.GetTCP().DestinationPort = 43000
++	}
++	if drop {
++		f.Verdict = flow.Verdict_DROPPED
++		f.DropReasonDesc = flow.DropReason_POLICY_DENIED
++	}
++	return &observer.GetFlowsResponse_Flow{Flow: f}
++}
++func TestLabServiceMatcherRejectsIncorrectTraffic(t *testing.T) {
++	svc := fixtureService()
++	client := fixturePod("lab", "client", "10.0.0.1", "fd00::1")
++	backend := fixturePod("lab", "echo", "10.0.0.2", "fd00::2")
++	for _, family := range []features.IPFamily{features.IPFamilyV4, features.IPFamilyV6} {
++		p := ServiceFlowParameters(svc, map[string]Pod{"echo": backend}, family)
++		for _, tc := range []struct {
++			name, src, dst   string
++			drop, deny, want bool
++		}{
++			{"backend-success", client.Address(family), backend.Address(family), false, false, true},
++			{"vip-success", client.Address(family), svc.Address(family), false, false, true},
++			{"unrelated-destination", client.Address(family), "10.99.99.99", false, false, false},
++			{"wrong-source", "10.99.99.98", backend.Address(family), false, false, false},
++			{"unexpected-drop", client.Address(family), backend.Address(family), true, false, false},
++			{"expected-drop", client.Address(family), backend.Address(family), true, true, true},
++			{"unexpected-allow", client.Address(family), backend.Address(family), false, true, false},
++		} {
++			t.Run(family.String()+"/"+tc.name, func(t *testing.T) {
++				tt := NewTest("lab", false, false)
++				tt.ctx = &ConnectivityTest{}
++				a := &Action{test: tt, src: &client, dst: svc, ipFam: family, expEgress: Result{Drop: tc.deny}}
++				reqs := a.GetEgressRequirements(p)
++				if len(reqs) != 1 {
++					t.Fatalf("literal IP unexpectedly requires DNS: %d", len(reqs))
++				}
++				fs := flowsSet{tcpFlow(tc.src, tc.dst, &flow.TCPFlags{SYN: true}, tc.drop)}
++				if !tc.drop {
++					fs = append(fs, tcpFlow(tc.src, tc.dst, &flow.TCPFlags{SYN: true, ACK: true}, false), tcpFlow(tc.src, tc.dst, &flow.TCPFlags{FIN: true, ACK: true}, false))
++				}
++				r := a.matchFlowRequirements(fs, &reqs[0])
++				pass := r.Failures == 0 && !r.NeedMoreFlows
++				if pass != tc.want {
++					t.Fatalf("pass=%v want=%v result=%+v", pass, tc.want, r)
++				}
++			})
++		}
++	}
++}
+--- a/vendor/github.com/cilium/cilium/cilium-cli/connectivity/filters/filters.go
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/filters/filters.go
+@@ -53,10 +53,12 @@
+ }
+ 
+ type FlowSetRequirement struct {
+-	First  FlowRequirement
+-	Middle []FlowRequirement
+-	Last   FlowRequirement
+-	Except []FlowRequirement
++	// RejectExceptions prevents retrying past an observed forbidden flow.
++	RejectExceptions bool
++	First            FlowRequirement
++	Middle           []FlowRequirement
++	Last             FlowRequirement
++	Except           []FlowRequirement
+ }
+ 
+ type andFilter struct {
+--- a/vendor/github.com/cilium/cilium/cilium-cli/connectivity/tests/service.go
++++ b/vendor/github.com/cilium/cilium/cilium-cli/connectivity/tests/service.go
+@@ -9,6 +9,7 @@
+ 	"net"
+ 	"slices"
+ 	"strconv"
++	"time"
+ 
+ 	"github.com/cilium/cilium/cilium-cli/connectivity/check"
+ 	"github.com/cilium/cilium/cilium-cli/utils/features"
+@@ -59,10 +60,8 @@
+ 				t.NewAction(s, fmt.Sprintf("curl-%s-%d", ipFamily, i), &pod, svc, ipFamily).Run(func(a *check.Action) {
+ 					a.ExecInPod(ctx, a.CurlCommand(svc))
+ 
+-					a.ValidateFlows(ctx, pod, a.GetEgressRequirements(check.FlowParameters{
+-						DNSRequired: true,
+-						AltDstPort:  svc.Port(),
+-					}))
++					a.ValidateFlows(ctx, pod, a.GetEgressRequirements(
++						check.ServiceFlowParameters(svc, ct.EchoPods(), ipFamily)))
+ 
+ 					a.ValidateMetrics(ctx, pod, a.GetEgressMetricsRequirements())
+ 				})
+@@ -264,16 +263,15 @@
+ 
+ 			// Create the Action with the original svc as this will influence what the
+ 			// flow matcher looks for in the flow logs.
+-			t.NewAction(s, name, pod, svc, features.IPFamilyAny).Run(func(a *check.Action) {
++			t.NewAction(s, name, pod, svc, ipFam).Run(func(a *check.Action) {
+ 				a.ExecInPod(ctx, a.CurlCommand(ep))
+ 
+ 				if validateFlows {
+-					a.ValidateFlows(ctx, pod, a.GetEgressRequirements(check.FlowParameters{
+-						// The fact that curl is hitting the NodePort instead of the
+-						// backend Pod's port is specified here. This will cause the matcher
+-						// to accept both the NodePort and the ClusterIP (container) port.
+-						AltDstPort: np,
+-					}))
++					p := check.ServiceFlowParameters(svc, t.Context().EchoPods(), ipFam)
++					p.DNSRequired = false // NodePort URLs contain a literal node IP.
++					p.AltDstIP = addr.Address
++					p.AltDstPort = np
++					a.ValidateFlows(ctx, pod, a.GetEgressRequirements(p))
+ 				}
+ 			})
+ 		}
+@@ -439,11 +437,27 @@
+ 				}
+ 
+ 				t.NewAction(s, fmt.Sprintf("curl-%s-%d", ipFamily, i), &pod, svc, ipFamily).Run(func(a *check.Action) {
++					reqs, err := check.SelfServiceSocketRequirements(pod, svc, ct.L7LBClientPods(), ipFamily)
++					if err != nil {
++						a.Failf("self-Service fixture: %s", err)
++						return
++					}
++					// The lab uses a 5s socket-event aggregation token interval.
++					// Allow a fresh interval after CLI deployment probes. Other
++					// traffic can still consume the token; missing events fail.
++					if ct.FlowAggregation() {
++						a.Log("Waiting 6s before self-Service probe (lab socket trace interval: 5s)")
++						select {
++						case <-ctx.Done():
++							a.Failf("socket trace wait: %s", ctx.Err())
++							return
++						case <-time.After(6 * time.Second):
++						}
++					}
++					// Lab socket-LB path: curl validates the HTTP response; the
++					// scoped PRE event validates the Service socket lookup only.
+ 					a.ExecInPod(ctx, a.CurlCommand(svc))
+-					a.ValidateFlows(ctx, pod, a.GetEgressRequirements(check.FlowParameters{
+-						DNSRequired: true,
+-						AltDstPort:  svc.Port(),
+-					}))
++					a.ValidateFlows(ctx, pod, reqs)
+ 					a.ValidateMetrics(ctx, pod, a.GetEgressMetricsRequirements())
+ 				})
+ 			})

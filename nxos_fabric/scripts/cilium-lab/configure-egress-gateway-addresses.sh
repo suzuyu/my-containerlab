@@ -1,113 +1,131 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# The controller runs on the lab host; no Python dependency is added to Kind nodes.
+exec python3 - "$@" <<'PY'
+import argparse
+import ipaddress
+import json
+import subprocess
+import sys
+import time
 
-usage() {
-  cat <<'EOF'
-Usage:
-  configure-egress-gateway-addresses.sh --cluster adc-k02 \
-    --action check|apply|remove
+parser = argparse.ArgumentParser(description='Manage dedicated routed Egress /32 and /128 addresses on an owned dummy interface. No BGP or Policy changes.')
+parser.add_argument('--cluster', required=True, choices=['adc-k02', 'bdc-k03'])
+parser.add_argument('--action', required=True, choices=['check', 'apply', 'remove'])
+args = parser.parse_args()
+iface = 'egress0'
+owner = 'cilium-lab-egress:' + args.cluster
+site = 24 if args.cluster == 'adc-k02' else 25
+node_segment = 4 if site == 24 else 5
+nodes = [args.cluster + '-worker', args.cluster + '-worker2']
+fabric = ['bond0.14', 'bond0.104'] if site == 24 else ['bond0.105', 'bond0.105']
+expected = {node: [f'172.16.{site}.{i}/32', f'fd21:0:0:{site}::{i}/128'] for i, node in enumerate(nodes, 1)}
 
-The script manages the dedicated Egress Gateway secondary addresses on the
-two k02 worker Kind node containers. Cilium does not allocate these addresses.
-EOF
-}
+def fail(message):
+    raise RuntimeError(message)
 
-die() {
-  printf 'ERROR: %s\n' "$*" >&2
-  exit 1
-}
+def run(*cmd):
+    p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if p.returncode:
+        fail(' '.join(cmd) + ': ' + p.stderr.strip())
+    return p.stdout
 
-cluster=""
-action=""
+def ip(node, *cmd):
+    return run('docker', 'exec', node, 'ip', *cmd)
 
-while (($# > 0)); do
-  case "$1" in
-    --cluster)
-      (($# >= 2)) || die "--cluster requires a value"
-      cluster="$2"
-      shift 2
-      ;;
-    --action)
-      (($# >= 2)) || die "--action requires a value"
-      action="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      die "unknown argument: $1"
-      ;;
-  esac
-done
+def addresses(node):
+    return json.loads(ip(node, '-j', 'addr', 'show'))
 
-[[ "$cluster" == adc-k02 ]] || die "only adc-k02 is defined for the initial Egress Gateway test"
-case "$action" in
-  check|apply|remove) ;;
-  *) die "--action must be check, apply, or remove" ;;
-esac
+def normalized(record):
+    return ipaddress.ip_interface(f"{record['local']}/{record['prefixlen']}")
 
-command -v docker >/dev/null 2>&1 || die "docker is required"
+def link(node):
+    links = json.loads(ip(node, '-j', '-d', 'link', 'show'))
+    return next((x for x in links if x['ifname'] == iface), None)
 
-nodes=(adc-k02-worker adc-k02-worker2)
-interfaces=(bond0.14 bond0.104)
-primary_v4=(172.16.4.21/24 172.16.4.22/24)
-egress_v4=(172.16.4.31/24 172.16.4.32/24)
-egress_v6=(fd21:0:0:4::3:1/64 fd21:0:0:4::3:2/64)
+def verify_owned(node, obj):
+    if obj.get('linkinfo', {}).get('info_kind') != 'dummy' or obj.get('ifalias') != owner:
+        fail(f'{node}: {iface} exists but is not an owned dummy interface; leave it unchanged')
+    allowed = {ipaddress.ip_interface(x) for x in expected[node]}
+    for dev in addresses(node):
+        if dev['ifname'] != iface:
+            continue
+        for rec in dev.get('addr_info', []):
+            addr = normalized(rec)
+            if addr not in allowed and not addr.ip.is_link_local:
+                fail(f'{node}: unexpected address {addr} on {iface}; leave it unchanged')
 
-address_present() {
-  local node="$1"
-  local family="$2"
-  local interface="$3"
-  local address="$4"
-  if [[ "$family" == v4 ]]; then
-    docker exec "$node" ip -o -4 addr show dev "$interface" | awk '{print $4}' | grep -Fxq "$address"
-  else
-    docker exec "$node" ip -o -6 addr show dev "$interface" | awk '{print $4}' | grep -Fxq "$address"
-  fi
-}
+def ready(node):
+    required = {ipaddress.ip_interface(x) for x in expected[node]}
+    for _ in range(10):
+        found = set()
+        for dev in addresses(node):
+            if dev['ifname'] != iface:
+                continue
+            for rec in dev.get('addr_info', []):
+                addr = normalized(rec)
+                if addr not in required:
+                    continue
+                flags = rec.get('flags', [])
+                if rec.get('dadfailed') or 'dadfailed' in flags:
+                    fail(f'{node}: DAD failed for {addr}')
+                if not rec.get('tentative') and 'tentative' not in flags:
+                    found.add(addr)
+        obj = link(node)
+        if obj and 'UP' in obj.get('flags', []) and obj.get('operstate', '').upper() in ('UP', 'UNKNOWN') and found == required:
+            return
+        time.sleep(1)
+    fail(f'{node}: addresses or {iface} are not ready')
 
-failed=false
-for index in "${!nodes[@]}"; do
-  node="${nodes[$index]}"
-  interface="${interfaces[$index]}"
-  address_v4="${egress_v4[$index]}"
-  address_v6="${egress_v6[$index]}"
-
-  docker inspect "$node" >/dev/null 2>&1 || die "container not found: $node"
-  docker exec "$node" ip link show dev "$interface" >/dev/null 2>&1 || die "$node is missing $interface"
-  address_present "$node" v4 "$interface" "${primary_v4[$index]}" || \
-    die "$node $interface is missing expected primary address ${primary_v4[$index]}"
-
-  case "$action" in
-    apply)
-      address_present "$node" v4 "$interface" "$address_v4" || \
-        docker exec "$node" ip addr add "$address_v4" dev "$interface"
-      address_present "$node" v6 "$interface" "$address_v6" || \
-        docker exec "$node" ip -6 addr add "$address_v6" dev "$interface" nodad
-      ;;
-    remove)
-      if address_present "$node" v4 "$interface" "$address_v4"; then
-        docker exec "$node" ip addr del "$address_v4" dev "$interface"
-      fi
-      if address_present "$node" v6 "$interface" "$address_v6"; then
-        docker exec "$node" ip -6 addr del "$address_v6" dev "$interface"
-      fi
-      ;;
-  esac
-
-  has_v4=false
-  has_v6=false
-  address_present "$node" v4 "$interface" "$address_v4" && has_v4=true
-  address_present "$node" v6 "$interface" "$address_v6" && has_v6=true
-  printf '%s %s IPv4=%s IPv6=%s\n' "$node" "$interface" "$has_v4" "$has_v6"
-
-  if [[ "$action" == check || "$action" == apply ]]; then
-    [[ "$has_v4" == true && "$has_v6" == true ]] || failed=true
-  else
-    [[ "$has_v4" == false && "$has_v6" == false ]] || failed=true
-  fi
-done
-
-[[ "$failed" == false ]] || die "Egress Gateway address validation failed"
+try:
+    # Complete preflight on both nodes before modifying either node.
+    target_ips = {ipaddress.ip_interface(x).ip: n for n, values in expected.items() for x in values}
+    for idx, node in enumerate(nodes):
+        run('docker', 'inspect', node)
+        ip(node, 'link', 'show', 'dev', fabric[idx])
+        primary = ipaddress.ip_interface(f'172.16.{node_segment}.{21+idx}/24')
+        current = addresses(node)
+        if not any(d['ifname'] == fabric[idx] and any(normalized(a) == primary for a in d.get('addr_info', [])) for d in current):
+            fail(f'{node}: expected Fabric primary address {primary} missing')
+        obj = link(node)
+        if obj:
+            verify_owned(node, obj)
+        elif args.action == 'check':
+            fail(f'{node}: {iface} is absent')
+    # Detect duplicates on all running Kind nodes for this cluster, including control-plane.
+    for node in run('docker', 'ps', '--format', '{{.Names}}').splitlines():
+        if not node.startswith(args.cluster + '-'):
+            continue
+        for dev in addresses(node):
+            for rec in dev.get('addr_info', []):
+                addr = normalized(rec)
+                if addr.ip in target_ips:
+                    intended = target_ips[addr.ip]
+                    if node != intended or dev['ifname'] != iface or addr not in {ipaddress.ip_interface(x) for x in expected[intended]}:
+                        fail(f'duplicate/wrong prefix: {addr} on {node}/{dev["ifname"]}')
+    for node in nodes:
+        obj = link(node)
+        if args.action == 'apply':
+            if not obj:
+                ip(node, 'link', 'add', iface, 'type', 'dummy')
+                ip(node, 'link', 'set', 'dev', iface, 'alias', owner)
+            ip(node, 'link', 'set', 'dev', iface, 'up')
+            have = {normalized(a) for d in addresses(node) if d['ifname'] == iface for a in d.get('addr_info', [])}
+            for value in expected[node]:
+                addr = ipaddress.ip_interface(value)
+                if addr not in have:
+                    ip(node, '-4' if addr.version == 4 else '-6', 'addr', 'add', str(addr), 'dev', iface)
+        elif args.action == 'remove' and obj:
+            # All unexpected global addresses and ownership were checked above.
+            ip(node, 'link', 'delete', 'dev', iface)
+        if args.action in ('apply', 'check'):
+            ready(node)
+            print(f'{node} {iface} IPv4=true IPv6=true ownership=OK', flush=True)
+        else:
+            if link(node):
+                fail(f'{node}: {iface} still exists')
+            print(f'{node} {iface} absent=true', flush=True)
+except (RuntimeError, OSError, ValueError) as exc:
+    print('ERROR: ' + str(exc), file=sys.stderr)
+    sys.exit(1)
+PY

@@ -7,6 +7,7 @@ Usage:
   converge-cilium-lab.sh --profile singlesite-final|multisite-final \
     [--context-k02 kind-adc-k02] [--context-k03 kind-bdc-k03] \
     [--coredns-upstream DNS_IPV4] \
+    [--checksum-state-k02 ENROLLED_STATE_JSON] \
     [--output-dir DIR] [--apply]
 
 Without --apply, perform only offline Helm/Kustomize rendering. With --apply,
@@ -26,6 +27,7 @@ context_k02="kind-adc-k02"
 context_k03="kind-bdc-k03"
 output_dir=""
 coredns_upstream=""
+checksum_state_k02=""
 apply=false
 
 while (($# > 0)); do
@@ -59,6 +61,11 @@ while (($# > 0)); do
       apply=true
       shift
       ;;
+    --checksum-state-k02)
+      (($# >= 2)) || die "--checksum-state-k02 requires a value"
+      checksum_state_k02="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -73,6 +80,17 @@ case "$profile" in
   singlesite-final|multisite-final) ;;
   *) die "--profile must be singlesite-final or multisite-final" ;;
 esac
+
+if [[ -n "$checksum_state_k02" ]]; then
+  [[ "$profile" == singlesite-final ]] || die "checksum compatibility is explicitly scoped to singlesite-final"
+  [[ -f "$checksum_state_k02" ]] || die "enrolled checksum state does not exist"
+  python3 - "$checksum_state_k02" "$context_k02" <<'PY'
+import json, sys
+policy = json.load(open(sys.argv[1]))
+if policy.get('cluster') != 'adc-k02' or policy.get('context') != sys.argv[2] or not policy.get('enabled'):
+    sys.exit('checksum state must be enabled and match adc-k02 and the selected context')
+PY
+fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd "${script_dir}/../../.." && pwd -P)"
@@ -122,6 +140,16 @@ prepare_site() {
   local site_root="${fabric_root}/k8s_kind/${site}"
 
   require_context "$context"
+  if [[ "$site" == k02 && -n "$checksum_state_k02" ]]; then
+    local cluster_uid
+    cluster_uid="$(kubectl --context "$context" get namespace kube-system -o jsonpath='{.metadata.uid}')"
+    python3 - "$checksum_state_k02" "$cluster_uid" <<'PY'
+import json, sys
+policy = json.load(open(sys.argv[1]))
+if policy['expected']['cluster_uid'] != sys.argv[2]:
+    sys.exit('checksum enrollment belongs to another cluster UID; stop before changing the cluster')
+PY
+  fi
   "${script_dir}/configure-cilium-node-labels.sh" --context "$context" --apply
   "${script_dir}/preflight-host-and-kind.sh" --cluster "$cluster" --kube-context "$context"
   "${script_dir}/render-k8s-api-values.sh" \
@@ -205,6 +233,10 @@ accept_site() {
 if [[ "$profile" == singlesite-final ]]; then
   prepare_site k02 adc-k02 "$context_k02"
   install_cilium k02 "$context_k02" 20-singlesite-egress.yaml
+  if [[ -n "$checksum_state_k02" ]]; then
+    python3 "${script_dir}/checksum-compat.py" reconcile --state "$checksum_state_k02"
+    python3 "${script_dir}/checksum-compat.py" check --state "$checksum_state_k02"
+  fi
   configure_coredns k02 "$context_k02"
   apply_platform_resources k02 adc-k02 "$context_k02" false
   install_tetragon k02 "$context_k02"

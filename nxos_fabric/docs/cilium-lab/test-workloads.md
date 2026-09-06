@@ -131,12 +131,16 @@ LB確認ではHTTP keep-aliveにより同じconnectionが同じbackendへ継続�
 
 ## 6. `egress-probe`: Egress Gateway
 
+実行コマンド、端末 A／B の役割、出力の見方、証跡保存と撤去は
+[Egress Gateway 構築・試験手順](egress-gateway-test-plan.md)を参照する。
+以下は試験設計であり、実施済みの結果ではない。
+
 ### 6.1 構成
 
 ```mermaid
 flowchart LR
-    Selected["selected-client\npolicy対象"]
-    Control["control-client\npolicy対象外"]
+    Selected["selected\nPolicy 対象"]
+    Control["unselected\nPolicy 対象外"]
     SourceNode["source node"]
     Gateway["gateway node A / B\nper-node egress IP"]
     NXOS["NX-OS fabric"]
@@ -149,21 +153,22 @@ flowchart LR
 | Resource | 設計 |
 |---|---|
 | Namespace | `egress-probe` |
-| `selected-client` | `CiliumEgressGatewayPolicy`のPod selectorに一致する |
-| `control-client` | 同じnamespaceだがselectorに一致しない |
+| `selected` | `CiliumEgressGatewayPolicy` の Pod selector に一致する。worker2 に配置する |
+| `unselected` | 同じ namespace／worker2 に配置するが、selector に一致しない |
 | External server | 既存の `adc-t1sv0102` を使用する |
 | Traffic | HTTPを基本とし、IPv4/IPv6を`curl -4`/`curl -6`で分ける |
 
 Gateway Node は `adc-k02-worker`／`adc-k02-worker2` とし、`gw-a` を初期 profile、`gw-b` を手動切替先とする。
 Egress IP は Gateway ごとに
-`172.16.4.31`／`fd21:0:0:4::3:1` と `172.16.4.32`／`fd21:0:0:4::3:2`、selected Pod の label は
+`172.16.24.1`／`fd21:0:0:24::1` と `172.16.24.2`／`fd21:0:0:24::2`、selected Pod の label は
 `lab.cilium.io/egress-policy=selected` とする。destination は `172.16.0.0/24`、
 `fd21:0:0:1::/64`、除外対象は `adc-t1sv0101` の `172.16.0.1/32`、
 `fd21:0:0:1::101/128` とする。
 
-Cilium は Egress IP を Node へ動的に割り当てない。Policy 適用前に worker の `bond0.14` と worker2 の
-`bond0.104` へ IPv4／IPv6 の secondary address を設定して重複、ARP／NDP、return route を確認する。IPv4 Policy と
-IPv6 Policy に分割し、選択中 profile の `egressGateway` に 1 Node と対応する `egressIP` を指定する。
+Cilium は Egress IP を Node へ動的に割り当てない。各 Node の専用 `egress0` に `/32`／`/128` を設定し、
+`Interface` 広報、NX-OS の個別経路、外部からの戻り先を確認する。実通信は既存 Fabric NIC を通す。
+IPv4／IPv6 の別 Policy に `egressIP` を指定する。k03 の予約値と導入条件は
+[専用 IP・BGP 経路設計](egress-gateway-routed-design.md) を参照する。
 
 外部serverはKubernetes ServiceやIngressを経由させず、実際にcluster外のFabric networkへ置く。
 access logまたはpacket captureでremote addressを記録し、Cilium Egress Gatewayによるsource変換を
@@ -180,11 +185,15 @@ access logまたはpacket captureでremote addressを記録し、Cilium Egress G
 | `W-EGRESS-05` | source nodeとgateway nodeが異なる | gateway nodeまでredirectされてSNATされる |
 | `W-EGRESS-06` | 新規Pod作成直後 | policy反映までの時間とsource IPを記録する |
 | `W-EGRESS-07` | gateway node停止 | 新規/既存connectionとfail-closed動作を記録する |
-| `W-EGRESS-08` | policy削除/Helm rollback | baseline egressへ戻り、LB/BGPにregressionがない |
-| `W-EGRESS-09` | `gw-a` から `gw-b` profile へ計画切替 | 既存 connection は切断を許容し、新規 connection が `.32`／`::3:2` で復旧する |
+| `W-EGRESS-08` | 試験 Policy の削除 | baseline egress へ戻り、LB／BGP に regression がない。初期構築済み feature の Helm rollback は含めない |
+| `W-EGRESS-09` | `gw-a` から `gw-b` profile へ計画切替 | 既存 connection は切断を許容し、新規 connection が `172.16.24.2`／`fd21:0:0:24::2` で復旧する |
 | `W-EGRESS-10` | `gw-a` Node を hard stop | 自動切替を前提にせず、blackhole／fail-closed と障害検知時間を記録する |
 | `W-EGRESS-11` | 障害検知後に `gw-b` profile を適用 | 新規 connection が切替先 Gateway から成功し、手動復旧時間を記録できる |
-| `W-EGRESS-12` | 両 Gateway が選択不能 | 対象 traffic が fail-closed で drop される |
+| `W-EGRESS-12` | Gateway／Egress IP の選択不能 | 下記 12A／12B に分け、対象通信の drop と対象外通信の継続・復旧を確認する |
+| `W-EGRESS-12A` | Gateway selector に一致する Node がない | `NO_EGRESS_GATEWAY` に対応する drop。Node 自体は停止しない |
+| `W-EGRESS-12B` | Gateway は選べるが、指定 Egress IP がその Node にない | `DROP_NO_EGRESS_IP` に対応する drop。稼働 NIC の IP は削除しない |
+| `W-EGRESS-13` | Policy 適用前の BGP 広報 | 各 `/32`／`/128` が所有 Gateway を指し、外部の VRF まで戻り経路が届く。Egress 集約はない |
+| `W-EGRESS-14` | Policy と BGP advertisement の削除 | 個別経路が撤回され、通常 Pod egress と LB 集約・HTTP が維持される |
 
 通常の Cluster Mesh profile と `multisite-final` には、この workload と Egress Gateway 用 resource を
 含めない。Stage 5 合格後の同時有効化試験では、k02／k03 に別々の namespace、Policy、local Gateway を

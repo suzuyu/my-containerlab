@@ -1,0 +1,28 @@
+{
+  "official_source": "https://codeload.github.com/cilium/cilium-cli/tar.gz/refs/tags/v0.19.7",
+  "source_sha256": "3bb9a91bbbede233cc5929208c6de1366b0d5df99a9d65728121589f7b1b81cf",
+  "version": "v0.19.7-lab-flowfix.3",
+  "binary_sha256": "b143e996066169602894fa5572873c8871cf5998fbff1be09621e3811fade7cb",
+  "go_version": "go1.27.1",
+  "scope": "lab candidate; standard CLI unchanged",
+  "official_git_url": "https://github.com/cilium/cilium-cli.git",
+  "upstream_tag": "v0.19.7",
+  "upstream_commit": "7ca7fc53c20275f5c10ef5f3557076691fd1d720",
+  "tag_object": "0daca0bcfdc383ad944cb759dab5cdb5d5488c24",
+  "patch_file": "v0.19.7-lab-flowfix.3.patch",
+  "patch_sha256": "921e842e66bfc36a7efc2b2594ebfd14d8b751b61082a4b350bf4afa9edafd93",
+  "binary_sha256_meaning": "Reference binary from the original lab build; rebuild hash may differ with toolchain and build paths.",
+  "modified_files": [
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/builder/to_fqdns.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/builder/to_fqdns_lab_test.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/action.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/check.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/self_service.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/self_service_test.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/service_flow.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/check/service_flow_test.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/filters/filters.go",
+    "vendor/github.com/cilium/cilium/cilium-cli/connectivity/tests/service.go"
+  ],
+  "packaging_note": "Includes check/service_flow.go from the original build tree, omitted from the earlier evidence patch. Binary source logic unchanged."
+}

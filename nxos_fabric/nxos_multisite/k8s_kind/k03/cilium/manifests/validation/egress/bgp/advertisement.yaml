@@ -1,0 +1,27 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k03-egress
+  labels:
+    advertise: k03
+spec:
+  advertisements:
+    - advertisementType: Interface
+      interface:
+        name: egress0
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k03-egress-planned-shut
+  labels:
+    advertise: k03-planned-shut
+spec:
+  advertisements:
+    - advertisementType: Interface
+      interface:
+        name: egress0
+      attributes:
+        communities:
+          wellKnown:
+            - planned-shut

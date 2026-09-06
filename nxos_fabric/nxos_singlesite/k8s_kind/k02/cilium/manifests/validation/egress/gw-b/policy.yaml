@@ -16,7 +16,7 @@ spec:
     nodeSelector:
       matchLabels:
         kubernetes.io/hostname: adc-k02-worker2
-    egressIP: 172.16.4.32
+    egressIP: 172.16.24.2
 ---
 apiVersion: cilium.io/v2
 kind: CiliumEgressGatewayPolicy
@@ -36,4 +36,4 @@ spec:
     nodeSelector:
       matchLabels:
         kubernetes.io/hostname: adc-k02-worker2
-    egressIP: fd21:0:0:4::3:2
+    egressIP: fd21:0:0:24::2

@@ -96,14 +96,20 @@ route-map IPv6_DEFAULT-ONLY permit 1000
   match ipv6 address prefix-list IPv6_DEFAULT-ONLY_PREFIX
 route-map IPv6_REDISTRIBUTE_ALL permit 1000
   match ipv6 address prefix-list IPv6_ALL_PREFIX
+ip prefix-list CILIUM_K02_EGRESS_V4 seq 5 permit 172.16.24.0/24 le 32
+ipv6 prefix-list CILIUM_K02_EGRESS_V6 seq 5 permit fd21:0:0:24::/64 le 128
 route-map CILIUM_K02_IN_V4 permit 10
   match ip address prefix-list CILIUM_K02_AGG_V4
 route-map CILIUM_K02_IN_V4 permit 20
   match ip address prefix-list CILIUM_K02_LB_V4
+route-map CILIUM_K02_IN_V4 permit 30
+  match ip address prefix-list CILIUM_K02_EGRESS_V4
 route-map CILIUM_K02_IN_V6 permit 10
   match ipv6 address prefix-list CILIUM_K02_AGG_V6
 route-map CILIUM_K02_IN_V6 permit 20
   match ipv6 address prefix-list CILIUM_K02_LB_V6
+route-map CILIUM_K02_IN_V6 permit 30
+  match ipv6 address prefix-list CILIUM_K02_EGRESS_V6
 vrf context management
   ip name-server 192.168.129.254
   ip route 0.0.0.0/0 192.168.129.254
@@ -393,8 +399,10 @@ router bgp 65010
     router-id 10.0.250.1
     address-family ipv4 unicast
       maximum-paths 16
+      aggregate-address 172.16.24.0/24
     address-family ipv6 unicast
       maximum-paths 16
+      aggregate-address fd21:0:0:24::/64
     neighbor fd21::1:1
       remote-as 65001
       address-family ipv6 unicast
