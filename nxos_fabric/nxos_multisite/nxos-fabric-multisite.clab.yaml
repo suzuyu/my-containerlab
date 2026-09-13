@@ -10,7 +10,7 @@ mgmt:
 topology:
   kinds:
     cisco_n9kv:
-      image: vrnetlab/cisco_n9kv:10.5.4.M.lite
+      image: vrnetlab/cisco_n9kv:10.6.4.M.lite
       # startup-config: configs/as-equals/cisco_n9kv/__clabNodeName___run.txt
       # startup-config: configs/as-changes/cisco_n9kv/__clabNodeName___run.txt
       env:
@@ -498,7 +498,7 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::1:1/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9100";
+            export MTU="9150";
             export SET_DEFAULT_ROUTE="false";
             export KUBELET_NODE_IP="172.16.4.11,fd21:0:0:4::1:1";
 
@@ -522,7 +522,7 @@ topology:
         DEF_GW: "172.16.4.1"
         IPV6_CIDR: "fd21:0:0:4::2:1/64"
         DEF_GW6: "fd21:0:0:4::1"
-        MTU: "9100"
+        MTU: "9150"
         SET_DEFAULT_ROUTE: "false"
       exec:
         - |
@@ -532,7 +532,7 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::2:1/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9100";
+            export MTU="9150";
             export SET_DEFAULT_ROUTE="false";
             export KUBELET_NODE_IP="172.16.4.21,fd21:0:0:4::2:1";
 
@@ -558,7 +558,7 @@ topology:
             export DEF_GW="172.16.4.1";
             export IPV6_CIDR="fd21:0:0:4::2:2/64";
             export DEF_GW6="fd21:0:0:4::1";
-            export MTU="9100";
+            export MTU="9150";
             export SET_DEFAULT_ROUTE="false";
             export KUBELET_NODE_IP="172.16.4.22,fd21:0:0:4::2:2";
 
@@ -594,7 +594,7 @@ topology:
             export DEF_GW="172.16.5.1";
             export IPV6_CIDR="fd21:0:0:5::1:1/64";
             export DEF_GW6="fd21:0:0:5::1";
-            export MTU="9100";
+            export MTU="9150";
             export SET_DEFAULT_ROUTE="false";
             export KUBELET_NODE_IP="172.16.5.11,fd21:0:0:5::1:1";
 
@@ -618,7 +618,7 @@ topology:
         DEF_GW: "172.16.5.1"
         IPV6_CIDR: "fd21:0:0:5::2:1/64"
         DEF_GW6: "fd21:0:0:5::1"
-        MTU: "9100"
+        MTU: "9150"
         SET_DEFAULT_ROUTE: "false"
       exec:
         - |
@@ -628,7 +628,7 @@ topology:
             export DEF_GW="172.16.5.1";
             export IPV6_CIDR="fd21:0:0:5::2:1/64";
             export DEF_GW6="fd21:0:0:5::1";
-            export MTU="9100";
+            export MTU="9150";
             export SET_DEFAULT_ROUTE="false";
             export KUBELET_NODE_IP="172.16.5.21,fd21:0:0:5::2:1";
 
@@ -654,7 +654,7 @@ topology:
             export DEF_GW="172.16.5.1";
             export IPV6_CIDR="fd21:0:0:5::2:2/64";
             export DEF_GW6="fd21:0:0:5::1";
-            export MTU="9100";
+            export MTU="9150";
             export SET_DEFAULT_ROUTE="false";
             export KUBELET_NODE_IP="172.16.5.22,fd21:0:0:5::2:2";
 

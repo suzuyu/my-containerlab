@@ -15,7 +15,9 @@ ipam:
 routingMode: tunnel
 tunnelProtocol: vxlan
 autoDirectNodeRoutes: false
-MTU: 9000
+# IPv4 VXLAN: base 9050 - tunnel overhead 50 = Pod route MTU 9000.
+# Node Fabric interfaces are configured separately at MTU 9150.
+MTU: 9050
 
 kubeProxyReplacement: true
 

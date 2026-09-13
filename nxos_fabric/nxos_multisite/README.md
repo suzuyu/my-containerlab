@@ -9,7 +9,9 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric の複数サイトを
 `adc-k02`と`bdc-k03`へCilium Cluster Meshを段階構築する計画は
 [Cilium / Hubble / Tetragon ラボ検討](../docs/cilium-lab/README.md)を参照する。
 
-- DataCenter(DC) Site は 3サイトとする
+構築後は [k02／k03 の操作環境](#multisite-client-environment) と [Hubble UI アクセス](#hubble-ui-access) を参照する。
+
+- DataCenter(DC) Site は 3 サイト版（ADC／BDC／CDC）と CDC 除外版（ADC／BDC）から選択する
   - DC Site A
     - 通常の Fabric サイト想定用
       - EVPN BGP + Underlay OSPF 構成
@@ -19,11 +21,11 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric の複数サイトを
     - Site 間疎通確認用での通常の Fabric 構成
     - Spine は1つに省略
     - Leaf も1セットのみ
-  - DC Site C
+  - DC Site C（3 サイト版のみ）
     - レガシーサイト想定用
     - レガシーサイト内に L3SW を配置して、レガシーセグメントを DCI に載せて通信を試験する
-    - 下記を実施したかったが、[Nexus 9000v は vPC BGW をサポートしてない](https://www.cisco.com/c/ja_jp/td/docs/dcn/nx-os/nexus9000/106x/n9000v-9300v-9500v/cisco-nexus-9000v-9300v-9500v-guide-release-106x/m-overview.html?utm_source=chatgpt.com#Cisco_Reference.dita_55d93795-31c2-428b-be6b-8c2ed0fa7677) ので L3 ルーティングの延伸のみとする
-      - [レガシーサイト統合](https://www.cisco.com/c/en/us/products/collateral/switches/nexus-9000-series-switches/white-paper-c11-739942.html#Legacysiteintegration)の推奨に従って[vPCボーダーゲートウェイを使用した構成設計](https://www.cisco.com/c/en/us/products/collateral/switches/nexus-9000-series-switches/whitepaper-c11-742114.html)をする (未実施)
+    - [Nexus 9000v は vPC BGW をサポートしてない](https://www.cisco.com/c/ja_jp/td/docs/dcn/nx-os/nexus9000/106x/n9000v-9300v-9500v/cisco-nexus-9000v-9300v-9500v-guide-release-106x/m-overview.html?utm_source=chatgpt.com#Cisco_Reference.dita_55d93795-31c2-428b-be6b-8c2ed0fa7677) ため、L3 ルーティングの延伸のみとする
+      - [レガシーサイト統合](https://www.cisco.com/c/en/us/products/collateral/switches/nexus-9000-series-switches/white-paper-c11-739942.html#Legacysiteintegration)と[vPCボーダーゲートウェイを使用した構成設計](https://www.cisco.com/c/en/us/products/collateral/switches/nexus-9000-series-switches/whitepaper-c11-742114.html)は設計の参考資料とする
         -  EVPNマルチサイトアーキテクチャではvPCは必須ではありませんが、既存サイトへの回復力が高くループのない接続を提供するために必要です。
       - 既存レガシーネットワーク想定の L3SW と BGW との接続
         - fabric-tracking は SVI 非対応のため物理ポートで収容する
@@ -34,13 +36,12 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric の複数サイトを
 
 ### 機種構成
 
-- Fabric 機器は Cisco Nexus 9000v (N9Kv) / Nexus 9300v nexus9300v64-lite.10.5.4.M.qcow2 を使用する
+- Fabric 機器は Cisco Nexus 9000v (N9Kv) / Nexus 9300v Lite を使用する
   - mgmt0 は外部からアクセス用として containerlab サーバの bridge0 へ接続して固定 IP をアサインする
   - メモリフットプリントを削減するため、10.5(3)F 以上を使用する ([参照 Reduced footprint N9Kv Lite image to 4.5G](https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/105x/configuration/n9000v-9300v-9500v/cisco-nexus-9000v-9300v-9500v-guide-release-105x/m-new-and-changed-105x.html))
   - VXLAN の対応として、所謂 [New L3 VNI Mode](https://community.cisco.com/t5/tkb-%E3%83%87%E3%83%BC%E3%82%BF%E3%82%BB%E3%83%B3%E3%82%BF%E3%83%BC-%E3%83%89%E3%82%AD%E3%83%A5%E3%83%A1%E3%83%B3%E3%83%88/ndfc-new-l3vni-mode-%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6/ta-p/5128776#toc-hId-328186197) が N9Kv が非対応 ([L3VNI without VLAN : No](https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/106x/configuration/n9000v-9300v-9500v/cisco-nexus-9000v-9300v-9500v-guide-release-106x/m-overview.html#Cisco_Reference.dita_55d93795-31c2-428b-be6b-8c2ed0fa7677)) のため、VLAN 付きの L3 VNI で試験する必要がある
 - Fabric 機器以外は軽量化・複数種類試験のため [`Arista cEOS`](https://containerlab.dev/manual/kinds/ceos/) を使用する
   - Management0 は外部からアクセス用として containerlab サーバの bridge0 へ接続して固定 IP をアサインする
-  - 4.32.0F を使用した際にパケット複製被疑で不具合が出たので避けている (詳細まで切り分けはしてない)
 - Server は疎通確認用に [network-multitool](https://github.com/srl-labs/network-multitool) を使用する
   - bonding で Network 機器へ接続する (eth1,eth2)
   - containerlab 上の検証ネットワーク向けにデフォルトルートを作成して疎通試験するようにする
@@ -48,11 +49,13 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric の複数サイトを
     - 基本的には `docker exec -it [container name] bash` などでアクセスするので IP は固定してない
 - kind (Kubernetes in Docker) は Kubernetes `v1.35.5` の Node image を使用する
 
-使用するコンテナイメージ:
+現在の topology に指定しているコンテナイメージ（両構成共通）:
+
+バージョンは試験要件に合わせて選択・変更する。変更時は使用する YAML の `image`（kind は digest を含む）と、この一覧を揃える。
 
 ```text
 REPOSITORY                        TAG
-vrnetlab/cisco_n9kv               10.5.4.M.lite
+vrnetlab/cisco_n9kv               10.6.4.M.lite
 ceos                              4.35.4M
 ghcr.io/hellt/network-multitool   latest
 kindest/node                      v1.35.5
@@ -206,12 +209,45 @@ Server コンテナは `scripts/linux/init-bond-singlevlan-route.sh` で `eth1`/
 
 - `bridge0` に接続できる containerlab 実行環境を用意する
   - 機器の外部接続に利用する
-  - 必要に応じて `evpn-multisite.clab.yaml` の IP を変更する
+  - 必要に応じて選択する topology YAML の IP を変更する
   - containerlab 環境の IP は `172.16.0.0/12` は使用してない前提で、重複するとサーバの接続 IP に影響が出る
-- `vrnetlab/cisco_n9kv:10.5.4.M.lite` と `ceos:4.35.4M` を事前に pull/import しておく
+- 選択する topology の NX-OS イメージと `ceos:4.35.4M` を事前に pull/import しておく（[機種構成](#機種構成) を参照）
 - N9Kv は台数が多いため、ホスト側のメモリに余裕を持たせる
 
+### 構成の選択
+
+試験対象と実行環境のメモリ容量に合わせて、3 サイト版または CDC 除外版を選択する。
+
+3 サイト版は、ADC／BDC の Fabric 間接続に加え、CDC のレガシーサイト接続を含む検証に使用する。
+CDC 除外版は、メモリに制約のある実行環境（例：128 GB 未満）で、kind 上の Cilium Cluster Mesh 試験など、
+Network OS 以外にもメモリを必要とする検証を行うための構成である。
+CDC のネットワーク機器とサーバを省くことで試験用のメモリ余力を確保し、
+ADC／BDC 間の **EVPN＋VXLAN＋Multisite による 2 サイト検証**を行えるようにしている。
+128 GB は環境の例であり、動作可否の境界や最小要件ではない。必要な容量は Network OS の版・割当メモリ、
+Kubernetes の構成、試験負荷によって異なるため、起動後の使用量と余力を確認する。
+
+| 構成 | 対象サイト | topology | 機器台帳 |
+|---|---|---|---|
+| 3 サイト版 | ADC／BDC／CDC | [nxos-fabric-multisite.clab.yaml](nxos-fabric-multisite.clab.yaml) | [hosts.txt](hosts.txt) |
+| CDC 除外版 | ADC／BDC | [nxos-fabric-multisite-no-cdc.clab.yaml](nxos-fabric-multisite-no-cdc.clab.yaml) | [hosts-no-cdc.txt](hosts-no-cdc.txt) |
+
+両構成とも k01／k02／k03、共通 WAN、DCI route-server を含む。
+CDC 除外版は、3 サイト版に含まれる CDC の 6 ノード・20 リンクを持たない。
+CDC のレガシーサイト接続・共有サーバへの疎通確認には 3 サイト版を使用する。
+
+lab 名は両構成とも `nxos-fabric-multisite`。同時起動せず、使用する YAML と機器台帳を明示する。
+CDC 向けの保存 config は共通の設定ディレクトリに残るため、CDC 除外版では該当する port／neighbor の Down を期待値として扱う。
+NX-OS の config は両構成とも起動後に投入する。
+
+k01 は MetalLB 比較用として使用できる。資源は基盤導入後と試験負荷を加えた状態で測定し、
+swap／OOM が発生する場合は起動対象や負荷を見直す。
+Mesh の性能測定中は k01 の負荷試験を同時実行せず、CPU 競合を避ける。
+
 ### 起動
+
+同一ホスト上で single-site から切り替える場合は、同名 `adc-k02-*` Node の破棄・再作成前に
+[旧 checksum timer の停止手順](../docs/cilium-lab/runbooks/checksum-compat-multisite.md#2-旧-single-site-の監視と実行環境を分ける) を実施する。
+旧 state は新しいクラスタへ流用しない。別ホストで single-site を維持する場合は、そのホストの timer も維持する。
 
 ```sh
 export CLABNAME="nxos-fabric-multisite"
@@ -220,9 +256,34 @@ export CLABPATH="${REPODIR}/nxos_fabric/nxos_multisite/"
 cd $CLABPATH
 ```
 
+次のいずれかを選択し、topology と機器台帳を設定する。lab 名は両構成で共通とする。
+
+3 サイト版:
+
 ```sh
-containerlab deploy -t ${CLABNAME}.clab.yaml
+export CLAB_TOPOLOGY="nxos-fabric-multisite.clab.yaml"
+export CLAB_HOSTS="hosts.txt"
 ```
+
+CDC 除外版:
+
+```sh
+export CLAB_TOPOLOGY="nxos-fabric-multisite-no-cdc.clab.yaml"
+export CLAB_HOSTS="hosts-no-cdc.txt"
+```
+
+選択した topology を検証し、成功を確認してから起動する。
+
+```sh
+containerlab validate -t "${CLAB_TOPOLOGY}"
+```
+
+```sh
+containerlab deploy -t "${CLAB_TOPOLOGY}"
+```
+
+起動中に `error creating fsnotify watcher: too many open files` が出る場合は、
+[Appendix: kind Node の `inotify` instance 上限不足](#kind-inotify-limit) の確認・対処手順を参照する。
 
 N9Kv は起動に時間がかかり起動時に containerlab 実行環境サーバに負荷がかかるので、一部 Node に `startup-delay` を設定して初期起動時の負荷を分散している。よって40分程度待つことになる。
 
@@ -237,14 +298,14 @@ cd $CLABPATH
 AS 統一版の場合
 
 ```sh
-alred prepare-hosts --input hosts.txt --output hosts.lab.yaml
+alred prepare-hosts --input "${CLAB_HOSTS}" --output hosts.lab.yaml
 alred push-config-dir --input-dir configs/as-equals/cisco_n9kv/ --file-suffix _run.txt --hosts hosts.lab.yaml --username admin --password admin
 ```
 
 AS 重複回避の場合
 
 ```sh
-alred prepare-hosts --input hosts.txt --output hosts.lab.yaml
+alred prepare-hosts --input "${CLAB_HOSTS}" --output hosts.lab.yaml
 alred push-config-dir --input-dir configs/as-changes/cisco_n9kv/ --file-suffix _run.txt --hosts hosts.lab.yaml --username admin --password admin
 ```
 
@@ -469,19 +530,262 @@ docker exec -it clab-${CLABNAME}-bdc-t1sv0104 curl http://172.16.13.10
 docker exec -it clab-${CLABNAME}-bdc-t1sv0104 curl -g "http://[fd21::13:0:0:1:0]/"
 ```
 
+### k02／k03 Cilium の構築と最終設定
+
+containerlab による kubeconfig の作成後、Cilium の構築手順へ進む前に、k02／k03 の読み取り権限を設定する。
+`nxos_fabric/nxos_multisite` ディレクトリで実行する。
+作業ユーザーが kubeconfig の所有グループに所属していることを前提に、k01 と同様にグループの読み取り権限を追加する。
+
+```bash
+export CLABNAME="nxos-fabric-multisite"
+ls -l "clab-${CLABNAME}/adc-k02/k8s_kind/k02/kubeconfig-k02" \
+      "clab-${CLABNAME}/bdc-k03/k8s_kind/k03/kubeconfig-k03"
+sudo chmod g+r "clab-${CLABNAME}/adc-k02/k8s_kind/k02/kubeconfig-k02"
+sudo chmod g+r "clab-${CLABNAME}/bdc-k03/k8s_kind/k03/kubeconfig-k03"
+test -r "clab-${CLABNAME}/adc-k02/k8s_kind/k02/kubeconfig-k02"
+test -r "clab-${CLABNAME}/bdc-k03/k8s_kind/k03/kubeconfig-k03"
+```
+
+[k02 Cilium README](k8s_kind/k02/cilium/README.md) と [k03 Cilium README](k8s_kind/k03/cilium/README.md) に
+2 つの構築パターンを記載する。
+
+- [A：段階導入と個別試験](k8s_kind/k02/cilium/README.md#staged-install)：k02 → CA 共有 → k03 の順に個別導入する。
+- [B：個別試験を行わない最終構成の導入](k8s_kind/k02/cilium/README.md#direct-final-install)：適用条件を確認し、両クラスタを 1 回の driver 実行で導入する。
+
+標準の `multisite-final` は Cluster Mesh を有効化し、Egress Gateway は無効とする。
+B は [checksum の初回登録・監視](../docs/cilium-lab/runbooks/checksum-compat-multisite.md) を先に準備し、
+クラスタごとの state を渡して再適用する。両クラスタ共通の DNS upstream を使用する。
+試験済み環境の撤去・復元は各 Cilium README の補足手順を使用する。
+
+<a id="multisite-client-environment"></a>
+
+### k02／k03 構築後の操作環境
+
+Containerlab 実行ホストの Bash で、新しい作業シェルを開くたびに設定する。
+CLI の準備と両クラスタの構築が完了していることを前提とする。
+Git 管理していない配置先では `REPO_ROOT` を実際のリポジトリ絶対パスに置き換える。
+
+#### 環境変数設定
+
+```bash
+export REPO_ROOT="$(git rev-parse --show-toplevel)"
+export SITE_TYPE="multisite"
+export LAB_ROOT="${REPO_ROOT}/nxos_fabric/nxos_${SITE_TYPE}"
+export K8S_CLIENT_RUNTIME="${LAB_ROOT}/k8s_kind/client/runtime"
+export PATH="${K8S_CLIENT_RUNTIME}/bin:${PATH}"
+hash -r
+export KUBECONFIG_K02="${LAB_ROOT}/clab-nxos-fabric-multisite/adc-k02/k8s_kind/k02/kubeconfig-k02"
+export KUBECONFIG_K03="${LAB_ROOT}/clab-nxos-fabric-multisite/bdc-k03/k8s_kind/k03/kubeconfig-k03"
+export KUBECONFIG="${KUBECONFIG_K02}:${KUBECONFIG_K03}"
+export KUBE_CONTEXT_K02="kind-adc-k02"
+export KUBE_CONTEXT_K03="kind-bdc-k03"
+export KUBE_CONTEXT="${KUBE_CONTEXT_K02}"
+```
+
+生成済みの管理 API 用 kubeconfig 2 個を `:` で指定し、CLI から両 context を参照する。
+ファイルを結合・上書きせず、各コマンドの context を明示して対象を選ぶ。
+絶対パスなので作業ディレクトリを移動しても参照先は変わらない。
+Fabric client 用の `runtime/kubeconfig/config` は別途準備するファイルである。
+single-site と同名の k02 context を使うため、single-site の kubeconfig を混ぜず、作業シェルを分ける。
+
+| 対象 | context | Hubble |
+|---|---|---|
+| ADC k02 | `kind-adc-k02` | Agent／Relay／UI |
+| BDC k03 | `kind-bdc-k03` | Agent／Relay。UI は配置しない |
+
+#### CLI・接続先の確認
+
+```bash
+command -v kubectl cilium hubble helm
+kubectl version --client
+cilium version --client
+hubble version
+helm version --short
+
+test -r "${KUBECONFIG_K02}"
+test -r "${KUBECONFIG_K03}"
+kubectl config get-contexts "${KUBE_CONTEXT_K02}"
+kubectl config get-contexts "${KUBE_CONTEXT_K03}"
+bash "${REPO_ROOT}/nxos_fabric/scripts/k8s-client/prepare-tools.sh" \
+  --profile "${LAB_ROOT}/k8s_kind/client" --check
+```
+
+`command -v` は multisite の `runtime/bin/` 配下を指すことを確認する。
+`--check` は固定 version と保存 checksum の照合のみで、ダウンロードしない。
+不足する場合は [CLI 準備](k8s_kind/client/README.md) と各クラスタの kubeconfig 準備を確認してから進む。
+
+```bash
+for context in "${KUBE_CONTEXT_K02}" "${KUBE_CONTEXT_K03}"; do
+  kubectl --context "$context" --request-timeout=10s get --raw='/readyz'
+  kubectl --context "$context" --request-timeout=10s get nodes -o wide
+  cilium status --context "$context"
+  cilium bgp peers --context "$context"
+  cilium clustermesh status --context "$context"
+  hubble status --kube-context "$context" -P
+done
+```
+
+API `ok`、各クラスタ 3 Node Ready、BGP は各 8 session Established を基準とする。
+Cluster Mesh の接続状態と cross-cluster 通信は別々に確認する。
+
+<a id="hubble-ui-access"></a>
+
+#### Hubble UI へのアクセス
+
+実行ホストの別端末で上記の環境変数を設定し、UI を配置する k02 を明示して開始する。
+
+```bash
+cilium hubble ui \
+  --context "${KUBE_CONTEXT_K02}" \
+  --port-forward 12000 \
+  --open-browser=false
+```
+
+同じホストのブラウザでは `http://localhost:12000/` を開く。コマンドは利用中そのまま動かす。
+手元の PC のブラウザを使う場合は、手元の別端末で次の SSH 転送を開始する。
+`LAB_SSH_TARGET` は実行ホストへの接続先（`user@host` または SSH config の Host 名）に置き換える。
+
+```bash
+LAB_SSH_TARGET="user@lab-host"
+ssh -N -o ExitOnForwardFailure=yes \
+  -L 127.0.0.1:12000:127.0.0.1:12000 \
+  "${LAB_SSH_TARGET}"
+```
+
+手元のブラウザで `http://127.0.0.1:12000/` を開く。
+VS Code Remote SSH では、上記 SSH コマンドの代わりに「ポート」タブから TCP `12000` を転送してもよい。
+手元のポートが使用中なら `-L` の最初のポートを `12001` へ変更し、URL も合わせる。
+実行ホスト側を変更する場合は UI の `--port-forward` と `-L` の最後のポートを合わせる。
+終了時は UI と SSH 転送をそれぞれ `Ctrl+C` で停止する。
+
+UI で通信を観測する namespace を選ぶ。Cluster Mesh demo を配置した場合は `cilium-test` が対象となる。
+通信が発生していない場合や demo 撤去後は、表示が空でも異常とは限らない。
+k02 の UI から k03 の全 flow が見えることは前提にせず、各 Relay の CLI 出力も比較する。
+
+##### ブラウザ表示確認用のデモ（k02 ↔ k03）
+
+両サイトに demo を配置し、k02 の client → k03 の server、k03 の client → k02 の server の
+通信を繰り返す。UI の転送を動かしたまま、実行ホストの別端末で上記の環境変数を設定する。
+撤去後も同じコマンドで再配置できる。
+
+```bash
+kubectl --context "${KUBE_CONTEXT_K02}" apply \
+  -f "${LAB_ROOT}/k8s_kind/k02/cilium/manifests/validation/clustermesh-demo/workload.yaml"
+kubectl --context "${KUBE_CONTEXT_K03}" apply \
+  -f "${LAB_ROOT}/k8s_kind/k03/cilium/manifests/validation/clustermesh-demo/workload.yaml"
+
+for context in "${KUBE_CONTEXT_K02}" "${KUBE_CONTEXT_K03}"; do
+  kubectl --context "$context" -n cilium-test \
+    rollout status deployment/clustermesh-demo --timeout=180s
+  kubectl --context "$context" -n cilium-test \
+    wait --for=condition=Ready pod/clustermesh-client --timeout=180s
+  kubectl --context "$context" -n cilium-test annotate service clustermesh-demo \
+    service.cilium.io/affinity=remote --overwrite
+  cilium clustermesh status --context "$context"
+done
+hubble status --kube-context "${KUBE_CONTEXT_K02}" -P
+```
+
+保存 manifest の既定値は `affinity: local`。このデモでは Service だけを一時的に `remote` に変更し、
+相手サイトの backend を優先する。[Service Affinity の公式説明](https://docs.cilium.io/en/stable/network/clustermesh/affinity/)も参照する。
+両サイトの Mesh 接続と、k02 Relay の `Connected Nodes: 6/6` を確認してから進む。
+
+ブラウザで namespace `cilium-test` を選び、次のループを開始する。
+両サイトから順に 1 回ずつ HTTP 通信を送り、1 秒待って繰り返す。
+
+```bash
+while true; do
+  for context in "${KUBE_CONTEXT_K02}" "${KUBE_CONTEXT_K03}"; do
+    printf '[%s] ' "$context"
+    kubectl --context "$context" -n cilium-test exec clustermesh-client -- \
+      curl -4 --noproxy "*" -fsS --connect-timeout 3 --max-time 5 \
+        http://clustermesh-demo.cilium-test.svc.cluster.local/
+  done
+  sleep 1
+done
+```
+
+期待する端末表示は次のとおり。UI では `clustermesh-client` → `clustermesh-demo` の
+通信線と flow の追加を確認し、送信元・宛先 IP と端末のクラスタ名を照合する。
+
+```text
+[kind-adc-k02] cluster=bdc-k03
+[kind-bdc-k03] cluster=adc-k02
+```
+
+反映直後は同期に時間がかかることがある。自サイトの応答が続く場合は Mesh 接続と相手の Pod Ready を確認する。
+`remote` は優先指定であり、相手の backend が利用できなければ自サイトへ fallback する。
+UI に表示されない場合は、下記の CLI でも両サイトの `cilium-test` の flow を比較する。
+
+通信ループは `Ctrl+C` で停止する。通常の local 優先に戻す場合は次を実行する。
+
+```bash
+for context in "${KUBE_CONTEXT_K02}" "${KUBE_CONTEXT_K03}"; do
+  kubectl --context "$context" -n cilium-test annotate service clustermesh-demo \
+    service.cilium.io/affinity=local --overwrite
+done
+```
+
+Pod／Service は残るので再利用できる。`local` のまま通信ループを動かすと、両サイト内の通信を観測できる。
+サイト間デモを再開するときは、両 Service を `remote` に変更してから通信ループを実行する。
+
+#### Hubble CLI とアクセス時の切り分け
+
+実行ホストの別端末で、観測するクラスタと namespace を指定する。以下は k03 の例。
+
+```bash
+export KUBE_CONTEXT="${KUBE_CONTEXT_K03}"
+export OBSERVE_NAMESPACE="cilium-test"
+hubble observe --kube-context "${KUBE_CONTEXT}" -P \
+  --namespace "${OBSERVE_NAMESPACE}" --follow
+```
+
+継続表示を `Ctrl+C` で終了後、保持されている直近 5 分の drop を確認する場合は次を使う。
+
+```bash
+hubble observe --kube-context "${KUBE_CONTEXT}" -P \
+  --namespace "${OBSERVE_NAMESPACE}" --since 5m --verdict DROPPED
+```
+
+UI が開かない場合は UI コマンド・SSH 転送・URL のポートを確認し、実行ホストで k02 の UI／Relay を確認する。
+
+```bash
+kubectl --context "${KUBE_CONTEXT_K02}" -n kube-system get \
+  deployment/hubble-ui deployment/hubble-relay service/hubble-ui service/hubble-relay
+kubectl --context "${KUBE_CONTEXT_K02}" -n kube-system logs \
+  deployment/hubble-ui --all-containers=true --tail=100
+hubble status --kube-context "${KUBE_CONTEXT}" -P
+kubectl --context "${KUBE_CONTEXT}" -n kube-system logs \
+  deployment/hubble-relay --all-containers=true --tail=100
+```
+
+`address already in use` の場合、Hubble CLI の `-P` は既定の TCP `4245` で競合し得るため、
+継続観測を停止してから別コマンドを実行するか `--port-forward-port 0` を追加する。
+UI が空の場合は namespace、実際の通信、Relay の接続状態と CLI flow を比較する。
+[Hubble UI 公式手順](https://docs.cilium.io/en/stable/observability/hubble/hubble-ui/) と
+[Cilium ラボ文書](../docs/cilium-lab/README.md) も参照する。
+
 ### 停止
 
+起動時に選択した `CLAB_TOPOLOGY` を使用する。別シェルの場合は起動時の環境変数を設定し直す。
+
 ```sh
-containerlab destroy -t ${CLABNAME}.clab.yaml
+containerlab destroy -t "${CLAB_TOPOLOGY}"
 ```
 
 設定も削除する場合は下記とする。N9Kv は起動時に設定が多いと設定投入中にハングして落ちる時があるので、下記推奨。
 
 ```sh
-containerlab destroy -t ${CLABNAME}.clab.yaml -c
+containerlab destroy -t "${CLAB_TOPOLOGY}" -c
 ```
 
 ## 参考： 実施環境
+
+以下は特定の検証環境の参考情報であり、構築に必要な固定条件や現在の稼働状況を示すものではない。
+実施状況は [Cilium ラボのステータス](../docs/cilium-lab/status.md)、
+clab02 の資源測定と構成検討は [起動前の評価記録](../docs/cilium-lab/design/multisite-clab02-startup-options.md) で管理する。
+
+参考：cEOS `4.32.0F` では過去の試験でパケット複製が疑われたため別版を選択した。原因の詳細な切り分けは未完了であり、一般的な不具合判定ではない。
 
 ### サーバスペック
 
@@ -573,6 +877,8 @@ $ free
 Mem:       128279664   117107732     1182800     1828984    13621448    11171932
 ```
 
+<a id="kind-inotify-limit"></a>
+
 ## Appendix: kind Node の `inotify` instance 上限不足
 
 ### 症状
@@ -615,17 +921,18 @@ Kind 公式資料でも、多 Node cluster では `fs.inotify.max_user_instances
 
 ### 一時対応と再実行
 
-今回確認した `max_user_instances` 不足には、Containerlab host 上で次を実行する。この変更は reboot すると失われる。
+`max_user_instances` の不足を確認した場合は、Containerlab host 上で上限を引き上げる。以下は `512` にする例で、必要値は Node 数と同居プロセスの使用量に合わせる。この変更は reboot すると失われる。
 
 ```bash
 sudo sysctl -w fs.inotify.max_user_instances=512
 ```
 
-設定値を確認してから multi-site topology を再実行する。
+設定値を確認してから、起動時に選択した multi-site topology を再実行する。
+`CLAB_TOPOLOGY` は [起動](#起動) の手順で 3 サイト版／CDC 除外版のいずれかを設定する。
 
 ```bash
 sysctl fs.inotify.max_user_instances
-containerlab deploy -t nxos-fabric-multisite.clab.yaml
+containerlab deploy -t "${CLAB_TOPOLOGY:?起動時の topology を指定してください}"
 ```
 
 ### 永続化

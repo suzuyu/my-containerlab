@@ -9,6 +9,8 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric を検証する
 Cilium、Hubble、Tetragonを`adc-k02`へ段階構築する計画は
 [Cilium / Hubble / Tetragon ラボ検討](../docs/cilium-lab/README.md)を参照する。
 
+構築済みの k02 を操作する際は、[構築後の操作環境](#k02-client-environment) で環境変数と CLI を確認する。
+
 - DataCenter(DC) Site は 1サイトとする
   - DC Site A
     - 通常の Fabric サイト想定用
@@ -87,6 +89,9 @@ cd $CLABPATH
 ```sh
 containerlab deploy -t ${CLABNAME}.clab.yaml
 ```
+
+起動中に `error creating fsnotify watcher: too many open files` が出る場合は、
+[Appendix: kind Node の `inotify` instance 上限不足](#kind-inotify-limit) の確認・対処手順を参照する。
 
 N9Kv は起動に時間がかかり起動時に containerlab 実行環境サーバに負荷がかかるので、一部 Node に `startup-delay` を設定して初期起動時の負荷を分散している。よって40分程度待つことになる。
 
@@ -243,7 +248,157 @@ docker exec -it clab-${CLABNAME}-adc-t1sv0101 curl -g "http://[fd21::13:0:0:1:0]
 
 k01 の MetalLB 動作確認後、k02 は Cilium CNI、Cilium LoadBalancer、BGP Control Plane、Hubble、
 Egress Gateway、Tetragon を初期構築する。kubeconfig の準備、preflight、Helm values の生成と導入順序は
-[adc-k02 Cilium 初期構築手順](k8s_kind/k02/cilium/README.md)を参照する。
+[adc-k02 Cilium 構築手順](k8s_kind/k02/cilium/README.md)を参照する。
+[段階導入と個別試験](k8s_kind/k02/cilium/README.md#staged-install) または
+[個別試験を行わない最終構成の導入](k8s_kind/k02/cilium/README.md#direct-final-install) を選択する。
+
+<a id="k02-client-environment"></a>
+
+### k02 構築後の操作環境
+
+Containerlab を実行しているホストの Bash で、新しい作業シェルを開くたびに設定する。
+CLI の準備と k02 の初期構築が完了していることを前提とする。
+以下はこのリポジトリ内の任意のディレクトリから実行できる。
+Git 管理していない配置先では、最初の `REPO_ROOT` を実行ホストのリポジトリ絶対パスへ置き換える。
+
+#### 環境変数設定
+
+```bash
+export REPO_ROOT="$(git rev-parse --show-toplevel)"
+export SITE_TYPE="singlesite"
+export LAB_ROOT="${REPO_ROOT}/nxos_fabric/nxos_${SITE_TYPE}"
+export K8S_CLIENT_RUNTIME="${LAB_ROOT}/k8s_kind/client/runtime"
+export PATH="${K8S_CLIENT_RUNTIME}/bin:${PATH}"
+hash -r
+
+export KUBECONFIG="${LAB_ROOT}/clab-nxos-fabric-${SITE_TYPE}/adc-k02/k8s_kind/k02/kubeconfig-k02"
+export KUBE_CONTEXT="kind-adc-k02"
+```
+
+`KUBECONFIG` は Containerlab が生成した k02 の管理 API 用ファイルを使用する。
+絶対パスで指定するため、設定後に作業ディレクトリを移動しても参照先は変わらない。
+Fabric client 用の `runtime/kubeconfig/config` とは用途を分ける。
+`KUBE_CONTEXT` は手順用の変数なので、各 CLI へ下記の context オプションで明示的に渡す。
+k01 や multisite の操作には別の作業シェルを使用する。
+
+#### 必要コマンド・接続先の確認
+
+まず CLI の参照先と version、kubeconfig の読み取りと context を確認する。
+`command -v` の出力が `${K8S_CLIENT_RUNTIME}/bin/` 配下であること、context が `kind-adc-k02` であることを確認する。
+エラーがある場合は、[CLI 準備](k8s_kind/client/README.md) または [k02 初期構築手順](k8s_kind/k02/cilium/README.md) の kubeconfig 準備を確認してから進む。
+
+```bash
+command -v kubectl cilium hubble helm
+kubectl version --client
+cilium version --client
+hubble version
+helm version --short
+
+test -r "${KUBECONFIG}"
+kubectl config get-contexts "${KUBE_CONTEXT}"
+```
+
+固定 version と保存 checksum まで照合する場合は、ダウンロードを行わない `--check` を使う。
+
+```bash
+bash "${REPO_ROOT}/nxos_fabric/scripts/k8s-client/prepare-tools.sh" \
+  --profile "${LAB_ROOT}/k8s_kind/client" --check
+```
+
+続いて API、Node、Cilium、Hubble Relay の状態を確認する。
+API は `ok`、Node は 3 台とも `Ready` が基本の確認点となる。
+Hubble の `-P` は Kubernetes API 経由の一時 port-forward を使用する。
+
+```bash
+kubectl --context "${KUBE_CONTEXT}" --request-timeout=10s get --raw='/readyz'
+kubectl --context "${KUBE_CONTEXT}" --request-timeout=10s get nodes -o wide
+cilium status --context "${KUBE_CONTEXT}"
+hubble status --kube-context "${KUBE_CONTEXT}" -P
+```
+
+現在の既知課題と試験の合否は [Cilium ラボのステータス](../docs/cilium-lab/status.md) を参照する。
+
+<a id="hubble-ui-access"></a>
+
+#### Hubble UI へのアクセス
+
+Containerlab 実行ホストの別端末で、上記の環境変数を設定してから実行する。
+この端末は UI を利用している間、そのまま開いておく。
+
+```bash
+cilium hubble ui \
+  --context "${KUBE_CONTEXT}" \
+  --port-forward 12000 \
+  --open-browser=false
+```
+
+実行ホスト上の TCP `12000` から Hubble UI への port-forward が開始する。
+同じホストでブラウザを使う場合は `http://localhost:12000/` を開く。
+終了時はこのコマンドの端末で `Ctrl+C` を押す。
+操作の詳細は [Cilium 公式 Hubble UI](https://docs.cilium.io/en/stable/observability/hubble/hubble-ui/) を参照する。
+
+**手元の PC のブラウザを使用する場合：** 手元の PC の別端末で SSH 転送を開始する。
+`LAB_SSH_TARGET` は普段使っている実行ホストへの SSH 接続先（`user@host` または SSH config の Host 名）に置き換える。
+
+```bash
+LAB_SSH_TARGET="user@lab-host"
+ssh -N -o ExitOnForwardFailure=yes \
+  -L 127.0.0.1:12000:127.0.0.1:12000 \
+  "${LAB_SSH_TARGET}"
+```
+
+手元のブラウザで `http://127.0.0.1:12000/` を開く。
+UI コマンドと SSH 転送の両方を維持し、終了時はそれぞれ `Ctrl+C` で停止する。
+手元の TCP `12000` が使用中の場合は、`-L` の最初のポートだけを `12001` にし、
+ブラウザも `http://127.0.0.1:12001/` に変更する。
+実行ホスト側のポートを変更する場合は、UI の `--port-forward` と `-L` の最後のポートを合わせる。
+
+VS Code Remote SSH を使う場合は、上記 SSH コマンドの代わりに「ポート」タブで実行ホストの
+TCP `12000` を転送してもよい。ブラウザでは、表示されたローカルの転送先ポートを使用する。
+
+UI 左上で観測したい namespace を選択する。例として、既存の疎通確認 workload は `cilium-lab-smoke`、
+Network Policy 試験を配置している間は `cilium-lab-policy` を選ぶ。
+service map は通信に応じて表示されるため、対象アプリへアクセスしながら確認する。
+試験用 namespace を撤去済みの場合は、稼働中の別 namespace を選ぶ。
+
+#### Hubble CLI での通信確認
+
+実行ホストの別端末でも環境変数を設定し、UI と同じ namespace の flow を比較する。
+次の例の namespace は観測対象に合わせて変更する。
+
+```bash
+export OBSERVE_NAMESPACE="cilium-lab-smoke"
+hubble observe --kube-context "${KUBE_CONTEXT}" -P \
+  --namespace "${OBSERVE_NAMESPACE}" --follow
+```
+
+継続表示は `Ctrl+C` で終了する。終了後、保持されている直近 5 分の drop を確認する場合は次を使う。
+Hubble のバッファで保持している範囲が対象であり、長期のログ保存とは区別する。
+
+```bash
+hubble observe --kube-context "${KUBE_CONTEXT}" -P \
+  --namespace "${OBSERVE_NAMESPACE}" --since 5m --verdict DROPPED
+```
+
+#### UI が開かない・flow が表示されない場合
+
+実行ホスト側の別端末で UI／Relay と接続先の状態を確認する。
+
+```bash
+kubectl --context "${KUBE_CONTEXT}" -n kube-system get \
+  deployment/hubble-ui deployment/hubble-relay service/hubble-ui service/hubble-relay
+hubble status --kube-context "${KUBE_CONTEXT}" -P
+kubectl --context "${KUBE_CONTEXT}" -n kube-system logs \
+  deployment/hubble-ui --all-containers=true --tail=100
+kubectl --context "${KUBE_CONTEXT}" -n kube-system logs \
+  deployment/hubble-relay --all-containers=true --tail=100
+```
+
+| 症状 | 確認すること |
+|---|---|
+| ブラウザが接続できない | UI コマンドが動作中か、SSH／VS Code の転送が有効か、ブラウザが手元の転送先ポートを指定しているか |
+| `address already in use` | 既存の転送とポートが競合していないか。Hubble CLI の `-P` は既定で TCP `4245` を使うため、継続中の observe を停止してから別の確認を行うか、`--port-forward-port 0` で空きポートを使用する |
+| UI は開くが表示が空 | 選択 namespace に workload と実際の通信があるか。Relay の接続状態と同じ namespace の CLI flow を比較する |
 
 ### 停止
 
@@ -256,6 +411,8 @@ containerlab destroy -t ${CLABNAME}.clab.yaml
 ```sh
 containerlab destroy -t ${CLABNAME}.clab.yaml -c
 ```
+
+<a id="kind-inotify-limit"></a>
 
 ## Appendix: kind Node の `inotify` instance 上限不足
 

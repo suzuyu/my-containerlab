@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 )
 
 func out(v any) { b, _ := json.Marshal(v); fmt.Println(string(b)) }
@@ -34,6 +35,57 @@ func number(i int) int {
 var mu sync.Mutex
 var counts = map[string]int64{}
 var peers = map[string]map[string]bool{}
+
+// Read socket state without changing PMTU discovery or fragmentation behavior.
+func socketInfo(c net.Conn) map[string]any {
+	info := map[string]any{"time": time.Now().UTC()}
+	sc, ok := c.(syscall.Conn)
+	if !ok {
+		info["error"] = "connection does not expose a syscall connection"
+		return info
+	}
+	raw, err := sc.SyscallConn()
+	if err != nil {
+		info["error"] = err.Error()
+		return info
+	}
+	err = raw.Control(func(fd uintptr) {
+		get := func(name string, level, option int) int {
+			value, e := syscall.GetsockoptInt(int(fd), level, option)
+			if e != nil {
+				info[name+"_error"] = e.Error()
+			} else {
+				info[name] = value
+			}
+			return value
+		}
+		domain := get("domain", syscall.SOL_SOCKET, syscall.SO_DOMAIN)
+		get("type", syscall.SOL_SOCKET, syscall.SO_TYPE)
+		if domain == syscall.AF_INET {
+			get("path_mtu", syscall.IPPROTO_IP, syscall.IP_MTU)
+			get("pmtu_discover", syscall.IPPROTO_IP, syscall.IP_MTU_DISCOVER)
+		} else if domain == syscall.AF_INET6 {
+			get("path_mtu", syscall.IPPROTO_IPV6, syscall.IPV6_MTU)
+			get("pmtu_discover", syscall.IPPROTO_IPV6, syscall.IPV6_MTU_DISCOVER)
+		}
+		if _, tcp := c.(*net.TCPConn); tcp {
+			var t syscall.TCPInfo
+			size := uint32(unsafe.Sizeof(t))
+			_, _, errno := syscall.Syscall6(syscall.SYS_GETSOCKOPT, fd, syscall.IPPROTO_TCP, syscall.TCP_INFO, uintptr(unsafe.Pointer(&t)), uintptr(unsafe.Pointer(&size)), 0)
+			if errno != 0 {
+				info["tcp_info_error"] = errno.Error()
+			} else if size < uint32(unsafe.Sizeof(t)) {
+				info["tcp_info_error"] = "short TCP_INFO response"
+			} else {
+				info["tcp"] = map[string]any{"pmtu": t.Pmtu, "snd_mss": t.Snd_mss, "rcv_mss": t.Rcv_mss, "advmss": t.Advmss, "total_retrans": t.Total_retrans, "unacked": t.Unacked}
+			}
+		}
+	})
+	if err != nil {
+		info["control_error"] = err.Error()
+	}
+	return info
+}
 
 func record(kind, peer string, n int) {
 	mu.Lock()
@@ -172,6 +224,8 @@ func load() {
 	start := time.Now()
 	var sent, received, errs atomic.Int64
 	var wg sync.WaitGroup
+	var samplesMu sync.Mutex
+	samples := []map[string]any{}
 	for k := 0; k < parallel; k++ {
 		wg.Add(1)
 		go func(k int) {
@@ -194,6 +248,13 @@ func load() {
 				return
 			}
 			defer c.Close()
+			before := socketInfo(c)
+			defer func() {
+				sample := map[string]any{"stream": k, "local": c.LocalAddr().String(), "before": before, "after": socketInfo(c)}
+				samplesMu.Lock()
+				samples = append(samples, sample)
+				samplesMu.Unlock()
+			}()
 			data := bytes.Repeat([]byte{byte(k + 1)}, size)
 			buf := make([]byte, size)
 			interval := time.Duration(float64(size*8*parallel) / float64(mbps*1000000) * 1e9)
@@ -257,7 +318,7 @@ func load() {
 	}
 	wg.Wait()
 	duration := time.Since(start).Seconds()
-	out(map[string]any{"network": network, "destination": addr, "seconds": duration, "streams": parallel, "payload": size, "rate_limit_mbps": mbps, "sent_bytes": sent.Load(), "received_bytes": received.Load(), "errors": errs.Load(), "receive_mbps": float64(received.Load()*8) / duration / 1e6, "time": time.Now().UTC()})
+	out(map[string]any{"network": network, "destination": addr, "seconds": duration, "streams": parallel, "payload": size, "rate_limit_mbps": mbps, "sent_bytes": sent.Load(), "received_bytes": received.Load(), "errors": errs.Load(), "receive_mbps": float64(received.Load()*8) / duration / 1e6, "socket_samples": samples, "time": time.Now().UTC()})
 	if errs.Load() != 0 {
 		os.Exit(1)
 	}
@@ -401,19 +462,29 @@ func boundary() {
 	defer c.Close()
 	sent, acked := 0, 0
 	errors := []string{}
+	attempts := []map[string]any{}
+	initial := socketInfo(c)
 	data := make([]byte, size)
 	buf := make([]byte, 10000)
 	for i := 0; i < count; i++ {
 		binary.BigEndian.PutUint64(data, uint64(time.Now().UnixNano()))
 		c.SetDeadline(time.Now().Add(650 * time.Millisecond))
+		attempt := map[string]any{"sequence": i, "before_write": socketInfo(c)}
+		attempts = append(attempts, attempt)
 		n, e := c.Write(data)
+		attempt["write_bytes"] = n
+		attempt["after_write"] = socketInfo(c)
 		if e != nil {
+			attempt["write_error"] = e.Error()
 			errors = append(errors, "write: "+e.Error())
 			continue
 		}
 		sent++
 		n, e = c.Read(buf)
+		attempt["read_bytes"] = n
+		attempt["after_read"] = socketInfo(c)
 		if e != nil {
+			attempt["read_error"] = e.Error()
 			errors = append(errors, "read: "+e.Error())
 		} else if n == size && bytes.Equal(data, buf[:n]) {
 			acked++
@@ -422,7 +493,7 @@ func boundary() {
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
-	out(map[string]any{"network": network, "destination": addr, "local": c.LocalAddr().String(), "total_ip_bytes": total, "payload": size, "sent": sent, "acked": acked, "errors": errors, "time": time.Now().UTC()})
+	out(map[string]any{"network": network, "destination": addr, "local": c.LocalAddr().String(), "total_ip_bytes": total, "payload": size, "sent": sent, "acked": acked, "errors": errors, "socket_initial": initial, "socket_final": socketInfo(c), "attempts": attempts, "time": time.Now().UTC()})
 }
 func main() {
 	if len(os.Args) < 2 {

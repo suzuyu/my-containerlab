@@ -331,10 +331,10 @@ for node_spec in "${NODE_SPECS[@]}"; do
   fi
 
   NODE_MTU="$(docker exec "$node_name" cat "/sys/class/net/${fabric_interface}/mtu" 2>/dev/null || true)"
-  if [ "$NODE_MTU" = 9100 ]; then
-    pass "${node_name} ${fabric_interface} MTU is 9100"
+  if [ "$NODE_MTU" = 9150 ]; then
+    pass "${node_name} ${fabric_interface} MTU is 9150"
   else
-    fail "${node_name} ${fabric_interface} MTU is ${NODE_MTU}; expected 9100"
+    fail "${node_name} ${fabric_interface} MTU is ${NODE_MTU}; expected 9150"
   fi
 
   NODE_ADDR_OUTPUT="$(docker exec "$node_name" ip -brief address show "$fabric_interface" 2>/dev/null || true)"

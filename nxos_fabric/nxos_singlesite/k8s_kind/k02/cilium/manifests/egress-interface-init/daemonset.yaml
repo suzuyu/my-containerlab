@@ -1,0 +1,281 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: k02-egress-interface-init
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: egress-interface-init
+    app.kubernetes.io/part-of: cilium-lab
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: egress-interface-init
+      app.kubernetes.io/instance: k02
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: egress-interface-init
+        app.kubernetes.io/instance: k02
+        app.kubernetes.io/part-of: cilium-lab
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/os: linux
+        lab.cilium.io/egress-gateway: "true"
+      priorityClassName: system-node-critical
+      securityContext:
+        appArmorProfile:
+          type: Unconfined
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: node-init
+          image: quay.io/cilium/startup-script@sha256:f99e2beda7324e93ba04d6240d9626a6b9ab023d7d56e3b029d3d9c823ce63ef
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            runAsNonRoot: false
+            runAsUser: 0
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - SYS_ADMIN
+                - SYS_CHROOT
+                - SYS_PTRACE
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          env:
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: CHECKPOINT_PATH
+              value: /run/cilium-egress-interface-init/$(POD_UID)
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NODES_JSON
+              valueFrom:
+                configMapKeyRef:
+                  name: k02-egress-interface-config
+                  key: nodes.json
+            - name: STARTUP_SCRIPT
+              value: |
+                set -Eeuo pipefail
+
+                readonly INTERFACE="egress0"
+                readonly OWNER="cilium-lab-egress:adc-k02"
+
+                fail() {
+                  printf 'ERROR: %s\n' "$*" >&2
+                  exit 1
+                }
+
+                require_command() {
+                  command -v "$1" >/dev/null 2>&1 || fail "required host command is missing: $1"
+                }
+
+                address_exists() {
+                  local family="$1"
+                  local cidr="$2"
+                  local address="${cidr%/*}"
+                  local prefix="${cidr##*/}"
+
+                  ip -j "-${family}" address show dev "${INTERFACE}" |
+                    jq -e --arg address "${address}" --argjson prefix "${prefix}" '
+                      any(.[].addr_info[]?;
+                        .local == $address and .prefixlen == $prefix)
+                    ' >/dev/null
+                }
+
+                address_ready() {
+                  local family="$1"
+                  local cidr="$2"
+                  local address="${cidr%/*}"
+                  local prefix="${cidr##*/}"
+
+                  ip -j "-${family}" address show dev "${INTERFACE}" |
+                    jq -e --arg address "${address}" --argjson prefix "${prefix}" '
+                      any(.[].addr_info[]?;
+                        .local == $address and
+                        .prefixlen == $prefix and
+                        (.tentative != true) and
+                        (.dadfailed != true) and
+                        (((.flags // []) | index("tentative")) == null) and
+                        (((.flags // []) | index("dadfailed")) == null))
+                    ' >/dev/null
+                }
+
+                desired_contains() {
+                  local candidate="$1"
+                  shift
+                  local desired
+
+                  for desired in "$@"; do
+                    if [[ "${candidate}" == "${desired}" ]]; then
+                      return 0
+                    fi
+                  done
+                  return 1
+                }
+
+                for command_name in ip jq mkdir sleep; do
+                  require_command "${command_name}"
+                done
+
+                mkdir -p /run/cilium-egress-interface-init
+
+                printf '%s' "${NODES_JSON}" | jq -e '
+                  type == "object" and
+                  length > 0 and
+                  all(to_entries[];
+                    (.key | type == "string") and
+                    (.value | type == "object") and
+                    (.value.fabricInterface | type == "string") and
+                    (.value.fabricInterface | length > 0) and
+                    (.value.ipv4 | type == "array") and
+                    (.value.ipv4 | length > 0) and
+                    (.value.ipv4 | all(.[];
+                      type == "string" and
+                      (contains(":") | not) and
+                      test("/32$"))) and
+                    (.value.ipv6 | type == "array") and
+                    (.value.ipv6 | length > 0) and
+                    (.value.ipv6 | all(.[];
+                      type == "string" and
+                      contains(":") and
+                      test("/128$")))) and
+                  ([to_entries[].value.ipv4[]] as $addresses |
+                    ($addresses | length) == ($addresses | unique | length)) and
+                  ([to_entries[].value.ipv6[]] as $addresses |
+                    ($addresses | length) == ($addresses | unique | length))
+                ' >/dev/null || fail "nodes.json is invalid or contains duplicate addresses"
+
+                node_config="$(
+                  printf '%s' "${NODES_JSON}" |
+                    jq -cer --arg node "${NODE_NAME}" '
+                      if has($node) then
+                        .[$node]
+                      else
+                        error("node is not defined in nodes.json: " + $node)
+                      end
+                    '
+                )"
+
+                fabric_interface="$(printf '%s' "${node_config}" | jq -er '.fabricInterface')"
+                mapfile -t desired_ipv4 < <(printf '%s' "${node_config}" | jq -er '.ipv4[]')
+                mapfile -t desired_ipv6 < <(printf '%s' "${node_config}" | jq -er '.ipv6[]')
+
+                fabric_ready=false
+                for ((attempt = 1; attempt <= 60; attempt++)); do
+                  if ip -j link show dev "${fabric_interface}" 2>/dev/null |
+                    jq -e '.[0].flags | index("UP") != null' >/dev/null 2>&1; then
+                    fabric_ready=true
+                    break
+                  fi
+                  sleep 2
+                done
+                [[ "${fabric_ready}" == true ]] || fail "Fabric interface is not ready: ${fabric_interface}"
+
+                all_addresses="$(ip -j address show)"
+                for cidr in "${desired_ipv4[@]}" "${desired_ipv6[@]}"; do
+                  address="${cidr%/*}"
+                  if printf '%s' "${all_addresses}" |
+                    jq -e --arg interface "${INTERFACE}" --arg address "${address}" '
+                      any(.[];
+                        .ifname != $interface and
+                        any(.addr_info[]?;
+                          .local == $address))
+                    ' >/dev/null; then
+                    fail "desired address already exists on another local interface: ${cidr}"
+                  fi
+                done
+
+                if ip link show dev "${INTERFACE}" >/dev/null 2>&1; then
+                  link_json="$(ip -d -j link show dev "${INTERFACE}")"
+                  link_kind="$(printf '%s' "${link_json}" | jq -r '.[0].linkinfo.info_kind // ""')"
+                  link_owner="$(printf '%s' "${link_json}" | jq -r '.[0].ifalias // ""')"
+                  [[ "${link_kind}" == dummy ]] || fail "${INTERFACE} exists but is not a dummy interface"
+                  [[ "${link_owner}" == "${OWNER}" ]] || fail "${INTERFACE} is not owned by this DaemonSet"
+                else
+                  ip link add "${INTERFACE}" type dummy
+                  ip link set dev "${INTERFACE}" alias "${OWNER}"
+                fi
+
+                ip link set dev "${INTERFACE}" up
+
+                for cidr in "${desired_ipv4[@]}"; do
+                  address_exists 4 "${cidr}" || ip -4 address add "${cidr}" dev "${INTERFACE}"
+                done
+                for cidr in "${desired_ipv6[@]}"; do
+                  address_exists 6 "${cidr}" || ip -6 address add "${cidr}" dev "${INTERFACE}"
+                done
+
+                addresses_ready=false
+                for ((attempt = 1; attempt <= 30; attempt++)); do
+                  addresses_ready=true
+                  for cidr in "${desired_ipv4[@]}"; do
+                    address_ready 4 "${cidr}" || addresses_ready=false
+                  done
+                  for cidr in "${desired_ipv6[@]}"; do
+                    address_ready 6 "${cidr}" || addresses_ready=false
+                  done
+                  [[ "${addresses_ready}" == true ]] && break
+                  sleep 1
+                done
+                [[ "${addresses_ready}" == true ]] || fail "desired addresses did not become ready"
+
+                mapfile -t actual_ipv4 < <(
+                  ip -j -4 address show dev "${INTERFACE}" |
+                    jq -r '.[].addr_info[]? |
+                      select(.scope == "global") |
+                      "\(.local)/\(.prefixlen)"'
+                )
+                for cidr in "${actual_ipv4[@]}"; do
+                  desired_contains "${cidr}" "${desired_ipv4[@]}" ||
+                    ip -4 address delete "${cidr}" dev "${INTERFACE}"
+                done
+
+                mapfile -t actual_ipv6 < <(
+                  ip -j -6 address show dev "${INTERFACE}" |
+                    jq -r '.[].addr_info[]? |
+                      select(.scope == "global") |
+                      "\(.local)/\(.prefixlen)"'
+                )
+                for cidr in "${actual_ipv6[@]}"; do
+                  desired_contains "${cidr}" "${desired_ipv6[@]}" ||
+                    ip -6 address delete "${cidr}" dev "${INTERFACE}"
+                done
+
+                for cidr in "${desired_ipv4[@]}"; do
+                  address_ready 4 "${cidr}" || fail "IPv4 address verification failed: ${cidr}"
+                done
+                for cidr in "${desired_ipv6[@]}"; do
+                  address_ready 6 "${cidr}" || fail "IPv6 address verification failed: ${cidr}"
+                done
+
+                printf '%s %s IPv4=%d IPv6=%d ownership=OK\n' \
+                  "${NODE_NAME}" "${INTERFACE}" \
+                  "${#desired_ipv4[@]}" "${#desired_ipv6[@]}"
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - nsenter -t 1 -m -u -i -n -p -- stat "${CHECKPOINT_PATH}" >/dev/null
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 90

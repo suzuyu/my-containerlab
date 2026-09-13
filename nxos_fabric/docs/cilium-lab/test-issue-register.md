@@ -43,16 +43,17 @@ Git 管理外領域へ保存する。この文書には、再現に必要な条�
 | `TI-001` | `Workaround validated` | adc-k02 Stage 2A／2B | Fabric client から IPv6 NodePort `externalTrafficPolicy: Cluster` へ接続した場合、remote backend 選択時だけ応答が timeout する | 両 worker の VXLAN TX checksum off で回帰確認済み。恒久 kernel 対応は未実施 |
 | `TI-002` | `Open` | adc-k02 Stage 2A BGP／Fabric | Cilium Service route は BGP／RIB／EVPN に存在するが、Nexus 9000v の Forwarding 表では aggregate が欠落し、BGR の exact route も 1 path だけに見える | 基本通信と観測試験は継続し、Forwarding／ECMP 冗長性は合格にしない |
 | `TI-003` | `Workaround validated` | adc-k02 NP-05 | 内部 Service DNS は成功するが、CoreDNS から外部上流 DNS への query が失敗する | Pod 到達確認済み resolver を CoreDNS `forward` へ runtime 設定し、FQDN Policy の許可／拒否通信を確認済み |
-| `TI-004` | `Open` | adc-k02 Stage 1／2B | 大きい TCP／UDP が Gateway 経由・通常経路で失敗し、高負荷後に LB が一時 timeout | 小さい通信の成功と分離し、サーバ側 Leaf を MTU 9216 へ修正し、8,900 byte まで再確認済み。高レート UDP の損失を継続確認、SNAT port 枯渇は保留 |
-| `TI-005` | `Open` | adc-k02 Stage 1／2B | Node 間 VXLAN が Fabric ではなく管理側 eth0 を通る設計差分 | 実経路を保存。Node InternalIP／underlay の変更は別作業として保留 |
+| `TI-004` | `Open` | adc-k02 Stage 1／2B | 高負荷時の UDP 損失・LB timeout、TCP 一括送信時の再送、Fabric 経由での応答遅延 | 40 条件＋対照 2 条件で Fabric の秒単位遅延・順序逆転を確認。高レートの欠落区間と socket 側未回収を分離し、原因確定を継続 |
+| `TI-005` | `Resolved` | adc-k02 Stage 1／2B | Node 間 VXLAN が管理側 eth0 を通っていた設計差分 | 全 3 Node の InternalIP と Cilium 終端を Fabric へ修正。gw-a の Fabric 通過、両 worker の eth0 で対象 packet 0 を確認 |
 | `TI-006` | `Open` | adc-k02 W-EGRESS-06 | 手順再現時、新規 Pod の最初の IPv4 接続だけ短い deadline で timeout | 239/240 成功、後続安定。初期 timeout の原因は未確定 |
-| `TI-007` | `Open` | Leaf Po11〜16／Stage 1・2B | Node／他サーバ向け MTU 9100 の統一が未実施、9000 byte 境界が未検証 | 次回の最優先。system jumbo の影響確認後に config 修正・適用・再試験 |
+| `TI-007` | `Resolved` | Leaf Po11〜16／Stage 1・2B | Leaf の MTU／LACP、Node 9150、Cilium 基準 9050 を反映し、k02 の Pod 経路 MTU 9000 と到達を確認 | Fabric 切替後も 9000 byte の到達を確認。待ち時間超過・性能は TI-004 で継続 |
+| `TI-008` | `Resolved` | adc-k02 connectivity 試験環境 | Fabric IP 切替前の hostNetwork 試験用 Pod に旧管理 IP が残り、Node 間通信の返信 capture が失敗 | 該当 Pod 1 個を再作成し、限定 1 test／6 actions 成功。Node IP 変更後は試験用 Pod IP も照合 |
 
 ## 4. TI-001: IPv6 NodePort の remote backend 応答 checksum 不整合
 
 **2026-09-06 の更新：** 両 worker の `cilium_vxlan tx-checksum-ip-generic=off` を適用し、
 [Egress・LB・限定 CLI の回帰](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/offload-regression-result.md) が成功した。
-状態を `Workaround validated` とする。[設定維持・復旧の運用](checksum-compat-operations.md) も整備済み。
+状態を `Workaround validated` とする。[設定維持・復旧の運用](runbooks/checksum-compat-operations.md) も整備済み。
 kernel 更新・Node 再起動は実施せず、恒久修正完了とはしない。以降の `Workaround prepared` という記載はこの更新前の調査履歴である。
 大きい packet／高負荷の問題は別件 `TI-004` として管理する。
 
@@ -553,13 +554,59 @@ BPF／NAT の設定変更や kernel 更新を行う前に、このリンクの M
 試験専用リソースを撤去し、Leaf の修正 MTU と既存 checksum 回避策は維持する。Node 障害・復旧、kernel 更新、SNAT port 枯渇は今回実施しない。
 
 
+### 7.6 2026-09-12：同一 Pod・3 経路の再比較
+
+通常／gw-a／gw-b、IPv4／IPv6 の TCP は通常 MSS、`256 KiB` 単位で全量回収したが、
+クライアント側の再送は通常経路 `5`／`9`、gw-a `0`／`0`、gw-b `8`／`8` だった。
+TCP を `8000` byte 単位へ分けた低レート再測定では再送 0。低レート UDP payload `1200`／`8000` も送受信量が一致した。
+送信間隔による 1 Mbps 制限と write 時のバーストを区別し、再送箇所・queue drop の原因確定は残す。
+`8999` byte のローカル拒否は TI-007 の Pod 経路 MTU `8950` によるものと確認した。
+詳細は [2026-09-12 の記録](results/singlesite/2026-09-12/validation-status-2026-09-12.md) を参照する。
+
+### 7.7 2026-09-12：Fabric underlay 修正後の遅延と再送
+
+TI-005 の修正後、gw-a の UDP payload 1200 byte・1 Mbps は IPv4 521 送信／317 回収、IPv6 521 送信／420 回収だった。
+両 family とも capture では 521 要求／521 応答を確認し、未回収分の 204／101 応答はプログラム終了後に到着した。
+境界試験の IPv6 UDP 8900 byte にも 650 ms の待ち時間を超える約 675 ms の応答が 1 回あった。
+今回の未回収をそのままネットワークの破棄率とはせず、遅延と待ち時間を区別して記録する。
+
+gw-a の UDP payload 8000 byte／IP 全長 9000 byte、通常／gw-b の低レート比較は全量回収。
+gw-a の payload 1200 byte を 0.1 Mbps に下げた比較も両 family で全量回収した。
+TCP write 単位 256 KiB では全量を回収したが、再送は通常 IPv4／IPv6 7／4、gw-a 11／12、gw-b 4／8。
+Fabric 経路の受入と性能の受入を分け、遅延する装置・queue、再送原因、高負荷時の挙動の調査を継続する。
+詳細は [Fabric underlay 修正記録](results/singlesite/2026-09-12/validation-status-2026-09-12.md#fabric-underlay-fix) を参照する。
+
+
+### 7.8 2026-09-12〜13：設定照合後の遅延・再送切り分け
+
+[全体回帰・性能切り分け](results/singlesite/2026-09-12/singlesite-regression-validation-2026-09-12.md) で UDP 40 条件＋capture 停止対照 2 条件、
+従来 UDP 12 条件、TCP 12 条件を実施した。状態は `Open` を維持する。
+
+- 通常／gw-b の小さい UDP は目標 5 Mbps で p95 約 3.9〜4.3 秒、gw-a は 1 Mbps で約 1.3〜1.6 秒。
+  これらは追加 5 秒の観測で全量回収した。capture 停止対照でも遅延が残った。
+- 通常の Leaf 間 capture 時刻差は p95 約 3.13 秒。Node―Leaf／Leaf―サーバ区間は 0.1 ms 未満だった。
+  同一 UDP flow が 2 台の Leaf へ分かれ、サーバで統合した受信順に逆転を認めた。
+- gw-a の payload 8000・目標 20 Mbps の IPv4 未回収 514 のうち、504 は期限後に到着。
+  サーバで返信のなかった残り 10 は UDP 受信バッファエラーの増加と一致した。
+- 同条件の IPv6 は送信側 Leaf で 1509、gateway 側で 814 request を観測し、695 が Fabric 区間で未観測。
+  廃棄した内部 queue／装置の確定は残る。
+- 通常／gw-b の高レート未回収計 22 は Pod capture に期限内の返信があり、socket／アプリ側の追加観測が必要。
+- TCP は 12 条件とも全量回収。256 KiB 単位の送信では再送が通常 5／3、gw-a 30／2、gw-b 7／6（IPv4／IPv6）。
+  8000 byte 単位では全 6 条件が再送 0。SACK／順序逆転 counter の増加も確認した。
+
+今回の LB は 232/232 HTTP 成功。Node／Cilium／BGP／初期化設定の最終照合は成功し、一時設定を撤去した。
+次は Leaf uplink／Spine／peer-link の capture と Pod socket counter を追加し、遅延・Fabric 欠落・
+受信バッファ不足を分けて比較する。MTU の追加変更や kernel 更新は今回行わない。
+
 <a id="ti-005-vxlan-underlay"></a>
 
 ## 8. TI-005：Node InternalIP と VXLAN underlay の設計差分
 
-**試験記録日：2026-09-06、状態：Open。**
+**試験記録日：2026-09-06、状態：Resolved（2026-09-12、k02 の Fabric 経路を確認）。**
 [実経路の確認結果](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/egress-remaining-result.md#4-経路照合と-bpf-map-の実行例) と
 [追加の packet capture](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/egress-mtu-result.md) に基づく。
+
+以下は修正前の記録であり、後続修正の結果は本節末尾に記載する。
 
 - 計画：Node 間の Fabric 接続と管理側接続を分離して設計・評価する。
 - 実測：selected の worker2 → Gateway worker は、Node InternalIP `172.18.0.6 → 172.18.0.2` の VXLAN／`eth0`。Gateway → 外部は `bond0.14` の Fabric。
@@ -568,8 +615,24 @@ BPF／NAT の設定変更や kernel 更新を行う前に、このリンクの M
 - 未対応：kubelet Node IP、Cilium の Node address／device 選択、BGP next-hop、API 到達性に対する変更設計と実装。
 - 次の方針：Fabric を underlay にする場合の変更影響を整理し、別の実施枠で確認する。Node／containerlab 再起動と kernel 変更は今回実施しない。
 
+**2026-09-12 の再確認：** gw-a の低レート TCP／UDP 中に worker2 の `eth0` で同じ Node 間 VXLAN 経路を確認し、
+外側 IPv4 の fragment も観測した。測定した通信の到達成功を、underlay の MTU 整合や無断片化の確認とはしない。
+証跡・次の設計項目は [2026-09-12 の記録](results/singlesite/2026-09-12/validation-status-2026-09-12.md) を参照する。
+
 `TI-004` の server 側 Leaf MTU 1500 は今回 packet を失った区間として確認できたため、
-管理 eth0 の MTU 1500 だけを大きい通信の失敗原因とはしない。設計に合わせた underlay へ変更し、packet capture と正常なサイズ境界を確認するまで本件は未完了とする。
+管理 eth0 の MTU 1500 だけを大きい通信の失敗原因とはしない。
+
+**2026-09-12 の後続修正：** ユーザーの依頼により、全 3 Node の kubelet `--node-ip` を Fabric の IPv4／IPv6 へ変更し、
+Cilium Pod を 1 台ずつ再作成した。Kubernetes／CiliumNode／Cilium の Node 一覧が Fabric IP に揃った。
+管理 API endpoint と default route は維持し、Node／host の再起動や Containerlab の再 deploy は行っていない。
+
+通常／gw-a／gw-b の各 100 秒の同時 capture で、両 worker の eth0 は VXLAN／外側 fragment の対象 packet が 0。
+gw-a への転送は `172.16.4.22 → 172.16.4.21`、`bond0.104 → bond0.14` の Fabric を通り、
+Pod IP 全長 9000 byte を包んだ Cilium VXLAN の IP 全長 9050 byte を確認した。観測した外側 IPv4 の fragment は 0。
+両 family・3 経路の ICMP／UDP 9000 byte は成功したため、本件の経路修正は Resolved とする。
+
+gw-a の小さい UDP の期限超過と TCP の再送は TI-004 へ残す。
+詳細と保存状態は [Fabric underlay 修正記録](results/singlesite/2026-09-12/validation-status-2026-09-12.md#fabric-underlay-fix) を参照する。
 
 
 <a id="ti-006-newborn-first-request"></a>
@@ -592,15 +655,40 @@ BPF／NAT の設定変更や kernel 更新を行う前に、このリンクの M
 **次の確認：** 新規 Pod の起動時刻、Endpoint／Policy map の反映時刻、SYN と外部受信を同時取得し、初回接続の deadline を条件別に比較する。
 今回は MTU 境界までの実施範囲のため、原因を確定する追加試験や設定変更は行っていない。
 
+**2026-09-12 の初期化 DaemonSet 統合試験：** gw-a を選択し、新規 Pod 3 個 × IPv4／IPv6 × 40 回の
+240/240 HTTP が指定 Egress IP で成功した。接続 deadline は従来どおり 400 ms。
+Pod の起動記録、Endpoint watch、両 worker と外部サーバの capture を取得した。
+今回は初回 timeout を再現せず、以前の 239/240 という失敗記録と原因未確定の `Open` は維持する。
+詳細は [初期化 DaemonSet の統合試験](results/singlesite/2026-09-12/egress-interface-init-validation-2026-09-12.md) を参照する。
+
 
 <a id="ti-007-mtu-9100"></a>
 
-## 10. TI-007：Leaf Po11〜16 の MTU 9100 統一と 9000 byte 境界確認
+## 10. TI-007：Leaf Po11〜16 の MTU 整合と 9000 byte 境界確認
 
-**課題記録日：2026-09-06。次回実施する残課題。状態：Open（未適用・未試験）。**
+**課題記録日：2026-09-06。状態：Resolved（2026-09-12、k02 の 9000 byte 境界・低レート受入に合格）。**
 設計の正本は [architecture の MTU 方針](architecture.md#mtu-9100-plan)。
 
-### 10.1 目的と現状との差
+**2026-09-12 の更新：** ユーザーの修正依頼により Leaf0103／0104 の Po12〜14 を `1500` → `9216` に変更し、
+メンバーの実 MTU と LACP／vPC、対象 3 経路の両 family・IP 全長 `9000` byte までの ICMP Echo を確認した。
+`system jumbomtu` は `9216` を維持し、下記の `9100` 統一案は未適用。後続の依頼で Leaf0101／0102 の Po11〜15 の
+LACP 参加設定と MTU も復元し、5 台とも 2 ポートの集約を確認した。
+追加 Egress 試験の `8999` byte の送信拒否は、後続の同一 Pod 比較で経路 MTU `8950` によるものと特定した。
+修正前の Pod interface と Cilium 設定値は `9000` だったが、VXLAN の overhead `50` byte を引いた値がデフォルト経路と socket に設定されていた。
+通常経路・gw-a・gw-b の両 family で、ICMP／UDP は `8950` まで成功し、`8951` 以上はローカル拒否だった。
+TCP は通常 MSS で全量回収したが、`256 KiB` 単位の送信では通常経路と gw-b に再送が残る。
+小分け TCP と低レート UDP の追加 18 条件は送受信量が一致し、TCP のクライアント側再送は 0。
+また gw-a の Node 間 VXLAN は管理側 `eth0` を通り、外側 IPv4 の断片化を確認した。
+その後のユーザー依頼で Node Fabric を `9150`、Cilium 基準値を `9050` に変更し、Pod 経路 MTU `9000` とした。
+通常／gw-a／gw-b × IPv4／IPv6 の ICMP／UDP は `9000` まで成功、`9001` は MTU `9000` のローカル拒否を確認した。
+低レート 24 条件も成功し、この課題のサイズ受入は合格とする。大きな TCP write の再送と管理側 VXLAN の断片化は
+この時点では TI-004／TI-005 として継続した。その後の Fabric underlay 修正で TI-005 は解決し、9000 byte の到達も再確認した。
+待ち時間を超える応答遅延と再送は TI-004 として継続する。Leaf の startup-config 保存は未実施、multisite は保存設定だけの更新である。
+詳細・保存状態は [2026-09-12 の記録](results/singlesite/2026-09-12/validation-status-2026-09-12.md) を参照する。
+
+以下の 10.1〜10.2 は 2026-09-06 に作成した当初案である。Leaf の `9100` 統一は採用せず、上記の `9216` 維持へ方針を更新した。
+
+### 10.1 当初の目的と現状との差
 
 Node Fabric の MTU `9100` に合わせ、他サーバ向けも含め Leaf の既存 `port-channel11`〜`16` を `9100` に統一する。
 Pod と外部サーバは MTU `9000` を維持し、IP 全長 `9000` byte までの双方向到達を確認する。
@@ -611,7 +699,7 @@ Pod と外部サーバは MTU `9000` を維持し、IP 全長 `9000` byte まで
 前回は障害区間の復旧を優先して既存 Leaf 値へ揃えたが、全サーバ向けの設計照合と `9000` byte の受入確認を完了条件へ含めなかった。
 今回、設計書の範囲と次回の完了条件を明記した。TI-004 の高負荷損失、TI-005 の管理側 VXLAN は別課題として維持する。
 
-### 10.2 次回の実施順序
+### 10.2 当初の実施順序と終了条件
 
 1. **端末 B：変更前の棚卸し。** 各 Leaf の Po11〜16、物理メンバー、vPC 対向、接続先 Node／サーバ、SVI、`system jumbomtu`、peer-link／uplink の config と実 MTU を保存する。存在しない Po は新設しない。Node の Fabric NIC・bond・VLAN は `9100`、その他サーバは `9000` を確認する。
 2. **設計・config の確定。** NX-OS の L2 MTU 制約と `system jumbomtu` 変更の波及範囲を調べ、Po11〜16 の目標 `9100` を実現する方法、Fabric 内部のカプセル化余裕、vPC 両端の投入順序、ロールバックを決める。他ポートを維持したまま変更できない場合は、その影響を明示して方針を確定する。実機確認前の一括置換は行わない。
@@ -633,3 +721,33 @@ kernel 更新、Node／kind worker／containerlab 再起動、停止中 multisit
 
 参照：[Cisco の MTU 設定制約](https://www.cisco.com/c/en/us/support/docs/switches/nexus-9000-series-switches/118994-config-nexus-00.html)、
 [過去の MTU 修正・再試験](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/egress-mtu-fix-result.md)。
+
+### 10.3 Node 9150／Cilium 9050 適用後の受入（2026-09-12）
+
+- Node Fabric：3 Node の全 6 方向 × IPv4／IPv6 × IP 全長 9000／9150 byte で 72/72 応答。
+  9151 byte は各条件でローカル MTU エラー。
+- Pod：通常／gw-a／gw-b × IPv4／IPv6 × IP 全長 8900／8950／8999／9000 byte で、
+  ICMP と UDP がそれぞれ 72/72 応答。9001 byte は各条件でローカル拒否、socket の MTU は 9000。
+- 低レート：TCP write 8000 byte、UDP payload 1200／8000 byte と IP 全長 9000 byte を 1 stream／1 Mbps／5 秒指定で測定。
+  全 24 条件で送受信量一致・プログラムエラー 0。小分け TCP の再送は全 6 条件で 0。
+- TCP write 256 KiB では全 6 条件で 786432 byte を送受信したが、クライアント側再送は 0〜14。
+  gw-a の管理側 VXLAN に外側 IPv4 の fragment が残る。性能や Fabric underlay の受入には含めない。
+- 設定ファイルは topology と base values、稼働値は Node・Helm・既存 Pod の interface／route で照合した。
+  試験用リソースを撤去し、Cilium・BGP・API・既存 LB の回帰を確認した。
+
+コマンド、ハッシュ、適用範囲と詳細は [実装と再試験の記録](results/singlesite/2026-09-12/validation-status-2026-09-12.md#mtu9150-implementation) を参照する。
+
+<a id="ti-008-stale-hostnetns"></a>
+
+## 11. TI-008: Node IP 変更後の試験用 hostNetwork Pod の旧 IP
+
+2026-09-12 の single-site 全体回帰で `node-to-node-encryption` の IPv4／IPv6 が capture 不在で失敗した。
+worker の Node InternalIP は Fabric IP だったが、既存 `host-netns` Pod の status に旧管理 IP が残っていた。
+CLI が旧 IP から返信側の interface／filter を選ぶため、Fabric へ送る ping の返信を管理側で探していた。
+
+全体試験後、旧 IP の試験用 Pod 1 個を再作成し、両 worker の Pod IP と Node InternalIP の一致を確認した。
+同じ CLI の限定再試験が 1 test／6 actions 成功したため `Resolved` とする。Node／Cilium agent は再起動していない。
+Node IP を変更した後は hostNetwork 試験用 Pod の status も確認し、不一致なら当該試験用 Pod を再作成する。
+
+全体結果は 80/82 tests 成功、2 tests 失敗のまま保持する。累積 drop 検出と試験用 Pod の問題は分けて扱う。
+[全体回帰と限定再試験の記録](results/singlesite/2026-09-12/singlesite-regression-validation-2026-09-12.md) を参照する。

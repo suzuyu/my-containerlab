@@ -4,7 +4,7 @@
 
 このディレクトリは、旧環境を基本 config に揃えるための移行差分である。試験ごとに追加・撤去する設定ではない。
 基本 config に Egress の受信許可・集約・公開範囲の制御を含める。停止中の環境は基本 config を使用して起動し、差分だけの二重投入は不要。
-[経路設計](../../../../docs/cilium-lab/egress-gateway-routed-design.md)を正本とする。
+[経路設計](../../../../docs/cilium-lab/design/egress-gateway-routed-design.md)を正本とする。
 
 - Cilium Node は所有する `/32`・`/128` を広報する。
 - NX-OS は Egress 範囲の `/24`・`/64` を集約する。現段階では `summary-only` を指定せず、個別経路も広報する。経路数の削減は未実施。
@@ -95,7 +95,7 @@ ADC Leaf の通常 `.cfg` は追加設定がなく、旧設定を撤去する移
 
 1. 適用順に沿って各 `.cfg` を 1 台ずつ適用し、parser error がないことを確認する。
 2. 既存 BGP session と LB 経路を比較する。hard clear は行わない。
-3. [single-site 手順 7](../../../../docs/cilium-lab/egress-gateway-test-plan.md#egress-routed-setup)で Node IP と Cilium advertisement を準備する。
+3. [single-site 手順 7](../../../../docs/cilium-lab/tests/egress-gateway-test-plan.md#egress-routed-setup)で Node IP と Cilium advertisement を準備する。
 4. Node の advertised-routes は個別経路、NX-OS は個別経路と集約の両方を持つことを確認する。
 5. controller VRF で両 family の Egress 集約について既存 import 条件の動作を確認し、全撤回後に経路が消えることを確認する。tenant BGP の Egress 経路に no-export が付かないことも確認する。
 6. multisite 起動後は LB と比較し、BGW の DCI peer advertised-routes と対向 site の tenant RIB に Egress 範囲が届くことを実測する。prefix 許可リストを導入する場合は Egress も含める。

@@ -8,12 +8,15 @@ Usage:
     [--context-k02 kind-adc-k02] [--context-k03 kind-bdc-k03] \
     [--coredns-upstream DNS_IPV4] \
     [--checksum-state-k02 ENROLLED_STATE_JSON] \
+    [--checksum-state-k03 ENROLLED_STATE_JSON] \
     [--output-dir DIR] [--apply]
 
 Without --apply, perform only offline Helm/Kustomize rendering. With --apply,
 converge Node labels/routes, Cilium, platform CRs, and Tetragon in dependency
 order, then run readiness checks. The script never creates, recreates, or
 destroys Containerlab or Kind resources, and it never applies validation apps.
+Checksum options require prior enrollment; they do not enroll or install timers.
+For multisite, supply a separate state for each cluster needing the workaround.
 EOF
 }
 
@@ -28,6 +31,7 @@ context_k03="kind-bdc-k03"
 output_dir=""
 coredns_upstream=""
 checksum_state_k02=""
+checksum_state_k03=""
 apply=false
 
 while (($# > 0)); do
@@ -66,6 +70,11 @@ while (($# > 0)); do
       checksum_state_k02="$2"
       shift 2
       ;;
+    --checksum-state-k03)
+      (($# >= 2)) || die "--checksum-state-k03 requires a value"
+      checksum_state_k03="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -81,16 +90,26 @@ case "$profile" in
   *) die "--profile must be singlesite-final or multisite-final" ;;
 esac
 
-if [[ -n "$checksum_state_k02" ]]; then
-  [[ "$profile" == singlesite-final ]] || die "checksum compatibility is explicitly scoped to singlesite-final"
-  [[ -f "$checksum_state_k02" ]] || die "enrolled checksum state does not exist"
-  python3 - "$checksum_state_k02" "$context_k02" <<'PY'
+if [[ "$profile" == singlesite-final && -n "$checksum_state_k03" ]]; then
+  die "--checksum-state-k03 requires multisite-final"
+fi
+validate_checksum_policy() {
+  local state="$1" cluster="$2" context="$3"
+  [[ -n "$state" ]] || return 0
+  [[ -f "$state" ]] || die "enrolled checksum state does not exist: $state"
+  python3 - "$state" "$cluster" "$context" <<'PY'
 import json, sys
 policy = json.load(open(sys.argv[1]))
-if policy.get('cluster') != 'adc-k02' or policy.get('context') != sys.argv[2] or not policy.get('enabled'):
-    sys.exit('checksum state must be enabled and match adc-k02 and the selected context')
+cluster, context = sys.argv[2:]
+if (policy.get('schema') != 1 or policy.get('cluster') != cluster
+        or policy.get('context') != context or policy.get('enabled') is not True
+        or set(policy.get('nodes', [])) != {cluster + '-worker', cluster + '-worker2'}
+        or not policy.get('kubeconfig') or not policy.get('expected', {}).get('cluster_uid')):
+    sys.exit('checksum state must be enabled and match the cluster, context, and both workers')
 PY
-fi
+}
+validate_checksum_policy "$checksum_state_k02" adc-k02 "$context_k02"
+validate_checksum_policy "$checksum_state_k03" bdc-k03 "$context_k03"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd "${script_dir}/../../.." && pwd -P)"
@@ -133,6 +152,34 @@ require_context() {
   kubectl --context "$context" get --raw=/livez >/dev/null || die "Kubernetes API is not live: ${context}"
 }
 
+validate_checksum_target() {
+  local state="$1" context="$2"
+  [[ -n "$state" ]] || return 0
+  require_context "$context"
+  local cluster_uid
+  cluster_uid="$(kubectl --context "$context" --request-timeout=15s get namespace kube-system -o jsonpath='{.metadata.uid}')"
+  python3 - "$state" "$cluster_uid" <<'PY'
+import json, subprocess, sys
+policy = json.load(open(sys.argv[1]))
+expected_uid = policy['expected']['cluster_uid']
+if expected_uid != sys.argv[2]:
+    sys.exit('checksum enrollment belongs to another cluster UID; stop before changing either cluster')
+actual_uid = subprocess.check_output([
+    'kubectl', '--kubeconfig', policy['kubeconfig'], '--context', policy['context'],
+    '--request-timeout=15s', 'get', 'namespace', 'kube-system', '-o',
+    'jsonpath={.metadata.uid}'], text=True, timeout=20).strip()
+if actual_uid != expected_uid:
+    sys.exit('checksum state kubeconfig points to another cluster UID; no changes made')
+PY
+}
+
+reconcile_checksum() {
+  local state="$1"
+  [[ -n "$state" ]] || return 0
+  python3 "${script_dir}/checksum-compat.py" reconcile --state "$state"
+  python3 "${script_dir}/checksum-compat.py" check --state "$state"
+}
+
 prepare_site() {
   local site="$1"
   local cluster="$2"
@@ -140,16 +187,6 @@ prepare_site() {
   local site_root="${fabric_root}/k8s_kind/${site}"
 
   require_context "$context"
-  if [[ "$site" == k02 && -n "$checksum_state_k02" ]]; then
-    local cluster_uid
-    cluster_uid="$(kubectl --context "$context" get namespace kube-system -o jsonpath='{.metadata.uid}')"
-    python3 - "$checksum_state_k02" "$cluster_uid" <<'PY'
-import json, sys
-policy = json.load(open(sys.argv[1]))
-if policy['expected']['cluster_uid'] != sys.argv[2]:
-    sys.exit('checksum enrollment belongs to another cluster UID; stop before changing the cluster')
-PY
-  fi
   "${script_dir}/configure-cilium-node-labels.sh" --context "$context" --apply
   "${script_dir}/preflight-host-and-kind.sh" --cluster "$cluster" --kube-context "$context"
   "${script_dir}/render-k8s-api-values.sh" \
@@ -230,20 +267,23 @@ accept_site() {
   kubectl --context "$context" -n kube-system get pods -o wide
 }
 
+# Validate all supplied enrollments before the first write to either cluster.
+validate_checksum_target "$checksum_state_k02" "$context_k02"
+validate_checksum_target "$checksum_state_k03" "$context_k03"
+
 if [[ "$profile" == singlesite-final ]]; then
   prepare_site k02 adc-k02 "$context_k02"
   install_cilium k02 "$context_k02" 20-singlesite-egress.yaml
-  if [[ -n "$checksum_state_k02" ]]; then
-    python3 "${script_dir}/checksum-compat.py" reconcile --state "$checksum_state_k02"
-    python3 "${script_dir}/checksum-compat.py" check --state "$checksum_state_k02"
-  fi
+  reconcile_checksum "$checksum_state_k02"
   configure_coredns k02 "$context_k02"
   apply_platform_resources k02 adc-k02 "$context_k02" false
+  bash "${script_dir}/configure-egress-interface-init.sh" --context "$context_k02" --action apply
   install_tetragon k02 "$context_k02"
   accept_site "$context_k02"
 else
   prepare_site k02 adc-k02 "$context_k02"
   install_cilium k02 "$context_k02" 20-multisite-clustermesh.yaml
+  reconcile_checksum "$checksum_state_k02"
   configure_coredns k02 "$context_k02"
   apply_platform_resources k02 adc-k02 "$context_k02" true
 
@@ -253,6 +293,7 @@ else
     --target-context "$context_k03" \
     --apply
   install_cilium k03 "$context_k03" 20-multisite-clustermesh.yaml
+  reconcile_checksum "$checksum_state_k03"
   configure_coredns k03 "$context_k03"
   apply_platform_resources k03 bdc-k03 "$context_k03" true
 

@@ -20,7 +20,7 @@ hash -r
 
 実行中の Containerlab topology にはまだ CLI／kubeconfig の bind を追加していない。対象
 `adc-t1sv0101` での `PATH` 設定、適用条件、YAML 追記案は
-[`docs/cilium-lab/client-tools.md`](../../../docs/cilium-lab/client-tools.md)を参照する。
+[`docs/cilium-lab/runbooks/client-tools.md`](../../../docs/cilium-lab/runbooks/client-tools.md)を参照する。
 
 準備スクリプトは `amd64`／`arm64` を判定し、kubectl、Cilium CLI、Hubble CLI、Helm CLI を公式 release URL から
 一時 directory へ取得する。公式 SHA256 の検証に合格した binary だけを `runtime/bin/` へ配置する。

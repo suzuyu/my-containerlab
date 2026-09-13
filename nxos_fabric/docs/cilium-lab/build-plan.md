@@ -20,7 +20,9 @@ flowchart LR
 LB IPAM／BGP feature、single-site Egress Gateway feature、Hubble、Tetragon を初期 platform 構築に含める。
 依存順序は維持し、Cilium Ready 後に LB／BGP resource と Tetragon release を導入する。Stage 2～4 は
 基盤を後付けする段階ではなく、試験アプリ／policy を追加して機能ごとの合否を確定する確認段階とする。
-未解決事象を残したまま、原因を増やす主要機能を追加しない。互換性比較や破壊的変更が必要な
+未解決事象は原因を増やす主要機能の追加前に範囲と比較基準を固定する。2026-09-13 に single-site は
+[終了時確認](results/singlesite/2026-09-13/singlesite-closeout-2026-09-13.md) を行い、既知課題付きで一区切りとした。
+multisite は site-local の基盤確認を先に行い、single-site の未合格項目を合格へ転記しない。互換性比較や破壊的変更が必要な
 発展機能だけを別profileとして扱う。
 
 ## 2. 各Stageの進め方
@@ -36,11 +38,11 @@ flowchart LR
     U --> N["次のStage"]
 ```
 
-1. [要件・設計台帳](requirements-and-design.md)から対象項目を選び、採用理由、設定値、依存関係、
+1. [要件・設計台帳](design/requirements-and-design.md)から対象項目を選び、採用理由、設定値、依存関係、
    受入条件を確定する。
-2. [パラメータ・アドレス割り当て台帳](parameter-and-address-allocation.md)と
+2. [パラメータ・アドレス割り当て台帳](design/parameter-and-address-allocation.md)と
    [構成設計と構成図](architecture.md)を更新し、Kubernetes 内外の経路と責務を確認する。
-3. [検証ワークロード設計](test-workloads.md)から対象workloadとTest IDを選び、kind設定、Helm values、
+3. [検証ワークロード設計](tests/test-workloads.md)から対象workloadとTest IDを選び、kind設定、Helm values、
    Kubernetes manifest、確認コマンドを作成する。
 4. schema、render結果、差分、アドレス重複、秘密情報の有無を静的に検証する。
 5. ユーザーが対象と操作を明示した後にlabへ構築する。
@@ -61,34 +63,29 @@ flowchart LR
 - NX-OS側BGP、route、counterの確認結果
 - 失敗時のsystem dump保存先。dumpそのものはcommitしない
 
-### 3.1 single-site の実施状況と残課題（2026-09-06 時点）
+<a id="31-single-site-の実施状況と残課題2026-09-12-時点"></a>
 
-**次回は [TI-007：Po11〜16 の MTU 9100 統一](test-issue-register.md#ti-007-mtu-9100) から再開する（2026-09-06 時点の残課題）。**
+### 3.1 実施状況の参照先
 
-- [ ] `system jumbomtu` と全対象ポートへの影響を確認し、Node／他サーバ向け Po11〜16 の MTU `9100` を config と稼働環境へ反映する（multisite は config のみ）
-- [ ] IPv4／IPv6、gw-a／gw-b／通常経路で IP 全長 `9000` byte までを確認し、`8999`／`9000`／`9001` の境界、低レート TCP／UDP、API／BGP／LB 回帰を記録する
+最新の結果、Stage ごとの進捗、次の作業は [現在のステータス](status.md) へ集約する。
+この文書では構築順序・受入条件と各 Stage のチェックリストを管理する。
 
-以下の `9216` 適用済みチェックは過去の実施範囲を表す。今回決めた `9100` への変更と `9000` byte の試験は未実施。
+`[x]` は記載した範囲で確認済み、`[ ]` は未実施・一部確認・設計照合待ちを表す。
+Stage 1〜4 の single-site の結果を Stage 5〜6 の multisite の合格とは扱わない。
+詳細な合否と当時の条件は [日付別の結果](results/README.md) を参照する。
 
-日付を固定した結果・適用状態・残課題は [2026-09-06 検証ステータス](validation-status-2026-09-06.md) を参照する。
+### 3.2 初期化の確認方法と kernel 更新の時期（2026-09-12 合意）
 
-Stage 1～4 のチェックは `nxos_singlesite/adc-k02` の保存済み結果に基づく。
-`[x]` は記載した範囲で確認済み、`[ ]` は未実施・一部確認・設計照合待ちを表し、理由を併記する。注記のない未チェック項目も、保存証跡だけでは完了を確定できていない。
-Stage 0 のチェックは設計・準備の確定であり、Stage 5～6 の multisite 実測完了を意味しない。
-過去の失敗は証跡に保持し、後続結果で確認できた範囲だけを更新する。
-
-| Stage | 現状 | 残りの中心 |
-|---|---|---|
-| 1 基盤 | 基本疎通と限定回帰は成功。全体試験は未合格 | 最新 lab CLI／回避策での全体回帰、InternalIP 設計照合、API 経路切替、MTU |
-| 2A LB／BGP | 基本疎通と checksum 回避策下の Node 間 IPv6 LB は成功 | 未割当 VIP、経路退避・障害・広告変化の受入 |
-| 2B Egress | 基本機能、新規 Pod、実経路、計画切替の既存接続を確認。大きい TCP／UDP は未合格 | TI-004 の高レート UDP 損失・一時 TCP／LB エラー、SNAT port 枯渇。Node 障害系は保留 |
-| 3 Hubble／Policy | NP-00〜NP-07 の既存合格を継承。Relay と後続の限定回帰も成功 | UI 接続経路、追加 resource 評価。今回全 NP を再実行したわけではない |
-| 4 Tetragon | TG-00～TG-08 の記録した観測・短時間負荷・停止復旧は合格 | 一部原本の転送元ハッシュ照合。accept 観測や長期負荷は確認範囲外 |
-| 5～6 multisite／発展 | single-site の結果をもってチェックしない | 停止中の multisite は実測未実施 |
-
-今回の実施対象から kernel 更新、kind worker／実行ホスト／containerlab の停止・再起動を除外する。
-これらを必要とする受入項目は保留し、Cilium Pod 再作成の成功で代替しない。
-checksum は暫定回避策の `off` を維持し、恒久修正済みとは扱わない。
+- kernel 更新は multisite 試験後に検討する。multisite 構築時も checksum 回避策を前提とし、[クラスタ別の初回登録・監視手順](runbooks/checksum-compat-multisite.md) を使用する。旧 single-site の state は流用しない。
+- Node 初期化の受入は、multisite の新規 Node に保存済み topology・設定・manifest を順に適用し、
+  ゼロから構築できることを確認する。既存 Node の停止・再起動は、この受入には含めない。
+- Fabric の eth1／eth2、LACP bond／VLAN、Node IP・経路・MTU `9150`、Cilium 基準 MTU `9050` と
+  Pod 経路 MTU `9000`、checksum 回避策を確認する。Egress 初期化 manifest の適用前には
+  `egress0` と初期化 checkpoint がないことを記録し、適用後に対象 Node だけで所定 IP が設定されることを確認する。
+- 手動の追加修正が必要なら構築手順へ反映し、初期状態から再確認する。既存環境の残存設定で成功した結果を
+  新規構築の成功とは扱わない。Egress 通信と Cluster Mesh の併用は Stage 6 の試験境界を維持する。
+- この受入は新規構築・初回適用の再現性を対象とする。再起動後のリンク自動復旧・設定維持は未検証として残し、
+  新規構築の成功で合格にしない。
 
 ## 4. Stage 0: 初期要件・基本設計
 
@@ -101,7 +98,7 @@ checksum は暫定回避策の `off` を維持し、恒久修正済みとは扱�
 
 - [x] Containerlab `v0.78.2` 内蔵 kind library `v0.31.0` と Kubernetes `v1.35.5` Node image の組み合わせ、digest、`kind load` の制約を確定する
 - [x] Cilium `v1.20.1`、Cilium CLI `v0.19.7`、Hubble CLI `v1.19.4`、Helm chart の version を固定する
-- [ ] kubectl、Cilium CLI、Hubble CLIをsite別version fileで固定し、共通準備scriptの`--check`を合格させる
+- [ ] kubectl、Cilium CLI、Hubble CLI を site 別 version file で固定し、共通準備 script の `--check` を合格させる（single-site は 2026-09-12 に version／checksum とも成功。multisite は構築時に確認）
 - [x] Tetragon `v1.7.0` と chart version の対応を確認する
 - [x] host kernel、eBPF config、BTF、cgroup v2 の preflight を作成して実行する
 - [x] bpffs、tracefs、host `/proc` mount の設計方針を決める
@@ -114,14 +111,14 @@ checksum は暫定回避策の `off` を維持し、恒久修正済みとは扱�
 - [x] k02 Node-facing trunk は VLAN `1-4094` の許可を維持し、port-channel／member MTU `9216` の公開 config を準備する
 - [x] k02 Leaf の対象 port-channel／member MTU `9216` を running-config へ適用し、LACP と trunk all を確認する
 - [x] ADC Leaf 4 台の k02 Node-facing MTU／description 修正を startup-config へ保存する
-- [x] k02 Node MTU `9100` を適用し、Fabric API の IPv4／IPv6 `/livez` HTTP `200` を確認する
+- [x] k02 Node Fabric MTU を適用する（現在 `9150`）。Fabric API の IPv4／IPv6 `/livez` HTTP `200` は導入時の確認結果を保持する
 - [ ] Cilium／Pod MTU `9000` の導入後に PMTUD、fragment、path MTU boundary を確認する
 - [x] k03 の全 Node が `bond0.105`、Leaf 側が VLAN `105`／VNI `10105` であることを確認する
 - [x] API は `eth0`、Node InternalIP は Fabric IP とする役割分担と bootstrap 順序を決める
 - [x] 管理 API を primary、control-plane Fabric IP の TCP `6443` を secondary とし、証明書 SAN へ含める
 - [ ] 対象network-multitoolの既存VLAN、IPv4/IPv6、gateway、leaf接続portを確認する
 - [ ] 対象network-multitoolへのCLI/kubeconfig bind追記案を作成し、container再作成単位を決める
-- [x] Containerlab 実行 host の site 別 PATH／KUBECONFIG と version 確認手順を準備する（[実行環境](execution-environment-singlesite-k02.md)）
+- [x] Containerlab 実行 host の site 別 PATH／KUBECONFIG と version 確認手順を準備する（[実行環境](runbooks/execution-environment-singlesite-k02.md)）
 - [ ] VIP利用clientを含むfabric側prefixの戻りrouteを確定する
 - [x] Egress Gateway の single-site 専用 overlay、worker 2 Node、`bond0.104`、Gateway ごとの Egress IP、外部試験 server を割り当てる
 - [x] Stage ごとの設定ファイル配置と rollback 単位を決める
@@ -159,7 +156,7 @@ Cilium base values には Kubernetes IPAM、VXLAN、kube-proxy replacement、MTU
 site profile を重ね、Cilium Ready 後に LB IPAM／BGP resource と Tetragon を同じ構築手順内で導入する。
 試験アプリ、Egress policy、Network Policy、TracingPolicy は初期構築から分離する。
 
-確定した値は [パラメータ・アドレス割り当て台帳](parameter-and-address-allocation.md)を正本とする。
+確定した値は [パラメータ・アドレス割り当て台帳](design/parameter-and-address-allocation.md)を正本とする。
 `[x]` は設計値の確定を示し、lab への適用や実測完了を示さない。
 
 ### 完了状態
@@ -179,13 +176,13 @@ kube-proxy replacement 有効で導入する。初期構築では Hubble、LB IP
 Egress Gateway feature gate、observe-only の Tetragon まで導入する。試験アプリと各種 policy は
 リソース判定が合格するまで適用しない。
 
-導入前に [kernel 判定と IPv6 checksum 対応方針](kernel-compatibility-policy.md) を確認し、
+導入前に [kernel 判定と IPv6 checksum 対応方針](runbooks/kernel-compatibility-policy.md) を確認し、
 基本要件に加えて採用する通信方式に必要な helper capability を判定する。
 互換設定が必要な場合は導入前に方針を決め、Cilium Ready 後の interface 生成時に適用する。
 LB 利用開始前に、別 Node の backend を通る IPv6 通信を受入条件へ含める。
 現状の preflight による数値判定だけで、この追加確認まで完了したとは扱わない。
-検証済み互換設定の [登録・再適用・監視手順](checksum-compat-operations.md) と、
-[kernel 恒久候補の評価](kernel-checksum-candidates.md) を併せて参照する。
+検証済み互換設定の [登録・再適用・監視手順](runbooks/checksum-compat-operations.md) と、
+[kernel 恒久候補の評価](reference/kernel-checksum-candidates.md) を併せて参照する。
 
 ### 設計・作成項目
 
@@ -199,36 +196,36 @@ LB 利用開始前に、別 Node の backend を通る IPv6 通信を受入条�
 - API server証明書SANへFabric側IPv4/IPv6を追加し、管理endpointとFabric endpointを同時に維持する
 - kubeletのdual-stack `node-ip`を各nodeの`bond0.<VLAN>` addressへ固定する
 - CiliumはVXLAN、Kubernetes IPAM、`kubeProxyReplacement: true`で導入する
-- Cilium／Pod MTU `9000`、Node Fabric interface MTU `9100` を明示する
+- Cilium 基準 MTU `9050`、Pod 経路 MTU `9000`、Node Fabric interface MTU `9150` を明示する
 - Ciliumの`devices`に管理用`eth0`とfabric側`bond0.<VLAN>`を含める
 - `nodePort.addresses`をk02のfabric側IPv4/IPv6 CIDRへ限定する
 - `bgpControlPlane.enabled: true`と`defaultLBServiceIPAM: none`を初回valuesへ含める
 - Cilium Helm values、install／status、rollback 手順を作成する
 - worker 2 Node だけへ BGP speaker label を付け、LB IPAM／BGP resource を適用する
 - Hubble と observe-only の Tetragon を初期構築し、試験アプリを適用しない状態でリソースを測定する
-- リソース判定後に [検証ワークロード設計](test-workloads.md)の `lab-smoke` を使い、dual-stack ClusterIP／NodePort を確認する
+- リソース判定後に [検証ワークロード設計](tests/test-workloads.md)の `lab-smoke` を使い、dual-stack ClusterIP／NodePort を確認する
 
 ### 受入確認
 
-根拠：[2026-09-05 限定通信](../../nxos_singlesite/operations/cilium-lab/2026-09-05/adc-k02/connectivity-result.md)、[全体結果](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/connectivity-full-result.md)、[回避策適用後の限定回帰](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/offload-regression-result.md)、[現在状態の保存](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/raw/egress-cidr-outside-8oPoHTOX/plan-audit/)。
+根拠：[2026-09-05 限定通信](../../nxos_singlesite/operations/cilium-lab/2026-09-05/adc-k02/connectivity-result.md)、[全体結果](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/connectivity-full-result.md)、[回避策適用後の限定回帰](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/offload-regression-result.md)、[現在状態の保存](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/raw/egress-cidr-outside-8oPoHTOX/plan-audit)。
 
 - [x] kube-proxy Pod が存在せず、Cilium agent／operator と全 Node が Ready になる（2026-09-06 状態再確認）
 - [ ] CoreDNS の A／AAAA 名前解決を両方照合する（外部 FQDN の成功だけでは両 family の完了としない）
 - [ ] 通常管理kubectlとCilium agentが`eth0`側primary endpoint経由でAPI serverへ到達する
 - [ ] Fabric側network-multitoolでtopology設定済みPATHのkubectlがcontrol-plane Fabric IP:6443経由で同じAPI serverへ到達する
 - [ ] primary/secondaryの一方を試験的に遮断しても、もう一方の経路と役割を説明できる
-- [ ] Node `InternalIP` と設計を照合する（実測は IPv4 `172.18.0.2`／`172.18.0.3`／`172.18.0.6`、IPv6 `fc00:f853:ccd:e793::2`／`fc00:f853:ccd:e793::3`／`fc00:f853:ccd:e793::6`。本節の Fabric IP 指定とは不一致。設計・稼働値の扱いを要整理）
+- [x] Node `InternalIP` と設計を照合する（2026-09-12 に全 3 Node の IPv4／IPv6 を Fabric IP へ修正。kubelet 引数・Kubernetes／CiliumNode と一致）
 - [x] Cilium の `devices=eth0,bond0.+` と Fabric 限定の `nodeport-addresses` を確認し、Fabric 側 NodePort の IPv4／IPv6 通信に成功する
 - [x] 同一 Node・異なる Node の Pod 間 IPv4／IPv6 が成功する（2026-09-05 の限定自動試験）
 - [x] ClusterIP、Fabric 側 NodePort、Pod から外部への通信が成功する（2026-09-06 限定回帰・Egress 結果）
-- [ ] Cilium connectivity test の全体受入を完了する（全体は 82 tests 中 4 tests 失敗。後続 lab CLI の限定 114 actions は成功、最新版での全体再実行は未実施）
-- [ ] VXLAN UDP 8472とnode間trafficがNX-OS側pathを通る
+- [ ] Cilium connectivity test の全体受入を完了する（2026-09-12 の lab CLI 全体は 80/82 tests 成功、50 skip。旧試験用 Pod を修正した限定 6 actions は成功。累積 FIB 48／Egress IP 未設定 12 は今回増加 0 だが、全体合格とはしない）
+- [x] VXLAN UDP 8472 と Node 間 traffic が NX-OS 側 path を通る（2026-09-12 の gw-a 経路 capture で確認）
 - [ ] VLAN 14/104間をVNI 10104経由でARP/NDPとIPv4/IPv6通信が通る
-- [ ] Docker 管理 network への意図しない迂回がないことを対象通信ごとに確認する（InternalIP は管理側。LB の成功だけで VXLAN underlay 全体を判定しない）
+- [x] 通常／gw-a／gw-b の対象試験通信で Docker 管理 network への迂回がないことを確認する（2026-09-12、両 worker の `eth0` で対象 packet 0。任意の未試験通信へ一般化しない）
 - [ ] `/procHost`、cgroup、bpffs、tracefsが設計どおり見える
 - [ ] path MTU boundary／PMTUD の全体受入（server 側 Leaf の MTU は修正済み。Egress 外部宛の 1,400〜8,900 byte は全 180 packet 成功。全経路の最大 MTU・ICMP による PMTUD 回復・fragment の受入は未完了）
-- [ ] kind worker 再起動後の復旧を確認する（今回の実施対象から除外）
-- [ ] 同じ設定からクラスタを再作成できる（再作成試験は今回の実施対象から除外）
+- [ ] kind worker 再起動後の復旧を確認する（今回の受入対象外。3.2 節の合意に従い、新規構築の再現性を multisite で確認する）
+- [ ] 保存設定から新規クラスタを構築し、初回適用だけで期待状態になる（multisite 構築時に 3.2 節の手順で確認）
 
 ## 6. Stage 2: 外部接続
 
@@ -242,7 +239,7 @@ LB 利用開始前に、別 Node の backend を通る IPv6 通信を受入条�
 
 - [Stage 2A lab-smoke 実行手順](../../nxos_singlesite/k8s_kind/k02/cilium/manifests/validation/lab-smoke/README.md)：LB IPAM、BGP、ClusterIP／NodePort／LoadBalancer の確認と証跡保存。
 - [ADC Stage 2A BGP 変更手順](../../nxos_singlesite/configs/changes/cilium-stage2a/README.md)：NX-OS 側の変更が必要な場合の投入順序と復旧。
-- [BGP 計画停止・経路退避手順](bgp-maintenance-and-route-drain.md)：基本通信確認後の冗長性・保守試験。
+- [BGP 計画停止・経路退避手順](runbooks/bgp-maintenance-and-route-drain.md)：基本通信確認後の冗長性・保守試験。
 
 基本通信の再確認は最初のリンクから開始する。既に適用済みの NX-OS 設定を再投入する必要はない。
 既知の `TI-001`／`TI-002` は [試験課題台帳](test-issue-register.md) と対応付けて判定する。
@@ -299,14 +296,14 @@ LoadBalancer VIP だけとし、Pod CIDR 広告は分離する。
 
 #### 構築・試験手順
 
-[single-site k02 Egress Gateway 構築・試験手順](egress-gateway-test-plan.md)を実行手順の正本とする。
+[single-site k02 Egress Gateway 構築・試験手順](tests/egress-gateway-test-plan.md)を実行手順の正本とする。
 初回は同手順の「2. 端末 A／B の環境設定」と「3. 事前確認」から開始し、Policy 未適用 baseline、
 `gw-a` の選択・SNAT、対象外・除外通信、`gw-b` 切替、撤去の順に進む。
-試験 ID と設計上の期待値は [egress-probe の試験設計](test-workloads.md#6-egress-probe-egress-gateway) を参照する。
+試験 ID と設計上の期待値は [egress-probe の試験設計](tests/test-workloads.md#6-egress-probe-egress-gateway) を参照する。
 
 Egress Gateway の開始条件は、この機能に必要な health、外向き通信、アドレス・経路の確認で判断する。
 全体 connectivity test の合否とは分けて記録する。今回の実行ホスト、配置パス、転送運用と実施順は
-[実際の試験環境](execution-environment-singlesite-k02.md) にまとめる。
+[実際の試験環境](runbooks/execution-environment-singlesite-k02.md) にまとめる。
 
 #### 構築する状態
 
@@ -329,14 +326,14 @@ NX-OS の常設受信許可・集約を確認し、専用 IP、試験用 BGP adv
 - Policy では `egressIP` または `interface` のどちらか一方だけを指定する
 - Cilium `devices`が選択したfabric interfaceを含むことを確認する
 - 既存`adc-t1sv0102`を第一候補とする外部試験serverのaccess log、packet capture、NX-OS counterで送信元変換と経路を確認する
-- [検証ワークロード設計](test-workloads.md)の`egress-probe`を使い、policy未適用、selector対象外、
+- [検証ワークロード設計](tests/test-workloads.md)の`egress-probe`を使い、policy未適用、selector対象外、
   selector対象、invalid gateway/egress IPを分離する
 - 新規Pod作成直後のpolicy反映遅延と、期待しないsource IPで外へ出る時間の測定
 - gateway node再起動、policy再適用、既存connection切断、SNAT port枯渇の確認方法
 - `gw-a` → `gw-b` の明示的 Policy 切替と Node hard stop を分け、既存 connection 切断、新規 connection の手動復旧時間を測定する
 - IPv4とIPv6を別々に確認し、IPv6 BPF masqueradingはbetaとして結果を分離する
 
-Egress IP の割当・広報・戻り経路は [専用 IP・BGP 経路設計](egress-gateway-routed-design.md) に従う。
+Egress IP の割当・広報・戻り経路は [専用 IP・BGP 経路設計](design/egress-gateway-routed-design.md) に従う。
 k02 は `172.16.24.0/24`／`fd21:0:0:24::/64`、k03 は `172.16.25.0/24`／`fd21:0:0:25::/64` を予約し、
 各 Node の `.1`／`.2`、`::1`／`::2` を `/32`／`/128` で広報する。LB 集約に含めない。
 [single-site NX-OS 差分](../../nxos_singlesite/configs/changes/cilium-stage2b/README.md)は BGP 個別経路を受信するための追加で、
@@ -345,7 +342,7 @@ Node NIC の L2 や kubelet Node IP は変更しない。基本 config は Egres
 
 #### 受入確認
 
-2026-09-06 に基本試験を実施した。結果・撤去後の状態は [実際の試験環境](execution-environment-singlesite-k02.md#latest-egress-results) を参照する。
+2026-09-06 に基本試験を実施した。当時の結果・撤去後の状態は [実施履歴](results/singlesite/2026-09-12/execution-environment-history-2026-09-12.md#latest-egress-results) を参照する。
 その後、両 worker の VXLAN TX checksum 回避策を適用し、[回帰試験](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/offload-regression-result.md) で
 Egress の 46 HTTP、既存 LB の 42 HTTP、Service／NodePort 等の 114 actions が成功した。
 LB IPv6 は回避策ありの条件付き合格。監視による設定ずれ修復と Cilium Pod 再作成後の維持確認は完了した。
@@ -364,8 +361,8 @@ LB IPv6 は回避策ありの条件付き合格。監視による設定ずれ修
 - [x] selector 対象 Pod の Gateway 選択を map と外部 SNAT で確認し、対象外 Pod は baseline の送信元を維持する
 - [x] 外部試験 server が接続元を指定 Egress IPv4／IPv6 として観測する
 - [x] source Node と Gateway Node が異なる場合も指定 Egress IP で SNAT される
-- [x] `ip route get`、`cilium-dbg bpf egress list`、Node capture、NX-OS counter を照合し、実際の転送経路を記録する（管理側 VXLAN → Gateway → Fabric NIC を確認）
-- [ ] Node 間転送の Fabric 側設計との適合を確認する（実際は管理側 InternalIP／eth0。今回是正せず）
+- [x] `ip route get`、`cilium-dbg bpf egress list`、Node capture、NX-OS counter を照合し、実際の転送経路を記録する（09-06 は管理側 VXLAN。09-12 の修正後は Fabric VXLAN → Gateway → Fabric NIC を確認）
+- [x] Node 間転送の Fabric 側設計との適合を確認する（2026-09-12 に TI-005 を修正し、gw-a の Fabric 通過と管理側への流出なしを確認）
 - [x] 宛先 CIDR 外および `excludedCIDRs` の通信は通常の送信元を維持する（gw-a／gw-b、selected／unselected、IPv4／IPv6 を比較）
 - [x] Gateway selector 不一致と利用不能 Egress IP の両方で対象通信の drop・対象外通信の継続・正常復旧を確認する（[W-EGRESS-12A／12B の結果](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/egress-invalid-result.md)。IPv4／IPv6 各 3 接続を理由 194／204 と照合）
 - [x] 新規 Pod の Policy 反映待ちと送信元を記録する（先行 240/240、手順検証 239/240。初回 IPv4 timeout 1 件を TI-006 に記録し、後続安定を確認）
@@ -375,7 +372,7 @@ LB IPv6 は回避策ありの条件付き合格。監視による設定ずれ修
 - [x] Policy 削除後に通常 egress へ戻り、LB／BGP が継続する（Egress 撤去後の回帰成功）
 - [x] single-site の server 側 Leaf Po11／member の実 MTU 9216 を確認し、single-site・multisite 両 AS 方式の 6 config へ反映する
 - [x] MTU・パケットサイズ境界を切り分け、Leaf サーバ向け MTU 不一致と実測を保存する（2026-09-06 の記録。Po11 MTU 9216 への修正後、全 180 packet と低レート 18 条件も成功）
-- [ ] 大きい TCP／UDP の性能受入（MTU 修正後に 48 条件を再比較。サイズ依存の失敗は解消したが高レート UDP の損失・一時 TCP／LB エラーが残り、TI-004 を継続）
+- [ ] 大きい TCP／UDP の性能受入（09-12〜13 に UDP 40 条件＋対照 2 条件、TCP 12 条件を実測。TCP は全量回収したが再送が残り、UDP の Fabric 遅延・欠落区間と socket 側未回収を TI-004 で継続）
 - [ ] SNAT port 枯渇と停止後の回復を確認する（未実施。通常経路の失敗が解消するまで保留）
 
 ## 7. Stage 3: Hubble と Network Policy
@@ -392,24 +389,24 @@ LB IPv6 は回避策ありの条件付き合格。監視による設定ずれ修
 - Hubble UIは通常ClusterIPとport-forwardで管理し、fabric確認用LoadBalancer Serviceは分離する
 - fabric公開時のアクセス元制限、終了後のService削除手順
 - baseline 記録後、test namespace だけに default-deny ingress／egress、DNS allow、L3/L4 allow を順に追加する
-- [検証ワークロード設計](test-workloads.md)の `starwars` を使う identity／Service Account、DNS／FQDN、HTTP L7 policy
+- [検証ワークロード設計](tests/test-workloads.md)の `starwars` を使う identity／Service Account、DNS／FQDN、HTTP L7 policy
 - Clusterwide policy は local namespaced policy 合格後へ延期する
 - test 終了時に全 Policy を削除して baseline へ戻す rollback
 - UI、metrics、flow exportの採否条件
 
 具体的な適用順、Test ID、判断 command、rollback は
-[Network Policy／Tetragon 検証計画](network-policy-and-tetragon-test-plan.md)を正本とする。
+[Network Policy／Tetragon 検証計画](tests/network-policy-and-tetragon-test-plan.md)を正本とする。
 
 ### 受入確認
 
 根拠：[Relay／flow 確認](../../nxos_singlesite/operations/cilium-lab/2026-09-05/adc-k02/connectivity-result.md)、[CLI の判定基準と限定回帰](../../nxos_singlesite/operations/cilium-lab/2026-09-06/adc-k02/connectivity-cli-fix-result.md)。
 
 - [x] Relay が全 3 Node を認識し、FORWARDED／DROPPED を取得できる（Relay 接続確認と許可・拒否の限定回帰）
-- [ ] site 別 runtime の Hubble CLI を照合する（version／Relay 接続は確認済み。CLI と Relay の version 差警告あり、配布物 checksum の受入証跡は別途照合）
+- [x] single-site runtime の Hubble CLI を照合する（2026-09-12 の `prepare-tools.sh --check` で固定 version と保存 checksum に一致。Relay 接続は全体試験開始時に確認。CLI／Relay の version 差は維持し、同一 version とは扱わない）
 - [ ] port-forward した Hubble UI へ `eth0` 管理経路から到達できる（UI 画像あり。接続経路までの証跡照合は未完了）
 - [ ] 一時的な Hubble UI LoadBalancer VIP を使う場合は Fabric 経路で到達し、確認後に公開を解除できる（任意試験・未実施）
 - [x] DNS、HTTP、Service frontend／backend を flow で関連付けられる（lab CLI の限定 114 actions。自己宛 Service の socket event は変換後 backend の直接証拠とは区別）
-- [x] 手動計画の default-deny と各 allow Policy 一式を確認する（[2026-08-30 の結果](validation-status-2026-08-30.md#34-network-policy) と保存済み evidence index で NP-00〜NP-07 合格を照合。2026-09-06 は選定した CLI 回帰のみで、全 NP の再実行ではない）
+- [x] 手動計画の default-deny と各 allow Policy 一式を確認する（[2026-08-30 の結果](results/singlesite/2026-08-30/validation-status-2026-08-30.md#34-network-policy) と保存済み evidence index で NP-00〜NP-07 合格を照合。2026-09-06 は選定した CLI 回帰のみで、全 NP の再実行ではない）
 - [x] 実施した Policy の許可・拒否を curl と対応 flow の verdict で説明できる（限定回帰の範囲）
 - [ ] L7 proxy と observability 追加による resource 影響を評価する（選定した通信は成功。追加前後の CPU／RAM 比較は未完了）
 
@@ -430,7 +427,7 @@ LB IPv6 は回避策ありの条件付き合格。監視による設定ずれ修
 - Tetragon削除とCilium通信継続を確認するrollback手順
 
 具体的な適用順、Test ID、判断 command、rollback は
-[Network Policy／Tetragon 検証計画](network-policy-and-tetragon-test-plan.md)を正本とする。
+[Network Policy／Tetragon 検証計画](tests/network-policy-and-tetragon-test-plan.md)を正本とする。
 
 ### 受入確認
 
@@ -500,7 +497,7 @@ Cilium `1.20.1` の公式文書は両機能を「not compatible」とするが�
 - 実験 overlay と Policy を削除し、Stage 5 の基準状態へ戻せることを確認する
 
 具体的な前提、適用境界、Test ID、証拠、停止条件、rollback は
-[Egress Gateway／Cluster Mesh 同時有効化試験](egress-clustermesh-coexistence-test.md)を正本とする。
+[Egress Gateway／Cluster Mesh 同時有効化試験](tests/egress-clustermesh-coexistence-test.md)を正本とする。
 試験に合格しても、公式サポート状態が変わるまでは `multisite-final` に取り込まない。
 
 ### 10.2 その他の発展試験

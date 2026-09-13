@@ -38,7 +38,7 @@ kubectl --context "${KUBE_CONTEXT}" get nodes
 ```
 
 `command -v` でいずれかが表示されない場合は、
-[クライアントツール準備手順](../../../../../../../docs/cilium-lab/client-tools.md)を先に実行する。`PATH` は shell ごとの
+[クライアントツール準備手順](../../../../../../../docs/cilium-lab/runbooks/client-tools.md)を先に実行する。`PATH` は shell ごとの
 設定であるため、新しい terminal で Hubble flow を取得する場合も同じ設定を実行する。
 
 ## 2. workload 適用前の BGP baseline
@@ -488,7 +488,7 @@ Hubble UI／Relay の基本動作を確認した出力例を次に示す。Names
 *図 9-1: Hubble UI から Hubble Relay への接続と 3 Node の flow 集約例*
 
 過去 flow が表示されない場合は、UI を開いた状態で通信を再生成する。基本確認後の Policy verdict／L7 表示は
-[Network Policy／Tetragon 検証計画](../../../../../../../docs/cilium-lab/network-policy-and-tetragon-test-plan.md#453-hubble-cli-と-ui-の開始)で
+[Network Policy／Tetragon 検証計画](../../../../../../../docs/cilium-lab/tests/network-policy-test-plan.md#453-hubble-cli-と-ui-の開始)で
 試験する。詳細は [Cilium 公式 Hubble UI](https://docs.cilium.io/en/stable/observability/hubble/hubble-ui/)を参照する。
 
 ### 9.4 2026-08-30 の初回結果
@@ -656,13 +656,13 @@ Tetragon、Network Policy の試験は継続できる。ただし Node／BGR 障
 実動作を確認するまで合格にしない。
 
 未割り当て VIP、Node／BGR 障害、`planned-shut`、withdraw、ECMP の詳細試験は、基本通信合格後に
-[Cilium Service VIP 経路集約の比較設計](../../../../../../../docs/cilium-lab/bgp-route-aggregation-design.md)と
-[Cilium BGP 経路退避とメンテナンス設計](../../../../../../../docs/cilium-lab/bgp-maintenance-and-route-drain.md)へ進む。
+[Cilium Service VIP 経路集約の比較設計](../../../../../../../docs/cilium-lab/design/bgp-route-aggregation-design.md)と
+[Cilium BGP 経路退避とメンテナンス設計](../../../../../../../docs/cilium-lab/runbooks/bgp-maintenance-and-route-drain.md)へ進む。
 
 ## 12. 後続試験
 
 `lab-smoke` の初期合格後は、
-[Network Policy／Tetragon 検証計画](../../../../../../../docs/cilium-lab/network-policy-and-tetragon-test-plan.md)の
+[Network Policy／Tetragon 検証計画](../../../../../../../docs/cilium-lab/tests/network-policy-and-tetragon-test-plan.md)の
 `NP-00` から開始し、Policy なしの baseline、default-deny、DNS、L3／L4、identity、FQDN、HTTP L7 の順に
 確認する。
 

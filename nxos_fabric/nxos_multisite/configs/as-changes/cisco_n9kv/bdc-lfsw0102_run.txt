@@ -338,6 +338,7 @@ interface port-channel13
   vpc 13
 
 interface port-channel14
+  mtu 9216
   description bdc-k03-control-plane bond0
   switchport mode trunk
   storm-control broadcast level 40.00
@@ -347,6 +348,7 @@ interface port-channel14
   vpc 14
 
 interface port-channel15
+  mtu 9216
   description bdc-k03-worker0 bond0
   switchport mode trunk
   storm-control broadcast level 40.00
@@ -356,6 +358,7 @@ interface port-channel15
   vpc 15
 
 interface port-channel16
+  mtu 9216
   description bdc-k03-worker2 bond0
   switchport mode trunk
   storm-control broadcast level 40.00

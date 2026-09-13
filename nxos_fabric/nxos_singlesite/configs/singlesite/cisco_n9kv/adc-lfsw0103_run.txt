@@ -316,6 +316,7 @@ interface port-channel11
 interface port-channel12
   description adc-t1sv0201 bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 12
@@ -323,6 +324,7 @@ interface port-channel12
 interface port-channel13
   description adc-t2sv0102 bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 13
@@ -330,6 +332,7 @@ interface port-channel13
 interface port-channel14
   description adc-k01-worker2 bond0
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   vpc 14
@@ -380,6 +383,7 @@ interface Ethernet1/2
   description adc-t1sv0201 ens2
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 12 mode active
@@ -388,6 +392,7 @@ interface Ethernet1/3
   description adc-t2sv0102 ens2
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 13 mode active
@@ -396,6 +401,7 @@ interface Ethernet1/4
   description adc-k01-worker2 eth1
   lacp rate fast
   switchport mode trunk
+  mtu 9216
   storm-control broadcast level 40.00
   storm-control action shutdown
   channel-group 14 mode active

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k02-egress-interface-config
+  namespace: kube-system
+data:
+  nodes.json: |
+    {
+      "adc-k02-worker": {
+        "fabricInterface": "bond0.14",
+        "ipv4": [
+          "172.16.24.1/32"
+        ],
+        "ipv6": [
+          "fd21:0:0:24::1/128"
+        ]
+      },
+      "adc-k02-worker2": {
+        "fabricInterface": "bond0.104",
+        "ipv4": [
+          "172.16.24.2/32"
+        ],
+        "ipv6": [
+          "fd21:0:0:24::2/128"
+        ]
+      }
+    }
