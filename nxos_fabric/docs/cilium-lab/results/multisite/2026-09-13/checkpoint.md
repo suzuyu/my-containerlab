@@ -57,7 +57,7 @@ namespace の消滅と、UI 用 demo の Pod／Service が残っていること�
 | 次の受入で優先 | multisite の MTU 境界、性能・資源測定 | 小さい HTTP の成功と分けて受入する |
 | 新規構築の再現性確認で必要 | kubelet Node IP の未反映と初回 ARP／ND 解決の原因調査 | 手動補正を含む実績として保存し、無介入で再現可能とはしない |
 | 継続調査 | single-site の TI-004、全体 connectivity の未合格分 | 既知課題を残した記録として保存できる |
-| 別途判断 | Leaf の `write memory` | リポジトリ内の config は更新済み。機器の startup-config 保存とは別操作で、今回は実施しない |
+| 後続操作で一部完了 | Leaf の `write memory` | clab02 の BDC Leaf0101／0102 は後続の明示依頼で保存済み。single-site（clab01）は別途未実施 |
 | 保留 | kernel 更新、Node 再起動、WireGuard／Egress と Mesh の発展試験 | 合意済みの順序に従い、今回の保存条件にはしない |
 
 ## Git 保存の範囲
@@ -69,3 +69,10 @@ namespace の消滅と、UI 用 demo の Pod／Service が残っていること�
 runtime、kubeconfig、秘密情報、生ログ、capture、`operations/`、`clab-*` は Git 保存対象外。
 別変更の `.gitignore` と `nxos_spine-leaf/README.md` は作業ツリーに保持する。
 ローカル commit とリモートへの push は別操作として扱う。
+
+## 後続の push と機器への保存
+
+ユーザーの明示依頼により、保存 commit `90caacc` を `origin/evpn-multisite` へ push した。
+同日、clab02 の BDC Leaf0101／0102 で `copy running-config startup-config` を実行し、
+両機の `Copy complete` と、startup-config の Po14〜16 にある `mtu 9216` を確認した。
+single-site（clab01）の保存操作はこの後続作業の対象に含めていない。

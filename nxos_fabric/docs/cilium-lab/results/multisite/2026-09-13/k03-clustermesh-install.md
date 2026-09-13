@@ -73,7 +73,9 @@ member Ethernet1/4〜6 も `9216` へ反映され、Po はすべて up、LACP me
 vPC consistency は success。修正後は同じ TLS 接続で HTTP 応答を取得でき、DNS 試験も成功した。
 
 `configs/as-equals/` と `configs/as-changes/` の両 Leaf 保存 config にも反映した。
-**機器への `write memory` は未実施**で、変更は running-config とリポジトリ内の config に反映されている。
+導入時は running-config とリポジトリ内の config へ反映し、`write memory` は未実施だった。
+同日の後続依頼で両機の startup-config へ保存し、Po14〜16 の `mtu 9216` も照合済み。
+[後続の保存操作](checkpoint.md#後続の-push-と機器への保存) を参照する。
 
 ## 実通信と状態確認
 

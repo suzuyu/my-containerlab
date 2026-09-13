@@ -17,6 +17,8 @@ BDC Leaf の MTU、Mesh の名前解決と API 更新方式を修正し、両サ
 一時リソースの扱い、Git 保存範囲と次の区切りへ回す作業をまとめた。
 自動試験用 `cilium-mesh-bootstrap-check` は両サイトから撤去済み。
 UI 用 `cilium-test` を保持し、撤去後も Mesh 接続と各 8/8 BGP Established を確認した。
+後続の保存操作で、clab02 の BDC Leaf0101／0102 は startup-config への保存を完了し、
+Po14〜16 の `mtu 9216` を startup-config でも確認した。
 
 ## single-site の直近の結果
 
@@ -77,6 +79,7 @@ BGP 退避・障害系、経路途中の PMTUD、SNAT port 枯渇などの残り
 - kernel 更新は multisite 試験後に検討する。checksum の回避策は暫定措置として維持する。
 - 初期化の再現性は multisite の新規 Node に保存済み設定を適用して確認する。Node 再起動後のリンク復旧・設定維持は別の未検証事項として残す。
 - multisite は k01 MetalLB の限定調査、k02／k03 導入と Mesh 基本通信を確認した。性能・障害・全体 connectivity の受入完了とはしない。
-- Leaf の最新 MTU／LACP 変更の startup-config 保存は未実施。
+- single-site（clab01）Leaf の最新 MTU／LACP 変更の startup-config 保存は未実施。
+  multisite（clab02）の BDC Leaf0101／0102 は保存済み。
 
 初期化の受入範囲は [構築計画 3.2](build-plan.md#32-初期化の確認方法と-kernel-更新の時期2026-09-12-合意) を参照する。
