@@ -5,6 +5,12 @@
 コマンドは Containerlab 実行ホストの `nxos_fabric/nxos_multisite` で実行する。
 初回は k02 の Cilium と CA を先に作り、k03 へ CA を共有してから k03 の Cilium を導入する。
 
+2026-09-25 に k04 を含む 3 クラスタの接続先を稼働環境へ追加した。
+本書の通常時用 values／`multisite-final` は 2 クラスタの基準を維持する。
+**k04 接続中の再適用では、[k04 手順の 3 クラスタ用 overlay](../../k04/cilium/README.md#k04-three-cluster-values)を最後に重ねる。**
+従来の一括手順だけでは接続先から k04 が外れる。
+[今回の導入・検証記録](../../../../docs/cilium-lab/results/multisite/2026-09-25/k04-clustermesh.md)を併せて参照する。
+
 ## 最初に確認：初期導入と最終構成の差分
 
 ここで「初期」は、パターン A の **Cilium の初回 Helm install 直後**を指す。
@@ -275,101 +281,314 @@ kubectl --context kind-adc-k02 -n kube-system rollout status deployment/tetragon
 
 ## パターン B：個別試験を行わず両クラスタを最終構成で導入
 
-Containerlab／kind の両クラスタと Fabric が作成済みで、Cilium をこれから導入する環境が対象である。
-Node／Fabric の前提確認を済ませたうえで、この節から作業環境・CLI・chart を準備できる。
-両 API から各 3 Node が取得できることを確認する。Cilium 導入前の `NotReady` は許容する。
-試験用リソースの撤去、既存 Helm release の退避、作成前の CA 同士の一致確認は行わない。
-既に試験した環境には [試験後の撤去・復元](#multisite-final-convergence) を使用する。
+本節だけで、環境設定 → 再起動後の Node 確認 → Cilium／CA → 条件付き checksum 回避策 →
+DNS／LB／BGP／Mesh／Tetragon → 最終確認まで進める。別ページへの移動は必須にしない。
+「最終構成」は共存試験前の通常基盤であり、Egress Gateway は無効のままにする。
+両クラスタを変更するため、k02／k03 のどちらか一方の手順から 1 回だけ実行する。
+失敗したブロックの後へ進まず、原因を解消する。lab／kind の作成・破棄や NX-OS への設定投入は含めない。
 
-### 1. 一括導入の適用条件と初回用 DNS を確認する
+### 1. 作業環境・ツール・変更前記録
 
-Containerlab 実行ホストの Bash で、リポジトリ内の任意のディレクトリから開始する。
-新しいシェルでは、まず次の環境変数を設定する。Git 管理していない配置では `REPO_ROOT` を実際の絶対パスへ置き換える。
-最後の入力欄には、この環境で使用する DNS resolver の IPv4 を入力する。
+Containerlab 実行ホストの Bash で、リポジトリ内から実行する。
+Git 管理していない配置先では `REPO_ROOT` を実際の絶対パスへ置き換える。
+DNS は両クラスタの Pod から使用する IPv4 resolver を入力する。既存クラスタでは現在の選定値を維持する。
+異なる DNS が必要な場合は、両方を一律に変更せずパターン A で個別設定する。
 
 ```bash
 export REPO_ROOT="$(git rev-parse --show-toplevel)"
-export SITE_TYPE="multisite"
-export LAB_ROOT="${REPO_ROOT}/nxos_fabric/nxos_${SITE_TYPE}"
+export LAB_ROOT="${REPO_ROOT}/nxos_fabric/nxos_multisite"
 export K8S_CLIENT_RUNTIME="${LAB_ROOT}/k8s_kind/client/runtime"
 export PATH="${K8S_CLIENT_RUNTIME}/bin:${PATH}"
 hash -r
 export KUBECONFIG_K02="${LAB_ROOT}/clab-nxos-fabric-multisite/adc-k02/k8s_kind/k02/kubeconfig-k02"
 export KUBECONFIG_K03="${LAB_ROOT}/clab-nxos-fabric-multisite/bdc-k03/k8s_kind/k03/kubeconfig-k03"
 export KUBECONFIG="${KUBECONFIG_K02}:${KUBECONFIG_K03}"
-export KUBE_CONTEXT_K02="kind-adc-k02"
-export KUBE_CONTEXT_K03="kind-bdc-k03"
-export KUBE_CONTEXT="${KUBE_CONTEXT_K02}"
+export KUBE_CONTEXT_K02=kind-adc-k02 KUBE_CONTEXT_K03=kind-bdc-k03
 cd "${LAB_ROOT}"
-
-read -r -p '両クラスタの Pod から使用する DNS resolver IPv4: ' SITE_DNS_RESOLVER_IPV4
-export SITE_DNS_RESOLVER_IPV4
-```
-
-生成済みの管理 API 用 kubeconfig 2 個を使用し、single-site の同名 context と混在させない。
-一括導入は両クラスタが対象なので、この節は k02／k03 のどちらか一方から 1 回実施する。
-
-一括 driver の CoreDNS upstream は両クラスタ共通である。`SITE_DNS_RESOLVER_IPV4` に、
-両クラスタの Pod から使用する DNS resolver の IPv4 を設定する。クラスタごとに異なる DNS が必要なら A を使用する。
-初回は保存済みの `runtime/20-coredns-upstream.env` を必要としない。
-
-checksum 回避策が必要な現行構成では、下記の offline render 後に
-[multisite 専用手順](../../../../docs/cilium-lab/runbooks/checksum-compat-multisite.md) で Cilium の bootstrap・初回登録・監視を先に準備する。
-新規 state を両クラスタで用意してから一括導入へ進む。kernel 更新は multisite 試験後に検討する。
-
-CLI・chart の準備コマンドは未準備なら取得し、続く `--check` で保存済みファイルを検査する。
-この節は Node／Fabric の作成や修正を行わない。各コマンドで失敗した場合は後続へ進まず、原因を解消する。
-
-```bash
-export COREDNS_UPSTREAM_DNS="${SITE_DNS_RESOLVER_IPV4:?両クラスタで使用する DNS resolver IPv4 を設定してください}"
 umask 077
 mkdir -p "${LAB_ROOT}/operations/cilium-lab/runtime"
 export FINAL_DIR="$(mktemp -d "${LAB_ROOT}/operations/cilium-lab/runtime/install-final-XXXXXXXX")"
+read -r -p '両クラスタで使用する DNS resolver IPv4: ' COREDNS_UPSTREAM_DNS
+export COREDNS_UPSTREAM_DNS
+```
+
+以降の各ブロックは子 Bash で途中エラー時に停止する。記録先には現在の values を保存し、認証情報は画面へ出さない。
+
+```bash
+bash <<'BASH'
+set -euo pipefail
+: "${COREDNS_UPSTREAM_DNS:?DNS resolver を設定してください}"
 ../scripts/k8s-client/prepare-tools.sh --profile k8s_kind/client
 ../scripts/k8s-client/prepare-tools.sh --profile k8s_kind/client --check
 ../scripts/cilium-lab/prepare-helm-charts.sh --profile k8s_kind/client
 ../scripts/cilium-lab/prepare-helm-charts.sh --profile k8s_kind/client --check
-../scripts/cilium-lab/converge-cilium-lab.sh \
-  --profile multisite-final \
-  --context-k02 "${KUBE_CONTEXT_K02}" --context-k03 "${KUBE_CONTEXT_K03}" \
-  --output-dir "${FINAL_DIR}/rendered"
+test -r "$KUBECONFIG_K02"
+test -r "$KUBECONFIG_K03"
+for context in "$KUBE_CONTEXT_K02" "$KUBE_CONTEXT_K03"; do
+  kubectl --context "$context" --request-timeout=15s get nodes -o wide
+  helm list --all --namespace kube-system --kube-context "$context"
+  kubectl --context "$context" get nodes -o yaml > "$FINAL_DIR/$context-nodes-before.yaml"
+  kubectl --context "$context" -n kube-system get cm coredns -o yaml > "$FINAL_DIR/$context-coredns-before.yaml"
+  if helm status cilium -n kube-system --kube-context "$context" >/dev/null 2>&1; then
+    helm get values cilium -n kube-system --kube-context "$context" -o yaml > "$FINAL_DIR/$context-cilium-before.yaml"
+  fi
+done
+../scripts/cilium-lab/converge-cilium-lab.sh --profile multisite-final \
+  --context-k02 "$KUBE_CONTEXT_K02" --context-k03 "$KUBE_CONTEXT_K03" \
+  --output-dir "$FINAL_DIR/rendered"
+BASH
 ```
 
-`--apply` なしでは offline render のみ。出力には仮の API address と試験用 manifest も含まれるため、
-出力 directory 全体を `kubectl apply -f` せず、冒頭の最終構成と照合する。
+ここまでの driver は offline render のみ。生成 directory 全体を `kubectl apply -f` しない。
+既存の実験 values／Policy がある場合は先に変更内容を確認し、通常 values で黙って上書きしない。
 
-### 2. checksum 回避策を初回準備する
+### 2. 再起動・再作成後の Node 設定と Cilium／CA
 
-[multisite 専用手順](../../../../docs/cilium-lab/runbooks/checksum-compat-multisite.md) の 2〜5 節で、Cilium と共有 CA の bootstrap、
-新しい cluster UID ごとの `COMPAT_STATE_K02`／`COMPAT_STATE_K03`、各 timer の登録・成功確認を完了する。
-旧 single-site の timer は旧 Node を破棄・再作成する移行操作の時点で停止し、旧 state は保存する。
-Cilium／checksum の初回準備は一括 driver では自動登録しない。
+Node が `Ready` でも InternalIP が管理側 `172.18.*` の場合がある。
+期待する Fabric IPv4／IPv6 は下表の値。Leaf L2／Fabric MTU `9216`、Node 側 `9150`、LACP が前提である。
 
-### 3. 両クラスタの常設設定を一括導入する
+| Node | InternalIP IPv4 | InternalIP IPv6 | Fabric interface |
+|---|---|---|---|
+| `adc-k02-control-plane` | `172.16.4.11` | `fd21:0:0:4::1:1` | `bond0.14` |
+| `adc-k02-worker` | `172.16.4.21` | `fd21:0:0:4::2:1` | `bond0.14` |
+| `adc-k02-worker2` | `172.16.4.22` | `fd21:0:0:4::2:2` | `bond0.104` |
+| `bdc-k03-control-plane` | `172.16.5.11` | `fd21:0:0:5::1:1` | `bond0.105` |
+| `bdc-k03-worker` | `172.16.5.21` | `fd21:0:0:5::2:1` | `bond0.105` |
+| `bdc-k03-worker2` | `172.16.5.22` | `fd21:0:0:5::2:2` | `bond0.105` |
+
+まず現在値を確認する。preflight は Node 側を検査するもので、Leaf の実効 MTU／LACP の確認を代替しない。
+
+BDC Leaf0101／0102 では次の表示を確認する。Po の MTU が正しくても、物理ポートが member でなければ完成ではない。
+`Po14`～`Po16` が `SU`、`Ethernet1/4`～`1/6` が対応する Po の `P`、物理・Po の MTU が `9216` であることを確認する。
+2026-09-25 の再構築後は Po のみ設定済みで member が欠落し、物理 MTU `1500` のため Pod exec が停止した。
+Nexus の復旧投入はこのクラスタ導入ブロックに含めず、対象差分を確認してから行う。
+
+```text
+show port-channel summary
+show interface ethernet1/4 | include MTU
+show interface ethernet1/5 | include MTU
+show interface ethernet1/6 | include MTU
+show interface port-channel14 | include MTU
+show interface port-channel15 | include MTU
+show interface port-channel16 | include MTU
+show vpc brief
+```
 
 ```bash
-../scripts/cilium-lab/converge-cilium-lab.sh \
-  --profile multisite-final \
-  --context-k02 "${KUBE_CONTEXT_K02}" --context-k03 "${KUBE_CONTEXT_K03}" \
-  --checksum-state-k02 "${COMPAT_STATE_K02:?k02 の初回登録を完了してください}" \
-  --checksum-state-k03 "${COMPAT_STATE_K03:?k03 の初回登録を完了してください}" \
-  --coredns-upstream "${COREDNS_UPSTREAM_DNS:?初回用 DNS の設定が必要です}" \
-  --output-dir "${FINAL_DIR}/applied-render" \
-  --apply
+bash <<'BASH'
+set -euo pipefail
+for cluster in adc-k02 bdc-k03; do
+  for role in control-plane worker worker2; do
+    node="$cluster-$role"
+    printf '\nnode=%s\n' "$node"
+    docker exec "$node" ip -br address
+    docker exec "$node" ip -4 route show
+    docker exec "$node" ip -6 route show
+    docker exec "$node" cat /var/lib/kubelet/kubeadm-flags.env
+  done
+done
+BASH
 ```
 
-driver は両 state の所属・UID を変更前に照合し、k02 の label／preflight／API values・Cilium・checksum・CoreDNS・LB／BGP／Mesh API Service →
-k03 の準備・CA 共有・Cilium・checksum・CoreDNS・LB／BGP／Mesh API Service → 両 Tetragon → readiness／Mesh 確認を実行する。
-Hubble は Cilium values に含み、UI は k02 のみに配置する。新規 k03 の CA は driver が k02 からコピーする。
-既存 CA が異なる場合は停止し、通常手順では置換しない。試験用 Cluster Mesh demo は適用しない。
-途中失敗時に全設定を自動 rollback する処理ではないため、失敗箇所を確認して対処する。
-上記は両クラスタで回避策を使用する場合の例。不要と評価済みのクラスタだけ、対応する state オプションを省略できる。
+**InternalIP が異なる場合だけ**次のブロックで保存設計へ修正する。
+helper は指定 IP が Node 上に存在することを確認し、引数が異なる Node の kubelet だけを再起動する。
+既に正しい場合はこの修正ブロックを省略する。Fabric IP／bond 自体がない場合は先に Node ネットワークの復旧が必要である。
 
-### 4. 最終状態を確認する
+```bash
+bash <<'BASH'
+set -euo pipefail
+while read -r node addresses context; do
+  docker exec "$node" cat /var/lib/kubelet/kubeadm-flags.env > "$FINAL_DIR/$node-kubeadm-flags-before.env"
+  docker exec -i -e KUBELET_NODE_IP="$addresses" "$node" bash -s \
+    < ../scripts/cilium-lab/configure-kubelet-node-ip.sh
+  kubectl --context "$context" wait --for="jsonpath={.status.addresses[0].address}=${addresses%%,*}" "node/$node" --timeout=90s
+  kubectl --context "$context" wait --for=condition=Ready "node/$node" --timeout=90s
+done <<'NODES'
+adc-k02-control-plane 172.16.4.11,fd21:0:0:4::1:1 kind-adc-k02
+adc-k02-worker 172.16.4.21,fd21:0:0:4::2:1 kind-adc-k02
+adc-k02-worker2 172.16.4.22,fd21:0:0:4::2:2 kind-adc-k02
+bdc-k03-control-plane 172.16.5.11,fd21:0:0:5::1:1 kind-bdc-k03
+bdc-k03-worker 172.16.5.21,fd21:0:0:5::2:1 kind-bdc-k03
+bdc-k03-worker2 172.16.5.22,fd21:0:0:5::2:2 kind-bdc-k03
+NODES
+BASH
+```
 
-[共通の最終状態確認](#final-state-check) を実施する。`FINAL_DIR` は上で作成した保存先を使用する。
-常設基盤の導入と個別試験の合格を区別し、省略した通信・性能・障害試験は未検証として記録する。
-本パターンの新規環境での一括導入は未実測であり、checksum 対応の制約も含めて適用範囲を確認する。
+続いて label と preflight を確認する。Node の経路欠落はここで止めて復旧する。
+期待する Fabric 経路は k02 が `172.16.0.0/16 via 172.16.4.1` と `fd21:0:0::/48 via fd21:0:0:4::1`、
+k03 が `172.16.0.0/16 via 172.16.5.1` と `fd21:0:0::/48 via fd21:0:0:5::1` である。
+
+```bash
+bash <<'BASH'
+set -euo pipefail
+for entry in 'adc-k02 kind-adc-k02' 'bdc-k03 kind-bdc-k03'; do
+  read -r cluster context <<< "$entry"
+  ../scripts/cilium-lab/configure-cilium-node-labels.sh --context "$context" --apply
+  ../scripts/cilium-lab/preflight-host-and-kind.sh --cluster "$cluster" --kube-context "$context"
+done
+BASH
+```
+
+Cilium を k02 → CA 共有 → k03 の順に揃える。既存 CA が異なる場合は停止する。`--replace-existing` は使わない。
+導入済みの場合も保存 values と現在値の差分を確認してから実行する。
+この時点の全体 `cilium status --wait` は相手サイトの未完成を待ってしまうため使用しない。
+
+```bash
+bash <<'BASH'
+set -euo pipefail
+for site in k02 k03; do
+  if [[ "$site" == k02 ]]; then
+    cluster=adc-k02; context="$KUBE_CONTEXT_K02"
+  else
+    cluster=bdc-k03; context="$KUBE_CONTEXT_K03"
+  fi
+  ../scripts/cilium-lab/render-k8s-api-values.sh \
+    --cluster "$cluster" --output "k8s_kind/$site/cilium/runtime/10-k8s-api.yaml"
+  if [[ "$site" == k03 ]]; then
+    ../scripts/cilium-lab/prepare-clustermesh-shared-ca.sh \
+      --source-context "$KUBE_CONTEXT_K02" --target-context "$KUBE_CONTEXT_K03" --apply
+  fi
+  helm upgrade --install cilium k8s_kind/client/runtime/charts/cilium-1.20.1.tgz \
+    --namespace kube-system --kube-context "$context" \
+    --values "k8s_kind/$site/cilium/values/00-base.yaml" \
+    --values "k8s_kind/$site/cilium/values/10-observability.yaml" \
+    --values "k8s_kind/$site/cilium/values/20-multisite-clustermesh.yaml" \
+    --values "k8s_kind/$site/cilium/runtime/10-k8s-api.yaml" --wait --timeout 10m
+  for resource in daemonset/cilium deployment/cilium-operator deployment/clustermesh-apiserver; do
+    kubectl --context "$context" -n kube-system rollout status "$resource" --timeout=5m
+  done
+  kubectl --context "$context" get ciliumnodes \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.addresses}{"\n"}{end}'
+done
+BASH
+```
+
+kubelet 修正前に Cilium が導入済みの場合、Helm の再適用だけでは旧 IP が残ることがある。
+CiliumNode の `InternalIP` が管理側のままのクラスタだけ、次を実行してから再照合する。
+
+```bash
+export REPAIR_CONTEXT=kind-adc-k02 # 必要なら kind-bdc-k03 に変更して同じ確認を行う
+bash <<'BASH'
+set -euo pipefail
+kubectl --context "$REPAIR_CONTEXT" -n kube-system rollout restart daemonset/cilium
+kubectl --context "$REPAIR_CONTEXT" -n kube-system rollout status daemonset/cilium --timeout=5m
+kubectl --context "$REPAIR_CONTEXT" get ciliumnodes \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.addresses}{"\n"}{end}'
+BASH
+```
+
+### 3. checksum 回避策の採否・必要な場合の登録
+
+回避策は一律必須ではない。以前の clab02 の記録では対象 helper の IPv6 flag は未対応だったが、
+試験した LB 経路に checksum 不正はなく、state／timer を作らず `on` を維持した。
+現在の kernel／Cilium／経路も確認して判断し、未評価を「不要」と読み替えない。
+復旧直後の未評価状態では、通常基盤の設定を先に揃えても試験開始可とはしない。
+手順 5 の疎通・checksum 確認で不正が再現した場合は、本節へ戻って登録する。
+
+```bash
+for node in adc-k02-worker adc-k02-worker2 bdc-k03-worker bdc-k03-worker2; do
+  docker exec "$node" uname -r
+  docker exec "$node" ethtool -k cilium_vxlan
+ done
+export COMPAT_SCRIPT="${REPO_ROOT}/nxos_fabric/scripts/cilium-lab/checksum-compat.py"
+export K02_UID="$(kubectl --context "$KUBE_CONTEXT_K02" get namespace kube-system -o jsonpath='{.metadata.uid}')"
+export K03_UID="$(kubectl --context "$KUBE_CONTEXT_K03" get namespace kube-system -o jsonpath='{.metadata.uid}')"
+: "${K02_UID:?UID 取得失敗}" "${K03_UID:?UID 取得失敗}"
+export COMPAT_STATE_K02="${LAB_ROOT}/operations/cilium-lab/runtime/adc-k02/${K02_UID}/checksum-compat.json"
+export COMPAT_STATE_K03="${LAB_ROOT}/operations/cilium-lab/runtime/bdc-k03/${K03_UID}/checksum-compat.json"
+```
+
+**必要と判断したクラスタだけ**以下を実行する。両方で必要なら `COMPAT_SITE` を変えて繰り返す。
+既存 state は再登録せず照合する。UID／kernel／image 不一致を state の上書きで隠さない。
+
+```bash
+export COMPAT_SITE=k02 # k03 が必要な場合は k03
+bash <<'BASH'
+set -euo pipefail
+case "$COMPAT_SITE" in
+  k02) cluster=adc-k02; context="$KUBE_CONTEXT_K02"; config="$KUBECONFIG_K02"; state="$COMPAT_STATE_K02"; uid="$K02_UID" ;;
+  k03) cluster=bdc-k03; context="$KUBE_CONTEXT_K03"; config="$KUBECONFIG_K03"; state="$COMPAT_STATE_K03"; uid="$K03_UID" ;;
+  *) exit 1 ;;
+esac
+unit="cilium-checksum-multisite-$cluster-$uid"
+if [[ ! -f "$state" ]]; then
+  read -r -p '両 worker の変更前 tx-checksum-ip-generic (on/off): ' restore_tx < /dev/tty
+  read -r -p '今回の適用根拠と証跡 ID: ' reason < /dev/tty
+  python3 "$COMPAT_SCRIPT" enroll --state "$state" \
+    --cluster "$cluster" --context "$context" --kubeconfig "$config" \
+    --node "$cluster-worker" --node "$cluster-worker2" \
+    --restore-tx "${restore_tx:?}" --reason "${reason:?}"
+fi
+python3 "$COMPAT_SCRIPT" reconcile --state "$state"
+python3 "$COMPAT_SCRIPT" check --state "$state"
+loginctl enable-linger "$(id -un)"
+python3 ../scripts/cilium-lab/install-checksum-monitor.py \
+  --state "$state" --runtime-bin "$K8S_CLIENT_RUNTIME/bin" --unit "$unit"
+systemctl --user is-active "$unit.timer"
+systemctl --user show "$unit.service" -p Result -p ExecMainStatus -p ExecMainStartTimestamp
+BASH
+```
+
+両 worker の元の値が異なる場合は一括登録せず、復元方針を決める。
+`enable-linger` はログアウト後・ホスト起動後も user timer を動かす設定である。
+当該クラスタの timer `active`、service `Result=success`／`ExecMainStatus=0` を確認する。
+
+### 4. 両クラスタの常設設定を一括導入
+
+登録済み state があるクラスタだけ driver に渡す。回避策なしの初回構築でも、このコマンドを使用できる。
+既存 timer があるのに対応 state が見つからない場合は、その所属と現在の UID を解決してから進む。
+
+```bash
+bash <<'BASH'
+set -euo pipefail
+checksum_args=()
+[[ ! -f "$COMPAT_STATE_K02" ]] || checksum_args+=(--checksum-state-k02 "$COMPAT_STATE_K02")
+[[ ! -f "$COMPAT_STATE_K03" ]] || checksum_args+=(--checksum-state-k03 "$COMPAT_STATE_K03")
+../scripts/cilium-lab/converge-cilium-lab.sh --profile multisite-final \
+  --context-k02 "$KUBE_CONTEXT_K02" --context-k03 "$KUBE_CONTEXT_K03" \
+  "${checksum_args[@]}" \
+  --coredns-upstream "${COREDNS_UPSTREAM_DNS:?DNS resolver を設定してください}" \
+  --output-dir "$FINAL_DIR/applied-render" --apply
+BASH
+```
+
+driver は Cilium、条件付き checksum、CoreDNS、LB pool、BGP、Mesh API Service、Tetragon を順に適用する。
+導入途中は各コンポーネントの rollout で判断し、両サイト完成後に Cilium 全体・Mesh 接続を確認する。
+失敗時に全設定を自動 rollback する処理ではない。Node／NX-OS の作成・修正、試験 workload、Egress 有効化は行わない。
+
+### 5. 試験前の完成状態を確認
+
+```bash
+bash <<'BASH'
+set -euo pipefail
+for context in "$KUBE_CONTEXT_K02" "$KUBE_CONTEXT_K03"; do
+  kubectl --context "$context" get nodes -o wide -L bgp-speaker,bgp-maintenance
+  cilium status --context "$context"
+  cilium bgp peers --context "$context"
+  cilium clustermesh status --context "$context"
+  hubble status --kube-context "$context" -P
+  kubectl --context "$context" -n kube-system get \
+    daemonset/cilium daemonset/tetragon deployment/tetragon-operator \
+    deployment/hubble-relay deployment/clustermesh-apiserver \
+    service/clustermesh-apiserver poddisruptionbudget/clustermesh-apiserver
+  helm get values cilium --kube-context "$context" -n kube-system -o json | \
+    python3 -c 'import json,sys; v=json.load(sys.stdin); print("egressGateway:", v.get("egressGateway"), "ciliumEndpointSlice:", v.get("ciliumEndpointSlice"))'
+  helm get values cilium --kube-context "$context" -n kube-system -o yaml > "$FINAL_DIR/$context-cilium-after.yaml"
+done
+../scripts/cilium-lab/prepare-clustermesh-shared-ca.sh \
+  --source-context "$KUBE_CONTEXT_K02" --target-context "$KUBE_CONTEXT_K03"
+BASH
+```
+
+期待値は両クラスタ 3 Node Ready、Cilium／Tetragon 各 `3/3`、Mesh API 各 `2/2`、BGP 各 `8/8 Established`、
+Mesh agent `3/3`・KVStoreMesh `2/2` connected。Mesh API VIP は k02 `172.16.14.10`／`fd21:0:0:14:0:0:1:10`、
+k03 `172.16.15.10`／`fd21:0:0:15:0:0:1:10`、Service affinity `ClientIP`、PDB `minAvailable: 1`。
+Egress Gateway は `false`、MCS／WireGuard も無効である。
+
+この節は個別の通信・障害試験を省略する導入手順であり、Ready の確認を共存試験の開始条件の合格とはしない。
+両 AF の実通信、初回 ARP／ND、checksum、MTU、Global Service／Policy、障害・復帰は別に受け入れる。
+次は [先行試験順序](../../../../docs/cilium-lab/design/clustermesh-cluster-upgrade-design.md#upgrade-prerequisites) に沿って残受入を確認し、
+[Egress Gateway／Mesh 共存試験](../../../../docs/cilium-lab/tests/egress-clustermesh-coexistence-test.md)へ進む。
 
 <a id="multisite-final-convergence"></a>
 

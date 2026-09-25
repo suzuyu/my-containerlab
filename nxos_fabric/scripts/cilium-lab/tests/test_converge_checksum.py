@@ -9,14 +9,18 @@ import unittest
 
 DRIVER = Path(__file__).resolve().parents[1] / 'converge-cilium-lab.sh'
 STUB = '''#!/usr/bin/env python3
-import json, os, pathlib, sys
+import json, os, pathlib, signal, sys
 name = pathlib.Path(sys.argv[0]).name
 args = sys.argv[1:]
 with open(os.environ['CALLS'], 'a') as f:
     f.write(json.dumps([name, *args]) + '\\n')
 if name == 'kubectl':
     if args[:2] == ['config', 'get-contexts']:
-        print('kind-adc-k02\\nkind-bdc-k03')
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+        print('kind-adc-k02\\nkind-bdc-k03', flush=True)
+        if os.environ.get('LARGE_CONTEXT_OUTPUT'):
+            for i in range(2000):
+                print('unrelated-' + str(i) + '-' + 'x' * 1000)
     elif 'namespace' in args:
         context = args[args.index('--context') + 1]
         uid = os.environ.get('UID_K03', 'uid-k03') if context == 'kind-bdc-k03' else 'uid-k02'
@@ -26,6 +30,9 @@ if name == 'kubectl':
 if name == 'checksum-compat.py' and args[0] == 'reconcile':
     if os.environ.get('FAIL_RECONCILE') and args[-1].endswith('k03.json'):
         sys.exit(9)
+if name == 'kubectl' and 'rollout' in args and 'daemonset/cilium' in args:
+    if os.environ.get('FAIL_CILIUM_ROLLOUT'):
+        sys.exit(8)
 '''
 
 
@@ -133,6 +140,32 @@ class ConvergeChecksum(unittest.TestCase):
         result = self.run_driver(apply=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual([c[0] for c in self.calls], ['render-cilium-lab.sh'])
+
+    def test_first_multisite_install_waits_for_mesh_only_after_both_services(self):
+        result = self.run_driver(sites=())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        services = [i for i, c in enumerate(self.calls) if c[0] == 'kubectl'
+                    and 'apply' in c and any('30-clustermesh-apiserver-service.yaml' in a for a in c)]
+        self.assertEqual(len(services), 2)
+        status_calls = [i for i, c in enumerate(self.calls)
+                        if c[0] == 'cilium' and 'status' in c]
+        self.assertTrue(status_calls)
+        self.assertTrue(all(i > max(services) for i in status_calls))
+        for context in ['kind-adc-k02', 'kind-bdc-k03']:
+            self.assertTrue(any(c[0] == 'kubectl' and 'rollout' in c
+                                and 'daemonset/cilium' in c and context in c for c in self.calls))
+
+    def test_local_rollout_failure_stops_before_dns_and_platform_changes(self):
+        self.env['FAIL_CILIUM_ROLLOUT'] = '1'
+        result = self.run_driver(sites=())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any(c[0] == 'configure-coredns-upstream.sh' for c in self.calls))
+        self.assertFalse(any(c[0] == 'kubectl' and 'apply' in c for c in self.calls))
+
+    def test_context_lookup_consumes_output_without_sigpipe_false_failure(self):
+        self.env['LARGE_CONTEXT_OUTPUT'] = '1'
+        result = self.run_driver(sites=())
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_singlesite_existing_option_still_works(self):
         result = self.run_driver(profile='singlesite-final', sites=('k02',))

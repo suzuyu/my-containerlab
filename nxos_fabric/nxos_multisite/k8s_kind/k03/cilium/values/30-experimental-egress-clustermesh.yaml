@@ -1,0 +1,9 @@
+# Temporary coexistence experiment only; do not include in multisite-final.
+egressGateway:
+  enabled: true
+bpf:
+  masquerade: true
+kubeProxyReplacement: true
+identityAllocationMode: crd
+ciliumEndpointSlice:
+  enabled: false

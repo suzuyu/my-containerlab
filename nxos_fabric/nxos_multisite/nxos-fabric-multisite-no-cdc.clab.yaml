@@ -16,7 +16,7 @@ topology:
     cisco_n9kv:
       image: vrnetlab/cisco_n9kv:10.6.4.M.lite
       # startup-config: configs/as-equals/cisco_n9kv/__clabNodeName___run.txt
-      # startup-config: configs/as-changes/cisco_n9kv/__clabNodeName___run.txt
+      startup-config: configs/as-changes/cisco_n9kv/__clabNodeName___run.txt
       env:
         QEMU_MEMORY: 4608 # 6144 (6G) # Minimum RAM 4.5 G (4608 MB) (basic bootup) 10.5(3)F ~ . Recommended RAM 8G
         QEMU_SMP: 2

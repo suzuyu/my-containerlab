@@ -117,7 +117,7 @@ fi
   die "no Pod-reachable resolver was detected; specify --upstream or COREDNS_UPSTREAM_DNS"
 valid_upstream "$upstream" || die "upstream must be a non-loopback unicast IPv4 address: $upstream"
 
-kubectl config get-contexts -o name | grep -Fxq "$context" || \
+kubectl config get-contexts -o name | grep -Fx "$context" >/dev/null || \
   die "Kubernetes context not found: $context"
 kubectl --context "$context" get --raw=/livez >/dev/null || \
   die "Kubernetes API is not live: $context"
@@ -200,7 +200,7 @@ run_dns_check() {
   kubectl --context "$context" -n kube-system wait pod/"$pod_name" \
     --for=condition=Ready --timeout=120s >/dev/null || result=$?
   if (( result == 0 )); then
-    kubectl --context "$context" -n kube-system exec pod/"$pod_name" -- \
+    kubectl --context "$context" --request-timeout=30s -n kube-system exec pod/"$pod_name" -- \
       getent hosts "$test_name" || result=$?
   fi
   kubectl --context "$context" -n kube-system delete pod "$pod_name" \

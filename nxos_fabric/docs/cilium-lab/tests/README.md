@@ -4,6 +4,8 @@
 
 | 文書 | 内容 |
 |---|---|
+| [移行・rollback・試験前復元の手順](upgrade-rehearsal-runbook.md) | k02 → k04 → k02、同一 VIP、別／同一 Egress IP、通信時間測定、反復手順 |
+| [アップグレード試験アプリ設計](../design/clustermesh-upgrade-test-applications.md) | 移行対象・比較用アプリ、外部 IP 観測、データ復帰、試験順序 |
 | [egress-clustermesh-coexistence-test.md](egress-clustermesh-coexistence-test.md) | Egress Gateway／Cluster Mesh 同時有効化試験 |
 | [egress-gateway-failure-tests.md](egress-gateway-failure-tests.md) | Egress Gateway 計画切替・異常系試験 |
 | [egress-gateway-functional-tests.md](egress-gateway-functional-tests.md) | Egress Gateway 基本機能・新規 Pod・経路試験 |

@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cilium-upgrade-app-a
+  annotations:
+    clustermesh.cilium.io/global: "false"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-a-nginx
+  namespace: cilium-upgrade-app-a
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      listen [::]:8080;
+      access_log /dev/stdout;
+      location = /healthz { return 200 "ok\n"; }
+      location / { return 200 "cluster=adc-k04 pod=$hostname\n"; }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-a
+  namespace: cilium-upgrade-app-a
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app-a
+  template:
+    metadata:
+      labels:
+        app: app-a
+        cluster: adc-k04
+    spec:
+      nodeSelector:
+        bgp-speaker: "true"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: app-a
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: server
+          image: docker.io/library/nginx:1.29.4-alpine@sha256:a60ab79b8d1cbc6c0860ca9829908c5e7e83ed887034e778fc7adf0b1bfe5e47
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: app-a-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-a
+  namespace: cilium-upgrade-app-a
+  labels:
+    lb-pool: k04-handover-app-a
+    vip-mode: handover
+    handover-state: "off"
+  annotations:
+    lbipam.cilium.io/ips: "172.16.14.20,fd21:0:0:14:0:0:1:100"
+    service.cilium.io/global: "false"
+    service.cilium.io/shared: "false"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: io.cilium/bgp-control-plane
+  ipFamilyPolicy: RequireDualStack
+  ipFamilies: [IPv4, IPv6]
+  externalTrafficPolicy: Cluster
+  selector:
+    app: app-a
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

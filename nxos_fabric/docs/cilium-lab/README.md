@@ -10,6 +10,7 @@
 | [構成設計と構成図](architecture.md) | 通信経路、責務、MTU の現行設計 |
 | [段階的な構築計画](build-plan.md) | Stage の順序、受入条件、チェックリスト |
 | [試験課題台帳](test-issue-register.md) | TI ごとの状態、原因、回避策、終了条件 |
+| [Cluster Mesh によるクラスタ更新設計](design/clustermesh-cluster-upgrade-design.md) | k02／k04 の交互更新、ID／IP 再利用、同一 ASN、VIP 優先度、Egress、DR の未適用案 |
 
 ## 目的別の入口
 

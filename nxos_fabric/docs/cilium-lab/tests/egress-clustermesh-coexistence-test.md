@@ -20,6 +20,16 @@ manager は同時有効化を明示的に拒否していないため、本ラボ
 この試験の合格は「本ラボの特定 version／構成で観測した動作」を意味し、Cilium の公式サポートを
 示すものではない。
 
+2026-09-25 の計画整理では、Cilium Egress Gateway を使うクラスタアップグレード試験の前提に位置付ける。
+Stage 5 の残受入 → 本試験 → 同一 Egress IP の小規模移管 → 同一バージョンの k04 追加の順とする。
+本試験の local Egress 成功だけでは、Egress IP のクラスタ間移管や NAT 状態の継承は確認できない。
+追加項目と合否による進め方は [アップグレード前の試験順序](../design/clustermesh-cluster-upgrade-design.md#upgrade-prerequisites)を参照する。
+この追記は試験実施記録ではなく、通常 profile の変更も行わない。
+
+2026-09-25 に、ユーザーの続行依頼に基づく [限定実験](../results/multisite/2026-09-25/egress-clustermesh-coexistence.md)を開始した。
+復旧後の基準通信を確認して先行したもので、Stage 5 の全受入完了ではない。
+以下の正式な開始条件は維持し、今回の実測範囲と残条件を結果文書で区別する。
+
 ### 1.1 実行前の CLI runtime
 
 コマンドは repository 内の任意の作業 directory から実行できる。新しい shell ごとに multi-site 用の client runtime を
@@ -64,6 +74,11 @@ kubectl config get-contexts
 - remote Pod を local cluster の Policy selector で制御する構成
 - 公式サポート構成への昇格判断
 - single-site Stage 2B で確認する複数 Egress Gateway の HA／割り当てを、この同時有効化試験では再試験しない
+
+追加のユーザー依頼により、[別クラスタの Egress Gateway を利用できないことの確認試験](../results/multisite/2026-09-25/remote-egress-gateway-negative-test.md)を別枠で実施した。
+これは remote Gateway を利用する構成の導入ではなく、対向 Node のみを選ぶ Policy が Gateway を選択できないことを確認する試験。
+両方向・両 AF で `Not Found`／`NO_EGRESS_GATEWAY` を確認し、同じ Pod・宛先のまま local 指定へ戻すと通信が回復した。
+共存全体の `Partial` 判定と `TI-009` は変更しない。
 
 ## 3. 論理構成
 
@@ -115,7 +130,9 @@ k03 は `172.16.25.1/32`／`.2/32` と `fd21:0:0:25::1/128`／`::2/128` を予�
 `.1`／`::1` は worker、`.2`／`::2` は worker2 の `egress0` に保持する。
 [専用 IP・BGP 設計](../design/egress-gateway-routed-design.md)に従い、
 [相応する NX-OS 差分](../../../nxos_multisite/configs/changes/cilium-stage2b/README.md)を選ぶ。
-k03 の稼働環境での重複確認と外部 observation server の選定は未完了のため、実施前に確定する。
+2026-09-25 の限定実験では IP 重複と pool 競合がないことを確認し、k03 の外部 observation server は
+BDC `t1sv0104`（`172.16.0.4`／`fd21:0:0:1::104`）を使用した。
+再実施時は現在の IP 所有・経路・server の利用状況を再確認する。
 
 ### 4.1 専用 IP と広報の準備
 
@@ -262,6 +279,11 @@ Gateway 定義へ同時に指定しない。
 
 `COEX-09` は DCI 自体を停止せず、Cluster Mesh control plane だけを対象にする。DCI を停止すると外部
 observation server への経路も失われる可能性があるため、別の障害試験として依存関係を明記する。
+
+`COEX-10` で Node の Fabric interface を down にする場合は、変更前の全アドレス・静的経路も保存し、
+復帰時に照合・復元する。2026-09-25 の実測では link up だけでは IPv6 アドレスと両 AF の静的経路が戻らなかった。
+試験用 control Pod は停止対象 Gateway と別 Node に置き、Node 障害の影響と Policy の影響範囲を分離する。
+この復帰課題は [TI-009](../test-issue-register.md#3-課題一覧)で追跡する。
 
 ## 9. 確認コマンドの骨格
 

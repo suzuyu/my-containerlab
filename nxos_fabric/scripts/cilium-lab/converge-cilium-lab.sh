@@ -148,7 +148,7 @@ tetragon_chart="${client_root}/runtime/charts/tetragon-${tetragon_version}.tgz"
 
 require_context() {
   local context="$1"
-  kubectl config get-contexts -o name | grep -Fxq "$context" || die "kube context not found: ${context}"
+  kubectl config get-contexts -o name | grep -Fx "$context" >/dev/null || die "kube context not found: ${context}"
   kubectl --context "$context" get --raw=/livez >/dev/null || die "Kubernetes API is not live: ${context}"
 }
 
@@ -208,7 +208,15 @@ install_cilium() {
     --values "${site_root}/cilium/values/${overlay}" \
     --values "${site_root}/cilium/runtime/10-k8s-api.yaml" \
     --wait --timeout 10m
-  cilium status --context "$context" --wait
+  if [[ "$profile" == multisite-final ]]; then
+    # Remote Mesh readiness depends on platform resources and the other site.
+    # Waiting for it here prevents a first install from reaching those steps.
+    for resource in daemonset/cilium deployment/cilium-operator deployment/clustermesh-apiserver; do
+      kubectl --context "$context" -n kube-system rollout status "$resource" --timeout=5m
+    done
+  else
+    cilium status --context "$context" --wait
+  fi
 }
 
 configure_coredns() {

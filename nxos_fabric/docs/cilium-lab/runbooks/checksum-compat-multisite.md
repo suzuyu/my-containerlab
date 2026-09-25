@@ -112,7 +112,9 @@ for site in k02 k03; do
     --values "k8s_kind/${site}/cilium/values/20-multisite-clustermesh.yaml" \
     --values "k8s_kind/${site}/cilium/runtime/10-k8s-api.yaml" \
     --wait --timeout 10m
-  cilium status --context "$context" --wait
+  for resource in daemonset/cilium deployment/cilium-operator deployment/clustermesh-apiserver; do
+    kubectl --context "$context" -n kube-system rollout status "$resource" --timeout=5m
+  done
 done
 BASH
 ```

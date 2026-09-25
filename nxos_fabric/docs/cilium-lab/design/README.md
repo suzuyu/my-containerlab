@@ -8,6 +8,8 @@
 | [bgp-route-aggregation-design.md](bgp-route-aggregation-design.md) | Cilium Service VIP 経路集約の比較設計 |
 | [cilium-configuration-parameters.md](cilium-configuration-parameters.md) | Cilium 設定パラメータ設計 |
 | [clustermesh-fabric-dci-and-acceptance.md](clustermesh-fabric-dci-and-acceptance.md) | Cluster Mesh 基本設計、Fabric／DCI 境界、合否基準 |
+| [clustermesh-cluster-upgrade-design.md](clustermesh-cluster-upgrade-design.md) | k02／k04 の交互更新、同一 ASN／独自 community、同一 VIP、Egress IP、DR、切替・復帰試験 |
+| [clustermesh-upgrade-test-applications.md](clustermesh-upgrade-test-applications.md) | アップグレード試験アプリ、外部 API mock、別／同一 Egress IP、Stateful の逆同期、合否と実装順 |
 | [current-environment-change-plan.md](current-environment-change-plan.md) | 現環境から Cilium ラボ初期構築までの変更計画 |
 | [egress-gateway-routed-design.md](egress-gateway-routed-design.md) | Egress Gateway の専用 IP・BGP 経路設計 |
 | [multisite-clab02-startup-options.md](multisite-clab02-startup-options.md) | clab02 の資源、CDC／k01 除外案、NX-OS 10.6(4)M の起動前評価 |

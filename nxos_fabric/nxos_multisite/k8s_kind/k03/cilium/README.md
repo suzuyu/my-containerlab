@@ -5,6 +5,12 @@
 コマンドは Containerlab 実行ホストの `nxos_fabric/nxos_multisite` で実行する。
 初回は k02 の Cilium と CA を先に作り、k03 へ CA を共有してから k03 の Cilium を導入する。
 
+2026-09-25 に k04 を含む 3 クラスタの接続先を稼働環境へ追加した。
+本書の通常時用 values／`multisite-final` は 2 クラスタの基準を維持する。
+**k04 接続中の再適用では、[k04 手順の 3 クラスタ用 overlay](../../k04/cilium/README.md#k04-three-cluster-values)を最後に重ねる。**
+従来の一括手順だけでは接続先から k04 が外れる。
+[今回の導入・検証記録](../../../../docs/cilium-lab/results/multisite/2026-09-25/k04-clustermesh.md)を併せて参照する。
+
 ## 最初に確認：初期導入と最終構成の差分
 
 ここで「初期」は、パターン A の **Cilium の初回 Helm install 直後**を指す。
@@ -288,101 +294,10 @@ helm upgrade --install tetragon k8s_kind/client/runtime/charts/tetragon-1.7.0.tg
 
 ## パターン B：個別試験を行わず両クラスタを最終構成で導入
 
-Containerlab／kind の両クラスタと Fabric が作成済みで、Cilium をこれから導入する環境が対象である。
-Node／Fabric の前提確認を済ませたうえで、この節から作業環境・CLI・chart を準備できる。
-両 API から各 3 Node が取得できることを確認する。Cilium 導入前の `NotReady` は許容する。
-試験用リソースの撤去、既存 Helm release の退避、作成前の CA 同士の一致確認は行わない。
-既に試験した環境には [試験後の撤去・復元](#multisite-final-convergence) を使用する。
-
-### 1. 一括導入の適用条件と初回用 DNS を確認する
-
-Containerlab 実行ホストの Bash で、リポジトリ内の任意のディレクトリから開始する。
-新しいシェルでは、まず次の環境変数を設定する。Git 管理していない配置では `REPO_ROOT` を実際の絶対パスへ置き換える。
-最後の入力欄には、この環境で使用する DNS resolver の IPv4 を入力する。
-
-```bash
-export REPO_ROOT="$(git rev-parse --show-toplevel)"
-export SITE_TYPE="multisite"
-export LAB_ROOT="${REPO_ROOT}/nxos_fabric/nxos_${SITE_TYPE}"
-export K8S_CLIENT_RUNTIME="${LAB_ROOT}/k8s_kind/client/runtime"
-export PATH="${K8S_CLIENT_RUNTIME}/bin:${PATH}"
-hash -r
-export KUBECONFIG_K02="${LAB_ROOT}/clab-nxos-fabric-multisite/adc-k02/k8s_kind/k02/kubeconfig-k02"
-export KUBECONFIG_K03="${LAB_ROOT}/clab-nxos-fabric-multisite/bdc-k03/k8s_kind/k03/kubeconfig-k03"
-export KUBECONFIG="${KUBECONFIG_K02}:${KUBECONFIG_K03}"
-export KUBE_CONTEXT_K02="kind-adc-k02"
-export KUBE_CONTEXT_K03="kind-bdc-k03"
-export KUBE_CONTEXT="${KUBE_CONTEXT_K03}"
-cd "${LAB_ROOT}"
-
-read -r -p '両クラスタの Pod から使用する DNS resolver IPv4: ' SITE_DNS_RESOLVER_IPV4
-export SITE_DNS_RESOLVER_IPV4
-```
-
-生成済みの管理 API 用 kubeconfig 2 個を使用し、single-site の同名 context と混在させない。
-一括導入は両クラスタが対象なので、この節は k02／k03 のどちらか一方から 1 回実施する。
-
-一括 driver の CoreDNS upstream は両クラスタ共通である。`SITE_DNS_RESOLVER_IPV4` に、
-両クラスタの Pod から使用する DNS resolver の IPv4 を設定する。クラスタごとに異なる DNS が必要なら A を使用する。
-初回は保存済みの `runtime/20-coredns-upstream.env` を必要としない。
-
-checksum 回避策が必要な現行構成では、下記の offline render 後に
-[multisite 専用手順](../../../../docs/cilium-lab/runbooks/checksum-compat-multisite.md) で Cilium の bootstrap・初回登録・監視を先に準備する。
-新規 state を両クラスタで用意してから一括導入へ進む。kernel 更新は multisite 試験後に検討する。
-
-CLI・chart の準備コマンドは未準備なら取得し、続く `--check` で保存済みファイルを検査する。
-この節は Node／Fabric の作成や修正を行わない。各コマンドで失敗した場合は後続へ進まず、原因を解消する。
-
-```bash
-export COREDNS_UPSTREAM_DNS="${SITE_DNS_RESOLVER_IPV4:?両クラスタで使用する DNS resolver IPv4 を設定してください}"
-umask 077
-mkdir -p "${LAB_ROOT}/operations/cilium-lab/runtime"
-export FINAL_DIR="$(mktemp -d "${LAB_ROOT}/operations/cilium-lab/runtime/install-final-XXXXXXXX")"
-../scripts/k8s-client/prepare-tools.sh --profile k8s_kind/client
-../scripts/k8s-client/prepare-tools.sh --profile k8s_kind/client --check
-../scripts/cilium-lab/prepare-helm-charts.sh --profile k8s_kind/client
-../scripts/cilium-lab/prepare-helm-charts.sh --profile k8s_kind/client --check
-../scripts/cilium-lab/converge-cilium-lab.sh \
-  --profile multisite-final \
-  --context-k02 "${KUBE_CONTEXT_K02}" --context-k03 "${KUBE_CONTEXT_K03}" \
-  --output-dir "${FINAL_DIR}/rendered"
-```
-
-`--apply` なしでは offline render のみ。出力には仮の API address と試験用 manifest も含まれるため、
-出力 directory 全体を `kubectl apply -f` せず、冒頭の最終構成と照合する。
-
-### 2. checksum 回避策を初回準備する
-
-[multisite 専用手順](../../../../docs/cilium-lab/runbooks/checksum-compat-multisite.md) の 2〜5 節で、Cilium と共有 CA の bootstrap、
-新しい cluster UID ごとの `COMPAT_STATE_K02`／`COMPAT_STATE_K03`、各 timer の登録・成功確認を完了する。
-旧 single-site の timer は旧 Node を破棄・再作成する移行操作の時点で停止し、旧 state は保存する。
-Cilium／checksum の初回準備は一括 driver では自動登録しない。
-
-### 3. 両クラスタの常設設定を一括導入する
-
-```bash
-../scripts/cilium-lab/converge-cilium-lab.sh \
-  --profile multisite-final \
-  --context-k02 "${KUBE_CONTEXT_K02}" --context-k03 "${KUBE_CONTEXT_K03}" \
-  --checksum-state-k02 "${COMPAT_STATE_K02:?k02 の初回登録を完了してください}" \
-  --checksum-state-k03 "${COMPAT_STATE_K03:?k03 の初回登録を完了してください}" \
-  --coredns-upstream "${COREDNS_UPSTREAM_DNS:?初回用 DNS の設定が必要です}" \
-  --output-dir "${FINAL_DIR}/applied-render" \
-  --apply
-```
-
-driver は両 state の所属・UID を変更前に照合し、k02 の label／preflight／API values・Cilium・checksum・CoreDNS・LB／BGP／Mesh API Service →
-k03 の準備・CA 共有・Cilium・checksum・CoreDNS・LB／BGP／Mesh API Service → 両 Tetragon → readiness／Mesh 確認を実行する。
-Hubble は Cilium values に含み、UI は k02 のみに配置する。新規 k03 の CA は driver が k02 からコピーする。
-既存 CA が異なる場合は停止し、通常手順では置換しない。試験用 Cluster Mesh demo は適用しない。
-途中失敗時に全設定を自動 rollback する処理ではないため、失敗箇所を確認して対処する。
-上記は両クラスタで回避策を使用する場合の例。不要と評価済みのクラスタだけ、対応する state オプションを省略できる。
-
-### 4. 最終状態を確認する
-
-[共通の最終状態確認](#final-state-check) を実施する。`FINAL_DIR` は上で作成した保存先を使用する。
-常設基盤の導入と個別試験の合格を区別し、省略した通信・性能・障害試験は未検証として記録する。
-本パターンの新規環境での一括導入は未実測であり、checksum 対応の制約も含めて適用範囲を確認する。
+両クラスタ共通のコマンドを [k02 README のパターン B](../../k02/cilium/README.md#direct-final-install) に集約した。
+同節内で環境設定、再起動後の Node IP 確認、Cilium／CA、条件付き checksum、DNS／LB／BGP／Mesh／Tetragon、
+最終確認まで実行できる。k02 と k03 の両方に適用するため、1 回だけ実施する。
+本節から k03 だけを追加で一括導入する必要はない。Egress Gateway は共存試験前の無効状態を維持する。
 
 <a id="multisite-final-convergence"></a>
 

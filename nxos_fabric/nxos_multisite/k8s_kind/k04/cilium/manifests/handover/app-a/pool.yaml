@@ -1,0 +1,17 @@
+# Example VIPs: verify ownership and Nexus prefix lists before applying.
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: k04-handover-app-a
+spec:
+  disabled: false
+  blocks:
+    - start: 172.16.14.20
+      stop: 172.16.14.20
+    - start: fd21:0:0:14:0:0:1:100
+      stop: fd21:0:0:14:0:0:1:100
+  serviceSelector:
+    matchLabels:
+      lb-pool: k04-handover-app-a
+      io.kubernetes.service.namespace: cilium-upgrade-app-a
+      io.kubernetes.service.name: app-a

@@ -5,6 +5,12 @@
 
 | サイト・記録日 | 結果 |
 |---|---|
+| multisite / 2026-09-25 | [VIP／Egress 移行・k02 復帰](multisite/2026-09-25/upgrade-rehearsal.md)：同一 VIP、別／同一 Egress IP の往復を実施。時間目標は未達。復元の照合結果は本文を参照 |
+| multisite / 2026-09-25 | [k04 の Cilium／3 クラスタ Mesh](multisite/2026-09-25/k04-clustermesh.md)：BGR 保存、Cilium／Tetragon 導入、full mesh、Pod／NodePort 各 48/48。初回の並列・短 timeout 条件での失敗は残課題 |
+| multisite / 2026-09-25 | [k04 の追加](multisite/2026-09-25/k04-addition.md)：Kubernetes 1.36.4 の新規作成、Leaf 4 台の再作成と既存接続の復旧。Fabric 受入状況は記録本文を参照 |
+| multisite / 2026-09-25 | [共存試験前の復旧・構築](multisite/2026-09-25/pre-coexistence-recovery.md)：両 BDC Leaf の member／MTU 復旧、k02／k03 の基盤・Mesh・基本通信を確認。startup-config 保存・照合済み。共存試験は別記録 |
+| multisite / 2026-09-25 | [Egress／Mesh 共存の限定実験](multisite/2026-09-25/egress-clustermesh-coexistence.md)：両 AF の local SNAT・remote 非選択・Mesh／Global Service・API 障害分離を確認。Gateway 復帰時の Node アドレス／経路消失を TI-009 として記録 |
+| multisite / 2026-09-25 | [別クラスタの Egress Gateway を利用できないことの確認試験](multisite/2026-09-25/remote-egress-gateway-negative-test.md)：両方向・両 AF で `Not Found`／`NO_EGRESS_GATEWAY`。対向 Gateway は選択できず、local 復帰で通信回復 |
 | multisite / 2026-09-13 | [保存時点・終了確認](multisite/2026-09-13/checkpoint.md)：基盤と Mesh 接続の再確認、残課題、Git 保存範囲 |
 | multisite / 2026-09-13 | [k03 導入・Cluster Mesh 接続と双方向通信](multisite/2026-09-13/k03-clustermesh-install.md)：Leaf MTU／Mesh 名前解決／更新方式の修正、Pod／Global Service／LB 確認 |
 | multisite / 2026-09-13 | [k02 の初回導入・基本確認](multisite/2026-09-13/k02-initial-install.md)：Cilium／BGP／LB／Hubble／Tetragon、k03 接続は未実施 |

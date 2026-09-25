@@ -3,7 +3,7 @@ set -uo pipefail
 
 MIN_AVAILABLE_MIB=8192
 MIN_KERNEL=5.10.0
-EXPECTED_NODE_IMAGE="kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95"
+EXPECTED_NODE_IMAGE=""
 CLUSTER=""
 KUBE_CONTEXT=""
 HOST_ONLY=false
@@ -18,11 +18,12 @@ Usage:
   preflight-host-and-kind.sh [options]
 
 Options:
-  --cluster adc-k02|bdc-k03   Check the expected Kind nodes and Fabric links.
+  --cluster adc-k02|bdc-k03|adc-k04   Check the expected Kind nodes and Fabric links.
   --kube-context CONTEXT      Also verify the worker-only BGP speaker labels.
   --host-only                 Check only the host requirements.
   --min-available-mib MIB     Required host MemAvailable value. Default: 8192.
   --expected-node-image IMG   Expected Kind node image including its digest.
+                             Default: k02/k03 1.35.5; k04 1.36.4.
   -h, --help                  Show this help.
 EOF
 }
@@ -90,9 +91,20 @@ if [ "$HOST_ONLY" = false ] && [ -z "$CLUSTER" ]; then
   exit 2
 fi
 
-if [ -n "$CLUSTER" ] && [ "$CLUSTER" != "adc-k02" ] && [ "$CLUSTER" != "bdc-k03" ]; then
-  printf '%s\n' '--cluster must be adc-k02 or bdc-k03.' >&2
+if [ -n "$CLUSTER" ] && [ "$CLUSTER" != "adc-k02" ] && [ "$CLUSTER" != "bdc-k03" ] && [ "$CLUSTER" != "adc-k04" ]; then
+  printf '%s\n' '--cluster must be adc-k02, bdc-k03, or adc-k04.' >&2
   exit 2
+fi
+
+if [ -z "$EXPECTED_NODE_IMAGE" ]; then
+  case "$CLUSTER" in
+    adc-k04)
+      EXPECTED_NODE_IMAGE="kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed"
+      ;;
+    *)
+      EXPECTED_NODE_IMAGE="kindest/node:v1.35.5@sha256:ce977ae6d65918d0b58a5f8b5e940429c2ce42fa3a5619ec2bbc60b949c0ac95"
+      ;;
+  esac
 fi
 
 if [ -n "$KUBE_CONTEXT" ]; then
@@ -101,7 +113,7 @@ if [ -n "$KUBE_CONTEXT" ]; then
     exit 2
   fi
   if ! kubectl config get-contexts "$KUBE_CONTEXT" -o name 2>/dev/null |
-    grep -Fxq "$KUBE_CONTEXT"; then
+    grep -Fx "$KUBE_CONTEXT" >/dev/null; then
     printf 'Kubernetes context is unavailable: %s\n' "$KUBE_CONTEXT" >&2
     printf 'Set KUBECONFIG to the Containerlab-generated kubeconfig before retrying.\n' >&2
     exit 2
@@ -258,6 +270,15 @@ case "$CLUSTER" in
     ROUTE4='172.16.0.0/16 via 172.16.4.1'
     ROUTE6='fd21::/48 via fd21:0:0:4::1'
     ;;
+  adc-k04)
+    NODE_SPECS=(
+      'adc-k04-control-plane|bond0.16|172.16.6.11|fd21::6:0:0:1:1|false'
+      'adc-k04-worker|bond0.16|172.16.6.21|fd21::6:0:0:2:1|true'
+      'adc-k04-worker2|bond0.106|172.16.6.22|fd21::6:0:0:2:2|true'
+    )
+    ROUTE4='172.16.0.0/16 via 172.16.6.1'
+    ROUTE6='fd21::/48 via fd21:0:0:6::1'
+    ;;
   bdc-k03)
     NODE_SPECS=(
       'bdc-k03-control-plane|bond0.105|172.16.5.11|fd21::5:0:0:1:1|false'
@@ -349,12 +370,14 @@ for node_spec in "${NODE_SPECS[@]}"; do
     fail "${node_name} is missing ${ipv6_address}/64 on ${fabric_interface}"
   fi
 
-  if docker exec "$node_name" ip route show | grep -Fq "${ROUTE4} dev ${fabric_interface}"; then
+  # Consume all output: grep -q may close the pipe early and make docker exec
+  # fail with SIGPIPE under pipefail, even when the expected route exists.
+  if docker exec "$node_name" ip route show | grep -F "${ROUTE4} dev ${fabric_interface}" >/dev/null; then
     pass "${node_name} has the expected IPv4 Fabric aggregate route"
   else
     fail "${node_name} is missing IPv4 route: ${ROUTE4} dev ${fabric_interface}"
   fi
-  if docker exec "$node_name" ip -6 route show | grep -Fq "${ROUTE6} dev ${fabric_interface}"; then
+  if docker exec "$node_name" ip -6 route show | grep -F "${ROUTE6} dev ${fabric_interface}" >/dev/null; then
     pass "${node_name} has the expected IPv6 Fabric aggregate route"
   else
     fail "${node_name} is missing IPv6 route: ${ROUTE6} dev ${fabric_interface}"

@@ -48,6 +48,7 @@ Git 管理外領域へ保存する。この文書には、再現に必要な条�
 | `TI-006` | `Open` | adc-k02 W-EGRESS-06 | 手順再現時、新規 Pod の最初の IPv4 接続だけ短い deadline で timeout | 239/240 成功、後続安定。初期 timeout の原因は未確定 |
 | `TI-007` | `Resolved` | Leaf Po11〜16／Stage 1・2B | Leaf の MTU／LACP、Node 9150、Cilium 基準 9050 を反映し、k02 の Pod 経路 MTU 9000 と到達を確認 | Fabric 切替後も 9000 byte の到達を確認。待ち時間超過・性能は TI-004 で継続 |
 | `TI-008` | `Resolved` | adc-k02 connectivity 試験環境 | Fabric IP 切替前の hostNetwork 試験用 Pod に旧管理 IP が残り、Node 間通信の返信 capture が失敗 | 該当 Pod 1 個を再作成し、限定 1 test／6 actions 成功。Node IP 変更後は試験用 Pod IP も照合 |
+| `TI-009` | `Open` | multisite k02／COEX-10 | Gateway の Fabric interface down/up 後に IPv6 アドレスと両 AF の静的経路が消失し、link up だけでは Egress が復帰しない | 元のアドレス・経路を再設定。共存の通常通信と障害分離は別評価とし、無介入復帰は未合格。[実測](results/multisite/2026-09-25/egress-clustermesh-coexistence.md#障害と復旧) |
 
 ## 4. TI-001: IPv6 NodePort の remote backend 応答 checksum 不整合
 
@@ -597,6 +598,39 @@ Fabric 経路の受入と性能の受入を分け、遅延する装置・queue�
 今回の LB は 232/232 HTTP 成功。Node／Cilium／BGP／初期化設定の最終照合は成功し、一時設定を撤去した。
 次は Leaf uplink／Spine／peer-link の capture と Pod socket counter を追加し、遅延・Fabric 欠落・
 受信バッファ不足を分けて比較する。MTU の追加変更や kernel 更新は今回行わない。
+
+### 7.9 2026-09-25：multisite の k04 追加後の並列 HTTP 試験
+
+[k04 の Cilium 導入・3 クラスタ Mesh の確認](results/multisite/2026-09-25/k04-clustermesh.md)で、
+並列数と待ち時間の異なる条件に成功率の差を観測した。既存課題と同一原因とは確定せず、関連観測として記録する。
+対象は k04 の Kubernetes `1.36.4`、Cilium `1.20.1`、ホスト kernel `5.14.0-611.49.1.el9_7.x86_64`。
+
+- 初回のクラスタ間 Pod HTTP は並列 6、接続 3 秒・全体 6 秒で timeout が発生。
+  検査用 `kubectl exec` も 20 秒で timeout し、全件集計前に停止した。
+- 初回の NodePort は並列 8、接続 3 秒・全体 5 秒で `19/48` 成功。
+  同時期の Cilium health にも最大約 8.6 秒の遅延を観測した。
+- 設定を変更せず、並列 2、接続 10 秒・全体 30 秒で再試験し、Pod HTTP／NodePort は各 `48/48` 成功。
+  Pod HTTP の実測全体時間は最大約 2.42 秒だった。試験時刻も異なるため、並列数だけを原因とはしない。
+- 外部端末での IPv6 受信 capture に不正 checksum はなく、k04 の VXLAN checksum offload は `on` を維持。
+  k02／k03 の既存回避策は変更していない。TI-001 の恒久解決を示す結果ではない。
+
+最終 Cilium health は `648/648` 成功したが、短い timeout 条件・並列性能の受入は未完了。
+ホスト負荷や初期収束の影響を含めた原因確定と、同一条件での比較を残し、TI-004 は `Open` を維持する。
+
+### 7.10 2026-09-25：VIP／Egress 移行時の時間測定
+
+[移行・k02 復帰のリハーサル](results/multisite/2026-09-25/upgrade-rehearsal.md)で、
+VIP 単独・別 E・同一 E の移行と復帰は確認したが、連続 3 成功まで 5 秒という提案目標は未達だった。
+同一 E の旧 VIP 復帰後は最初の期待応答が IPv4 約 15.85 秒、IPv6 約 7.51 秒。
+その後は追加の設定変更なしで回復し、両サイトの個別再確認と 60 秒以上の継続確認が成功した。
+
+- ADC の monitor は各 flow を 2 秒周期、socket 操作 timeout 5 秒で測定。要求全体の timeout とは異なる。
+- 個別 curl は接続 3 秒・全体 5 秒で、切替前や切替後にも散発的な timeout がある。
+- 切替前 IPv6 の ADC 受信 capture では正常 checksum 230、不正 0。offload 設定は変更していない。
+- 比較用 B は基準・切替・復帰の観測対象区間で 256/256 成功。Cilium feature 変更中は別区間。
+
+元の性能課題と同じ原因とは断定しない。経路更新時刻・Fabric の実転送・HTTP 往復・測定間隔を分けて
+追加確認する。機能的な往復成功を、短 timeout 条件や性能受入の合格に広げず、状態は `Open` を維持する。
 
 <a id="ti-005-vxlan-underlay"></a>
 

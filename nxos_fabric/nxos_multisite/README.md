@@ -4,6 +4,9 @@ Cisco Nexus 9000v (N9Kv) で構成した EVPN+VXLAN Fabric の複数サイトを
 
 ## 概要
 
+[k04 構築準備](k8s_kind/k04/cilium/README.md)と [CDC 除外＋k04 追加版](nxos-fabric-multisite-no-cdc-k04.clab.yaml)を用意した。
+既存 k01／k02／k03 を維持した別 topology で、初期広告は k04 の Mesh API のみ。未デプロイ・未適用である。
+
 ![構成概要1](./images/evpn-multisite-002.png)
 
 `adc-k02`と`bdc-k03`へCilium Cluster Meshを段階構築する計画は

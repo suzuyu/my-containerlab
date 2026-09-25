@@ -1,0 +1,17 @@
+# Only the dedicated Mesh API addresses are allocatable during preparation.
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: k04-mesh-api
+spec:
+  disabled: false
+  blocks:
+    - start: 172.16.34.10
+      stop: 172.16.34.10
+    - start: fd21:0:0:34:0:0:1:10
+      stop: fd21:0:0:34:0:0:1:10
+  serviceSelector:
+    matchLabels:
+      lb-pool: k04-mesh-api
+      io.kubernetes.service.namespace: kube-system
+      io.kubernetes.service.name: clustermesh-apiserver

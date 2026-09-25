@@ -1,0 +1,65 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k04-handover-candidate
+  labels:
+    advertise: k04
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses: [LoadBalancerIP]
+      selector:
+        matchLabels:
+          vip-mode: handover
+          lb-pool: k04-handover-app-a
+          handover-state: candidate
+          io.kubernetes.service.namespace: cilium-upgrade-app-a
+          io.kubernetes.service.name: app-a
+      attributes:
+        communities:
+          standard: ["65010:100"]
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k04-handover-current
+  labels:
+    advertise: k04
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses: [LoadBalancerIP]
+      selector:
+        matchLabels:
+          vip-mode: handover
+          lb-pool: k04-handover-app-a
+          handover-state: current
+          io.kubernetes.service.namespace: cilium-upgrade-app-a
+          io.kubernetes.service.name: app-a
+      attributes:
+        communities:
+          standard: ["65010:200"]
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: k04-handover-preferred
+  labels:
+    advertise: k04
+spec:
+  advertisements:
+    - advertisementType: Service
+      service:
+        addresses: [LoadBalancerIP]
+      selector:
+        matchLabels:
+          vip-mode: handover
+          lb-pool: k04-handover-app-a
+          handover-state: preferred
+          io.kubernetes.service.namespace: cilium-upgrade-app-a
+          io.kubernetes.service.name: app-a
+      attributes:
+        communities:
+          standard: ["65010:300"]

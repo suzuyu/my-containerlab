@@ -1,0 +1,10 @@
+# Offline preparation profile; render-cilium-lab.sh only. Not an apply driver.
+# order | cluster | component | source | initial-state
+10 | adc-k04 | Kind | k04/k04.kind.yaml | Kubernetes 1.36.4 pinned in adc-k04 topology; prepared, not created
+20 | adc-k04 | shared CA from k02 | scripts/cilium-lab/prepare-clustermesh-shared-ca.sh | before Cilium install
+30 | adc-k04 | Cilium Helm | k04/cilium/values/00-base.yaml,k04/cilium/values/10-observability.yaml,k04/cilium/values/20-multisite-clustermesh.yaml | Egress disabled
+40 | adc-k04 | Mesh-only LB IPAM and BGP | k04/cilium/resources | exact Mesh API routes only
+50 | adc-k04 | Tetragon Helm | k04/tetragon/values/00-observe-only.yaml | observe-only
+60 | adc-k02,bdc-k03 | append k04 Mesh connection | saved live values + k04/cilium/values/90-clustermesh-three-clusters.yaml | separate reviewed step
+70 | adc-k04 | NodePort validation | k04/cilium/manifests/validation/preflight | optional, not auto-applied
+80 | adc-k04 | application VIP example | k04/cilium/manifests/handover/app-a | optional, handover-state=off

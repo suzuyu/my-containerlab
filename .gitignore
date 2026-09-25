@@ -102,3 +102,8 @@ standardize_nxos_management.py
 
 # old multisite path
 /nxos_evpn_multisite/
+
+# k04 upgrade preparation runtime and generated kubeconfig
+/nxos_fabric/nxos_multisite/.k04-add.runtime.clab.yaml
+/nxos_fabric/nxos_multisite/k8s_kind/k04/cilium/runtime/
+/nxos_fabric/nxos_multisite/k8s_kind/k04/kubeconfig-k04

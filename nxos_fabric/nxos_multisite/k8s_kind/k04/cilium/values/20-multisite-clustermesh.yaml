@@ -1,0 +1,76 @@
+egressGateway:
+  enabled: false
+
+ciliumEndpointSlice:
+  enabled: false
+
+clustermesh:
+  useAPIServer: true
+  maxConnectedClusters: 255
+  cacheTTL: 10m
+  enableEndpointSliceSynchronization: false
+  defaultGlobalNamespace: false
+  policyDefaultLocalCluster: true
+  config:
+    enabled: true
+    domain: mesh.cilium.io
+    clusters:
+      - name: adc-k02
+        ips:
+          - 172.16.14.10
+          - fd21:0:0:14:0:0:1:10
+        port: 2379
+      - name: bdc-k03
+        ips:
+          - 172.16.15.10
+          - fd21:0:0:15:0:0:1:10
+        port: 2379
+      - name: adc-k04
+        ips:
+          - 172.16.34.10
+          - fd21:0:0:34:0:0:1:10
+        port: 2379
+  mcsapi:
+    enabled: false
+  apiserver:
+    replicas: 2
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
+    nodeSelector:
+      kubernetes.io/os: linux
+      bgp-speaker: "true"
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                k8s-app: clustermesh-apiserver
+            topologyKey: kubernetes.io/hostname
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+      maxUnavailable: null
+    service:
+      type: LoadBalancer
+      externallyCreated: true
+      externalTrafficPolicy: Cluster
+      enableSessionAffinity: Always
+    metrics:
+      enabled: true
+      kvstoremesh:
+        enabled: true
+      etcd:
+        enabled: true
+    tls:
+      authMode: cluster
+      auto:
+        enabled: true
+        method: cronJob
+        certValidityDuration: 365
+        schedule: "0 0 1 */4 *"
+        server:
+          extraDnsNames:
+            - adc-k04.mesh.cilium.io

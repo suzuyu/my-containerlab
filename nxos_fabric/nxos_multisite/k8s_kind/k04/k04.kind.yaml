@@ -1,0 +1,74 @@
+# https://kind.sigs.k8s.io/docs/user/configuration/
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: dual
+  disableDefaultCNI: true
+  kubeProxyMode: none
+  podSubnet: "10.204.0.0/16,fd00:10:204::/56"
+  serviceSubnet: "10.104.0.0/16,fd00:10:104::/112"
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      # containerlab 0.78.2 内蔵 Kind 0.31 は v1beta3 を生成する。
+      # Kind 0.32+ の Kubernetes 1.36 用 v1beta4 と両方を定義する。
+      - |
+        apiVersion: kubeadm.k8s.io/v1beta3
+        kind: ClusterConfiguration
+        apiServer:
+          certSANs:
+            - localhost
+            - 127.0.0.1
+            - 172.16.6.11
+            - fd21:0:0:6::1:1
+        controllerManager:
+          extraArgs:
+            node-cidr-mask-size-ipv4: "24"
+            node-cidr-mask-size-ipv6: "64"
+      - |
+        apiVersion: kubeadm.k8s.io/v1beta4
+        kind: ClusterConfiguration
+        apiServer:
+          certSANs:
+            - localhost
+            - 127.0.0.1
+            - 172.16.6.11
+            - fd21:0:0:6::1:1
+        controllerManager:
+          extraArgs:
+            - name: node-cidr-mask-size-ipv4
+              value: "24"
+            - name: node-cidr-mask-size-ipv6
+              value: "64"
+    extraMounts:
+      - hostPath: k8s_kind/node
+        containerPath: /scripts
+        readOnly: true
+      - hostPath: ../scripts/cilium-lab
+        containerPath: /cilium-lab-scripts
+        readOnly: true
+      - hostPath: /proc
+        containerPath: /procHost
+        readOnly: true
+  - role: worker
+    extraMounts:
+      - hostPath: k8s_kind/node
+        containerPath: /scripts
+        readOnly: true
+      - hostPath: ../scripts/cilium-lab
+        containerPath: /cilium-lab-scripts
+        readOnly: true
+      - hostPath: /proc
+        containerPath: /procHost
+        readOnly: true
+  - role: worker
+    extraMounts:
+      - hostPath: k8s_kind/node
+        containerPath: /scripts
+        readOnly: true
+      - hostPath: ../scripts/cilium-lab
+        containerPath: /cilium-lab-scripts
+        readOnly: true
+      - hostPath: /proc
+        containerPath: /procHost
+        readOnly: true

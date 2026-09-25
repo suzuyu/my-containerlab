@@ -1,0 +1,14 @@
+# Add last to the saved values of k02/k03 when k04 API is ready.
+# Helm replaces lists: keep all three entries, not only the new cluster.
+clustermesh:
+  config:
+    clusters:
+      - name: adc-k02
+        ips: [172.16.14.10, "fd21:0:0:14:0:0:1:10"]
+        port: 2379
+      - name: bdc-k03
+        ips: [172.16.15.10, "fd21:0:0:15:0:0:1:10"]
+        port: 2379
+      - name: adc-k04
+        ips: [172.16.34.10, "fd21:0:0:34:0:0:1:10"]
+        port: 2379

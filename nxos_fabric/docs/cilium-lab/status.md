@@ -1,6 +1,22 @@
 # Cilium ラボの現在のステータス
 
-最終実測：2026-09-13（single-site 終了時確認、multisite k01 MetalLB 調査、k02／k03 導入と Cluster Mesh 基本通信）。
+最終実測：2026-09-25（multisite 再構築後の k02／k03 設定復旧）。
+[今回の記録](results/multisite/2026-09-25/pre-coexistence-recovery.md)：6 Node の Fabric InternalIP と CiliumNode を修正し、
+両クラスタで Cilium／Tetragon `3/3`、BGP 各 `8/8`、Mesh agent `3/3`・KVStoreMesh `2/2` を確認した。
+**BDC 両 Leaf の k03 向け物理ポートを MTU `9216`・Po14～16 の LACP member として復旧し、k03 の残設定を完了。**
+サイト間 Pod HTTP `16/16`、Global Service `8/8`、外部 LB／NodePort は各クラスタ `12/12` 成功。
+今回の Leaf 差分は追加依頼後に startup-config へ保存・照合済み。
+続けて [Egress／Mesh の限定共存試験](results/multisite/2026-09-25/egress-clustermesh-coexistence.md)を実施した。
+通常時の両 AF SNAT、remote 非選択、Mesh／Global Service、Mesh API 障害分離は成功。
+Gateway の link up 後に Node のアドレス・経路が戻らない `TI-009` を検出し、判定は `Partial`。
+試験用設定を撤去し、両クラスタを通常構成へ復帰済み。変更前 values／ConfigMap と一致し、通信回帰も成功した。
+追加の [別クラスタの Egress Gateway を利用できないことの確認試験](results/multisite/2026-09-25/remote-egress-gateway-negative-test.md)では、
+両方向・両 AF で Gateway `Not Found`／`NO_EGRESS_GATEWAY` を確認し、local 指定への復帰で通信が回復した。
+標準 Policy による対向 Gateway 利用は不可。公式の非互換理由がこれだけであるとは断定しない。
+追加試験の一時リソースも撤去し、変更前設定との一致、通信回帰、Mesh／BGP の正常性を確認済み。
+09-13 の障害・性能等の未受入事項は、今回の基本疎通成功で合格へ変更しない。
+
+以下の導入実績・Stage 別受入は、上記の復旧記録を除き 2026-09-13 までの保存結果である。
 single-site `adc-k02` は既知課題付きで一区切りとし、multisite の構築へ移った。
 multisite はユーザーが clab02 で CDC 除外版を起動し、構築中。
 checksum 適用手順と一括 driver を準備済み。[CDC 除外・k01 維持版](design/multisite-clab02-startup-options.md) の YAML と機器台帳を作成し、静的検査を完了した。
@@ -61,9 +77,42 @@ Stage 1〜4 は single-site の保存済み結果に基づく。各 Stage の詳
 
 ## 次に進める作業
 
+[k04 の構築準備ファイル](../../nxos_multisite/k8s_kind/k04/cilium/README.md)と
+[CDC 除外＋k04 追加版](../../nxos_multisite/nxos-fabric-multisite-no-cdc-k04.clab.yaml)を作成した。
+49 ノード定義・88 リンク、初期 BGP 広告は専用 Mesh API のみ。k04 は初回から Kubernetes `1.36.4` を個別指定し、
+k02／k03 は `1.35.5`、Cilium は全クラスタ `1.20.1` に揃える計画。
+09-25 に [k04 の追加操作](results/multisite/2026-09-25/k04-addition.md)を実施し、3 Node の `v1.36.4` と両 AF の Fabric InternalIP を確認した。
+既存 Kind の作成用定義を除いた作業用 topology で追加し、ADC Leaf 4 台を再作成した。
+全 lab の再作成は行っていない。手動復旧後に Fabric ICMP `78/78`、既存クラスタ間の health HTTP `72/72`、
+k02／k03 の BGP 各 `8/8 Established` と Mesh 接続、Cilium health `288/288` を確認した。
+続いて [k04 の Cilium／Mesh 導入](results/multisite/2026-09-25/k04-clustermesh.md)を完了し、BGR 2 台も startup-config へ保存・照合した。
+現在は 3 クラスタ full mesh、BGP 各 `8/8`、Node `9/9 Ready`、Cilium health `648/648`。
+Pod／NodePort の両 AF HTTP は並列 2 の再試験で各 `48/48` が成功した。初回の並列・短 timeout 条件での失敗は `TI-004` の関連観測として残し、性能合格とはしない。
+この基盤導入時点では一時 workload を撤去し、k04 の NodePort 確認アプリを残した。
+後続の [VIP／Egress 移行・k02 復帰](results/multisite/2026-09-25/upgrade-rehearsal.md)では、
+VIP 単独・別 E・同一 E の各方式で k04 への移行と k02 への復帰を実施した。
+連続 3 成功まで 5 秒という時間目標は未達。短 timeout 条件の散発失敗も残し、全項目合格とはしない。
+試験用設定は撤去し、開始前設定の照合 52/52 と追加照合 19/19 が成功。
+最終状態は全 9 Node Ready、BGP 各 8/8、Mesh 接続、health 648/648、既存 k04 NodePort 8/8。
+
+[アップグレード試験アプリ設計](design/clustermesh-upgrade-test-applications.md)を具体化した。
+echo と旧側の比較用アプリ → 別 Egress IP の `report-api` → 同一 Egress IP の `partner-submit` →
+Stateful の逆同期 → DR の順に進める。小規模 HTTP アプリ・mock・runner は実装・試験済み。
+[手動の実施・復元手順](tests/upgrade-rehearsal-runbook.md)を追加した。Stateful／DR は未実施。
+
+2026-09-25 のアップグレード設計レビューでは、下記の既存受入を先行し、続けて Egress／Mesh 共存、
+同一 Egress IP の小規模移管、k04 追加の順に進める案とした。追加の再構築を避けるため、
+k04 は初回から Kubernetes `1.36.4` とする方針へ更新した。
+[先行試験と開始条件](design/clustermesh-cluster-upgrade-design.md#upgrade-prerequisites)を参照する。
+共存試験後の [段階別の残確認](design/clustermesh-cluster-upgrade-design.md#upgrade-current-gates)では、
+k04 構築・Ingress 切替・Egress 統合の開始条件を分けた。全残試験の終了を k04 構築の一律の条件にはしない。
+[一時アップグレードと常設 AZ の ASN／BGP 比較](design/clustermesh-cluster-upgrade-design.md#asn-az-comparison)も追加した。
+これは計画の更新であり、上記の最終実測日・合否は変更していない。
+
 1. Cluster Mesh API の片系停止・復旧、経路退避とサイト断、Global Service の local 優先／remote fallback を段階的に確認する。受入条件は [Cluster Mesh 設計](design/clustermesh-fabric-dci-and-acceptance.md) に従う。
 2. サイト間の MTU 境界と性能、資源使用量を測定する。k01／k02 の初回 ARP／ND 解決と、k02／k03 で kubelet Node IP が未反映だった原因も継続調査する。
 3. [multisite checksum 手順](runbooks/checksum-compat-multisite.md) に従い、新しい経路でも checksum を評価する。clab02 の helper は対象 IPv6 flag 未対応だが、k02／k03 の LB 試験で不正を検出せず、offload は `on`、state／timer は未作成。必要性を実測してから登録する。別ホスト clab01 の既存回避策は維持する。
+4. [Egress Gateway／Cluster Mesh 共存試験](tests/egress-clustermesh-coexistence-test.md)は 09-25 に限定実施し `Partial`。`TI-009` の無介入復帰と Stage 5 の残開始条件を解消して正式受入へ進む。Cilium Egress を使うクラスタ更新では先行条件とし、両 AF・両クラスタと rollback の結果から方式を判断する。全負荷試験の完了を機能試験の一律の条件にはしない。
 
 ## single-site から引き継ぐ調査
 
@@ -80,6 +129,6 @@ BGP 退避・障害系、経路途中の PMTUD、SNAT port 枯渇などの残り
 - 初期化の再現性は multisite の新規 Node に保存済み設定を適用して確認する。Node 再起動後のリンク復旧・設定維持は別の未検証事項として残す。
 - multisite は k01 MetalLB の限定調査、k02／k03 導入と Mesh 基本通信を確認した。性能・障害・全体 connectivity の受入完了とはしない。
 - single-site（clab01）Leaf の最新 MTU／LACP 変更の startup-config 保存は未実施。
-  multisite（clab02）の BDC Leaf0101／0102 は保存済み。
+  multisite（clab02）の BDC Leaf0101／0102 は 09-13 時点では保存済みだったが、再構築後の 09-25 の復旧差分も追加依頼後に startup-config へ保存・照合済み。
 
 初期化の受入範囲は [構築計画 3.2](build-plan.md#32-初期化の確認方法と-kernel-更新の時期2026-09-12-合意) を参照する。

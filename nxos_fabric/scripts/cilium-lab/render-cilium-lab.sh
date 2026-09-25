@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  render-cilium-lab.sh --profile singlesite-final|multisite-final \
+  render-cilium-lab.sh --profile singlesite-final|multisite-final|multisite-k04-prep \
     --output-dir DIR
 
 This command performs offline Helm and Kustomize rendering only. It does not
@@ -42,7 +42,7 @@ while (($# > 0)); do
 done
 
 case "$profile" in
-  singlesite-final|multisite-final) ;;
+  singlesite-final|multisite-final|multisite-k04-prep) ;;
   *) die "unsupported profile: ${profile:-<empty>}" ;;
 esac
 [[ -n "$output_dir" ]] || die "--output-dir is required"
@@ -89,16 +89,27 @@ render_site() {
   local site="$1"
   local overlay="$2"
   local site_root="${fabric_root}/k8s_kind/${site}"
+  local extra_values=()
+  local kube_version=1.35.5
+  if [[ "$site" == k04 ]]; then
+    kube_version=1.36.4
+  fi
+  if [[ "$profile" == multisite-k04-prep && "$site" != k04 ]]; then
+    extra_values+=(--values "${fabric_root}/k8s_kind/k04/cilium/values/90-clustermesh-three-clusters.yaml")
+  fi
   "$helm_bin" template cilium "$cilium_chart" \
+    --kube-version "$kube_version" \
     --namespace kube-system \
     --values "${site_root}/cilium/values/00-base.yaml" \
     --values "${site_root}/cilium/values/10-observability.yaml" \
     --values "${site_root}/cilium/values/${overlay}" \
+    "${extra_values[@]}" \
     --set k8sServiceHost=192.0.2.10 \
     --set k8sServicePort=6443 \
     > "${output_dir}/${site}-cilium.yaml"
 
   "$helm_bin" template tetragon "$tetragon_chart" \
+    --kube-version "$kube_version" \
     --namespace kube-system \
     --values "${site_root}/tetragon/values/00-observe-only.yaml" \
     > "${output_dir}/${site}-tetragon.yaml"
@@ -118,6 +129,9 @@ if [[ "$profile" == singlesite-final ]]; then
 else
   render_site k02 20-multisite-clustermesh.yaml
   render_site k03 20-multisite-clustermesh.yaml
+  if [[ "$profile" == multisite-k04-prep ]]; then
+    render_site k04 20-multisite-clustermesh.yaml
+  fi
 fi
 
 (
