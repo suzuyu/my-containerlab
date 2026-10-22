@@ -159,7 +159,7 @@ route-map IPv6_DEFAULT-ONLY permit 1000
 route-map IPv6_IMPORT_MAP_controller-vpc1 permit 10
   match extcommunity IMPORT_LEAK_FILTER_contoller-vpc1
 route-map IPv6_IMPORT_MAP_controller-vpc1 permit 20
-  match ip address prefix-list IPv6_IMPORT_LEAK_FILTER_PREFIX_controller-vpc1
+  match ipv6 address prefix-list IPv6_IMPORT_LEAK_FILTER_PREFIX_controller-vpc1
 route-map IPv6_REDISTRIBUTE_ALL permit 1000
   match ipv6 address prefix-list IPv6_ALL_PREFIX
 vrf context controller-vpc1

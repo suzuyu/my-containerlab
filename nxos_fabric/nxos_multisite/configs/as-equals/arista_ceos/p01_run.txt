@@ -3,7 +3,7 @@
 !
 no aaa root
 !
-! credential lines omitted from public lab sample
+username admin privilege 15 role network-admin secret 0 admin
 !
 management api http-commands
    no shutdown

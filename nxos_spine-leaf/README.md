@@ -496,7 +496,7 @@ af0b5dde8e4e   vrnetlab/cisco_n9kv:10.4.5.M             "uv run /launch.py -…"
 23:29:00 INFO Serving topology graph
   addresses=
   │   http://172.17.0.1:50080
-  │   http://192.168.129.59:50080
+  │   http://<実行ホストの管理 IP>:50080
 
 
 ```
@@ -680,4 +680,3 @@ lfsw0101# show processes memory | inc bgp
 ```
 
 これは[10.4(x)だとRecommended RAM 10G](https://www.cisco.com/c/en/us/td/docs/dcn/nx-os/nexus9000/104x/configuration/n9000v-n9300v-n9500v/cisco-nexus-9000v-9300v-9500v-guide-release-104x/m-nexus-9300v-and-9500v-lite-nx-os-image.html)のためで、6G は 10.5(1)Fから、10.5(3)F で 4.5G までフットプリントが下がったので、削減する場合は 10.5(3)F 以降が良さそう
-

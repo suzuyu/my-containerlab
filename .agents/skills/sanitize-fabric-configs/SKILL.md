@@ -1,6 +1,6 @@
 ---
 name: sanitize-fabric-configs
-description: Sanitize and inspect public lab network configurations under nxos_fabric. Use before adding, committing, pushing, or publishing NX-OS or cEOS configuration samples, and after regenerating as-changes configs. Remove username credential lines, reject globally routable management endpoints and private keys, and report intentionally retained SNMP, NTP, and logging sample settings.
+description: Sanitize and inspect public lab network configurations under nxos_fabric. Use before adding, committing, pushing, or publishing NX-OS or cEOS configuration samples, and after regenerating as-changes configs. Remove username credential lines except explicit disposable admin/admin samples, reject globally routable management endpoints and private keys, and report intentionally retained SNMP, NTP, and logging sample settings.
 ---
 
 # Sanitize Fabric Configs
@@ -16,9 +16,15 @@ require an explicit user request. Sanitization is an offline file operation.
 
 ## Apply the publication policy
 
-- Remove every active or commented `username` configuration line from public NX-OS and cEOS samples.
+- Remove active or commented `username` configuration lines except the exact disposable lab forms below
+  (leading whitespace and an optional `!` comment marker are allowed):
+  - NX-OS: `username admin password 0 admin role network-admin` (the `0` and role suffix are optional).
+  - cEOS: `username admin privilege 15 role network-admin secret 0 admin`.
+  Never exempt other passwords, hashes, SSH keys, or arbitrary lines just because the user is `admin`.
+  Do not attempt to recover credentials from omission markers or replace unknown credentials with admin/admin.
   Replace each consecutive block with `! credential lines omitted from public lab sample` so the
-  omission remains visible. Rely on the documented containerlab default user at lab startup.
+  omission remains visible. For Nexus 9000v, containerlab documents a default admin/admin user and
+  startup-config snippets applied after boot: https://containerlab.dev/manual/kinds/vr-n9kv/.
 - Fail when a config contains a private key, an `enable secret`, or a globally routable IP endpoint.
 - Retain SNMP communities and HomeLab-specific SNMP, NTP, and logging destinations only when the user
   confirms they are disposable lab samples and every destination is private, loopback, link-local,

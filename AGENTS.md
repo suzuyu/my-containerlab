@@ -19,7 +19,8 @@
 `nxos_fabric/`の追加、commit、push、公開前、および公開config再生成後は
 [sanitize-fabric-configs](.agents/skills/sanitize-fabric-configs/SKILL.md)を使用する。
 
-- 公開configからactive／commentedを問わず`username`設定行を除去する。
+- 公開configからactive／commentedを問わず`username`設定行を除去する。ただし、使い捨てlab用の
+  平文 `admin/admin` のみサニタイザーの許可形式で保持できる。ハッシュ値は例外にしない。
 - SNMP community、SNMP／NTP／logging先は、使い捨てのlabサンプルで、宛先が非global addressの
   場合だけ保持できる。別環境で再利用している値は公開前に変更する。
 - secret値、未加工の認証情報、実機ログを報告やcommit messageへ転載しない。

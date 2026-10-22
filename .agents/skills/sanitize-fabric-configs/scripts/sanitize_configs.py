@@ -10,6 +10,14 @@ from pathlib import Path
 
 
 USERNAME_RE = re.compile(r"^\s*!?\s*username\s+", re.IGNORECASE | re.MULTILINE)
+# Deliberately case-sensitive and anchored: never exempt arbitrary admin hashes,
+# other passwords, or trailing credential options.
+LAB_ADMIN_RE = re.compile(
+    r"[ \t]*!?[ \t]*username admin (?:"
+    r"password (?:0 )?admin(?: role network-admin)?"
+    r"|privilege 15 role network-admin secret 0 admin"
+    r")[ \t]*"
+)
 PRIVATE_KEY_RE = re.compile(r"BEGIN [A-Z0-9 ]*PRIVATE KEY", re.IGNORECASE)
 ENABLE_SECRET_RE = re.compile(r"^\s*enable\s+secret\b", re.IGNORECASE | re.MULTILINE)
 IPV4_RE = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])")
@@ -49,7 +57,7 @@ def sanitize_username_blocks(text: str) -> tuple[str, int]:
     omitted_blocks = 0
 
     for line in text.splitlines(keepends=True):
-        if USERNAME_RE.match(line):
+        if USERNAME_RE.match(line) and not LAB_ADMIN_RE.fullmatch(line.rstrip("\r\n")):
             if not in_username_block:
                 output.append(OMISSION)
                 omitted_blocks += 1
@@ -99,8 +107,8 @@ def main() -> int:
             changed_files += 1
 
         checked = rendered if args.write else original
-        if USERNAME_RE.search(checked):
-            errors.append(f"{path}: username configuration remains")
+        if sanitize_username_blocks(checked)[1]:
+            errors.append(f"{path}: non-sample username configuration remains")
         if PRIVATE_KEY_RE.search(checked):
             errors.append(f"{path}: private key material remains")
         if ENABLE_SECRET_RE.search(checked):
