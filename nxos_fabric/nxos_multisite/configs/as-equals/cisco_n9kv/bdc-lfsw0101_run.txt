@@ -421,6 +421,7 @@ interface Ethernet1/4
   storm-control multicast level 40.00
   storm-control unicast level 40.00
   storm-control action shutdown
+  mtu 9216
   channel-group 14 mode active
 
 interface Ethernet1/5
@@ -432,6 +433,7 @@ interface Ethernet1/5
   storm-control multicast level 40.00
   storm-control unicast level 40.00
   storm-control action shutdown
+  mtu 9216
   channel-group 15 mode active
 
 interface Ethernet1/6
@@ -443,6 +445,7 @@ interface Ethernet1/6
   storm-control multicast level 40.00
   storm-control unicast level 40.00
   storm-control action shutdown
+  mtu 9216
   channel-group 16 mode active
 
 interface Ethernet1/7

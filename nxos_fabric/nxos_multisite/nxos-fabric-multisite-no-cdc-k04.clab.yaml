@@ -342,11 +342,8 @@ topology:
     adc-k01:
       kind: k8s-kind
       startup-config: k8s_kind/k01/k01.kind.yaml
-      extras:
-        k8s_kind:
-          deploy:
-            kubeconfig: k8s_kind/k01/kubeconfig-k01
-            wait: 0s
+      kubeconfig: k8s_kind/k01/kubeconfig-k01
+      wait: 0s
     adc-k01-control-plane:
       kind: ext-container
       # ext-container では既存コンテナへ bind mount を追加できない。
@@ -432,11 +429,8 @@ topology:
     adc-k02:
       kind: k8s-kind
       startup-config: k8s_kind/k02/k02.kind.yaml
-      extras:
-        k8s_kind:
-          deploy:
-            kubeconfig: k8s_kind/k02/kubeconfig-k02
-            wait: 0s
+      kubeconfig: k8s_kind/k02/kubeconfig-k02
+      wait: 0s
     adc-k02-control-plane:
       kind: ext-container
       # ext-container では既存コンテナへ bind mount を追加できない。
@@ -528,11 +522,8 @@ topology:
     bdc-k03:
       kind: k8s-kind
       startup-config: k8s_kind/k03/k03.kind.yaml
-      extras:
-        k8s_kind:
-          deploy:
-            kubeconfig: k8s_kind/k03/kubeconfig-k03
-            wait: 0s
+      kubeconfig: k8s_kind/k03/kubeconfig-k03
+      wait: 0s
     bdc-k03-control-plane:
       kind: ext-container
       # ext-container では既存コンテナへ bind mount を追加できない。
@@ -625,11 +616,8 @@ topology:
       kind: k8s-kind
       image: kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
       startup-config: k8s_kind/k04/k04.kind.yaml
-      extras:
-        k8s_kind:
-          deploy:
-            kubeconfig: k8s_kind/k04/kubeconfig-k04
-            wait: 0s
+      kubeconfig: k8s_kind/k04/kubeconfig-k04
+      wait: 0s
     adc-k04-control-plane:
       kind: ext-container
       # ext-container では既存コンテナへ bind mount を追加できない。

@@ -9,7 +9,7 @@ Usage:
     [--coredns-upstream DNS_IPV4] \
     [--checksum-state-k02 ENROLLED_STATE_JSON] \
     [--checksum-state-k03 ENROLLED_STATE_JSON] \
-    [--output-dir DIR] [--apply]
+    [--output-dir DIR] [--skip-tetragon] [--apply]
 
 Without --apply, perform only offline Helm/Kustomize rendering. With --apply,
 converge Node labels/routes, Cilium, platform CRs, and Tetragon in dependency
@@ -32,6 +32,7 @@ output_dir=""
 coredns_upstream=""
 checksum_state_k02=""
 checksum_state_k03=""
+skip_tetragon=false
 apply=false
 
 while (($# > 0)); do
@@ -60,6 +61,10 @@ while (($# > 0)); do
       (($# >= 2)) || die "--coredns-upstream requires a value"
       coredns_upstream="$2"
       shift 2
+      ;;
+    --skip-tetragon)
+      skip_tetragon=true
+      shift
       ;;
     --apply)
       apply=true
@@ -254,6 +259,7 @@ apply_platform_resources() {
 }
 
 install_tetragon() {
+  if [[ "$skip_tetragon" == true ]]; then return 0; fi
   local site="$1"
   local context="$2"
   local site_root="${fabric_root}/k8s_kind/${site}"
